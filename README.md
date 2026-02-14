@@ -1,5 +1,22 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## 🌟 Lina Point AI Ecosystem
+
+A comprehensive resort booking and guest concierge system with AI-powered personalization, featuring:
+- 🏖️ Direct booking system with OTA price comparison
+- 🤖 AI concierge agents (Grok-4 + LangGraph)
+- 💬 WhatsApp integration for guest communication
+- 🎵 Personalized magic content generation (songs/videos)
+- 📊 Admin dashboard for management
+- 🔐 Supabase authentication and database
+
+## 📚 Documentation
+
+- [WhatsApp Integration Guide](./WHATSAPP_INTEGRATION.md) - Setup and usage for WhatsApp concierge
+- [Booking System](./BOOKING_README.md) - Direct booking flow and OTA integration
+- [Architecture](./ARCHITECTURE.md) - System architecture and design
+- [Supabase Setup](./SUPABASE_SETUP.md) - Database setup and migrations
+
 ## Getting Started
 
 First, run the development server:
