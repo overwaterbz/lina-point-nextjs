@@ -4,6 +4,9 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ['/auth/login', '/auth/signup', '/auth/verify-email', '/', '/rooms', '/experiences', '/concierge', '/gallery'];
 
+// SEO / static routes that should never hit auth
+const SEO_ROUTES = ['/sitemap.xml', '/robots.txt', '/favicon.ico', '/favicon.svg'];
+
 // API routes that handle their own auth (cron jobs, webhooks)
 const SELF_AUTH_API_ROUTES = [
   '/api/cron/',
@@ -19,17 +22,31 @@ export async function middleware(request: NextRequest) {
   const requestId = crypto.randomUUID();
   const start = Date.now();
 
+  // Allow SEO routes through without any processing
+  if (SEO_ROUTES.includes(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Security headers applied to all responses
+  const securityHeaders: Record<string, string> = {
+    'x-request-id': requestId,
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  };
+
   // Allow public routes
   if (PUBLIC_ROUTES.includes(pathname)) {
     const response = NextResponse.next();
-    response.headers.set('x-request-id', requestId);
+    Object.entries(securityHeaders).forEach(([k, v]) => response.headers.set(k, v));
     return response;
   }
 
   // API routes that handle their own auth pass through with tracing
   if (SELF_AUTH_API_ROUTES.some(route => pathname.startsWith(route))) {
     const response = NextResponse.next();
-    response.headers.set('x-request-id', requestId);
+    Object.entries(securityHeaders).forEach(([k, v]) => response.headers.set(k, v));
     return response;
   }
 
@@ -67,8 +84,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Add tracing headers
-  response.headers.set('x-request-id', requestId);
+  // Add security + tracing headers
+  Object.entries(securityHeaders).forEach(([k, v]) => response.headers.set(k, v));
 
   // Log API requests in development
   if (process.env.NODE_ENV !== 'production' && pathname.startsWith('/api/')) {
