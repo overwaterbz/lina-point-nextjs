@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { checkAvailability } from '@/lib/inventory'
+import { calculateDynamicPrice } from '@/lib/dynamicPricing'
+import type { RoomType } from '@/lib/inventory'
 
 /**
  * GET /api/availability?checkIn=2026-04-01&checkOut=2026-04-05
- * Public endpoint — returns available room counts per type.
+ * Public endpoint — returns available room counts per type with dynamic pricing.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -32,7 +34,30 @@ export async function GET(request: NextRequest) {
     const supabase = await createServerSupabaseClient()
     const availability = await checkAvailability(supabase, checkIn, checkOut)
 
-    return NextResponse.json({ availability }, { status: 200 })
+    // Enrich with dynamic pricing
+    const enriched = await Promise.all(
+      availability.map(async (item) => {
+        try {
+          const pricing = await calculateDynamicPrice(
+            supabase,
+            item.roomType as RoomType,
+            checkIn,
+            checkOut,
+          )
+          return {
+            ...item,
+            dynamicRate: pricing.finalRate,
+            totalForStay: pricing.totalForStay,
+            appliedRules: pricing.appliedRules,
+            savingsVsBase: pricing.savingsVsBase,
+          }
+        } catch {
+          return item // Fall back to base rate if pricing engine fails
+        }
+      }),
+    )
+
+    return NextResponse.json({ availability: enriched }, { status: 200 })
   } catch (err) {
     console.error('[Availability] Error:', err)
     return NextResponse.json(

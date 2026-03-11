@@ -15,6 +15,7 @@ import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { runWithRecursion } from "@/lib/agents/agentRecursion";
 import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
 import { grokLLM } from "@/lib/grokIntegration";
+import { publishToSocial, type SocialPostResult } from "@/lib/socialMediaService";
 
 const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
@@ -242,22 +243,40 @@ Format as JSON array: [{ type, platform, content, hashtags, cta }]`;
 // ============================================================================
 
 async function scheduleAndPostContent(state: typeof MarketingCrewAnnotation.State) {
-  debugLog(`[PostingAgent] Iteration ${state.iteration}: Scheduling posts...`);
+  debugLog(`[PostingAgent] Iteration ${state.iteration}: Publishing posts via real APIs...`);
   
-  const scheduleStatus = state.generatedContent.map((content, idx) => {
-    const scheduledTime = new Date(Date.now() + (idx + 1) * 60 * 60 * 1000); // Stagger by 1 hour
-    
-    return {
-      platform: content.platform,
-      contentId: `${state.campaignId}-${idx}`,
-      title: content.title,
-      scheduledTime,
-      status: "scheduled" as const,
-      mockUrl: `https://${content.platform}.com/posts/${state.campaignId}-${idx}`
-    };
-  });
+  const scheduleStatus: any[] = [];
 
-  debugLog(`[PostingAgent] Scheduled ${scheduleStatus.length} posts across ${new Set(scheduleStatus.map(s => s.platform)).size} platforms`);
+  for (const content of state.generatedContent) {
+    const platform = content.platform;
+    const text = content.hashtags?.length
+      ? `${content.content}\n\n${content.hashtags.join(' ')}`
+      : content.content;
+
+    // Attempt real API post
+    const result: SocialPostResult = await publishToSocial(
+      platform,
+      text,
+      content.mediaUrl,       // image/video URL if available
+      'https://linapoint.com' // fallback link
+    );
+
+    scheduleStatus.push({
+      platform,
+      contentId: `${state.campaignId}-${scheduleStatus.length}`,
+      title: content.title,
+      scheduledTime: new Date(),
+      status: result.success ? 'posted' : 'failed',
+      url: result.postUrl || null,
+      postId: result.postId || null,
+      error: result.error || null,
+    });
+
+    debugLog(`[PostingAgent] ${platform}: ${result.success ? '✅ posted' : '❌ ' + result.error}`);
+  }
+
+  const posted = scheduleStatus.filter(s => s.status === 'posted').length;
+  debugLog(`[PostingAgent] Published ${posted}/${scheduleStatus.length} posts`);
 
   return {
     ...state,

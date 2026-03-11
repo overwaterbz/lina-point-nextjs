@@ -248,6 +248,10 @@ interface AvailabilityItem {
   nights: number;
   estimatedTotal: number;
   available: boolean;
+  dynamicRate?: number;
+  totalForStay?: number;
+  appliedRules?: string[];
+  savingsVsBase?: number;
 }
 
 export default function BookingPage() {
@@ -476,12 +480,33 @@ export default function BookingPage() {
                         { roomType: 'cabana_2br', label: '2-Bedroom Family Cabana', baseRate: 349, availableRooms: -1, available: true },
                       ]).map((r: any) => (
                         <option key={r.roomType} value={r.roomType} disabled={!r.available}>
-                          {r.label} — ${r.baseRate}/night
+                          {r.label} — ${r.dynamicRate ?? r.baseRate}/night
+                          {r.savingsVsBase ? ` (save $${r.savingsVsBase})` : ''}
                           {r.availableRooms >= 0 ? (r.available ? ` (${r.availableRooms} left)` : ' — SOLD OUT') : ''}
                         </option>
                       ))}
                     </select>
                     {availLoading && <p className="text-xs text-blue-500 mt-1">Checking availability…</p>}
+                    {availability && (() => {
+                      const selected = availability.find(r => r.roomType === formData.roomType);
+                      if (!selected?.appliedRules?.length) return null;
+                      return (
+                        <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                          <p className="text-sm font-semibold text-green-800">
+                            Dynamic Rate: ${selected.dynamicRate}/night
+                            {selected.savingsVsBase ? <span className="ml-2 text-green-600">(save ${selected.savingsVsBase}/night)</span> : null}
+                          </p>
+                          <p className="text-xs text-green-700 mt-1">
+                            {selected.appliedRules.join(' · ')}
+                          </p>
+                          {selected.totalForStay && (
+                            <p className="text-sm font-bold text-green-900 mt-1">
+                              Total: ${selected.totalForStay} for {selected.nights} night{selected.nights !== 1 ? 's' : ''}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Dates Row */}

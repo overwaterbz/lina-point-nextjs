@@ -11,7 +11,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { findUpcomingArrivals, generatePreArrivalPacket, sendPreArrivalPacket } from '@/lib/agents/preArrivalAgent'
 import { updateGuestIntelligence, logInteraction } from '@/lib/agents/guestIntelligenceAgent'
+import { generateUpsellOffers, sendUpsellOffer } from '@/lib/upsellEngine'
 import { sendWhatsAppMessage } from '@/lib/whatsapp'
+import type { RoomType } from '@/lib/inventory'
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +31,7 @@ export async function GET(request: NextRequest) {
 
     const results = {
       preArrival: { sent: 0, errors: 0 },
+      upsells: { offered: 0 },
       morningGreeting: { sent: 0, errors: 0 },
       postCheckout: { processed: 0 },
     }
@@ -62,6 +65,29 @@ export async function GET(request: NextRequest) {
 
         await sendPreArrivalPacket(supabase, packet, profile?.phone_number || null, email)
         results.preArrival.sent++
+
+        // Generate and send one upsell offer with the pre-arrival packet
+        try {
+          const nights = Math.round(
+            (new Date(res.check_out_date).getTime() - new Date(res.check_in_date).getTime()) / (1000 * 60 * 60 * 24),
+          )
+          const offers = await generateUpsellOffers(supabase, {
+            userId: res.guest_id,
+            reservationId: res.id,
+            roomType: (res.room_type || 'overwater_suite') as RoomType,
+            checkIn: res.check_in_date,
+            checkOut: res.check_out_date,
+            nights,
+          })
+          if (offers.length > 0 && profile?.phone_number) {
+            const topOffer = offers[0]
+            await sendUpsellOffer(supabase, topOffer, { reservationId: res.id, userId: res.guest_id })
+            await sendWhatsAppMessage(profile.phone_number, topOffer.whatsAppPitch)
+            results.upsells.offered++
+          }
+        } catch (upsellErr) {
+          console.error(`[DailyGuestOps] Upsell error for ${res.id}:`, upsellErr)
+        }
       } catch (err) {
         console.error(`[DailyGuestOps] Pre-arrival error for ${res.id}:`, err)
         results.preArrival.errors++
