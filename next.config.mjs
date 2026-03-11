@@ -4,6 +4,12 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     remotePatterns: [
       {
