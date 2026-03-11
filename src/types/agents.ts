@@ -7,7 +7,10 @@ export type AgentName =
   | 'whatsapp_concierge'
   | 'self_improvement'
   | 'health_monitor'
-  | 'marketing_crew';
+  | 'marketing_crew'
+  | 'guest_intelligence'
+  | 'pre_arrival'
+  | 'trip_planner';
 
 export type AgentRunStatus = 'started' | 'completed' | 'failed';
 

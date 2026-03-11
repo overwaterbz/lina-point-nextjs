@@ -15,10 +15,20 @@ export interface WhatsAppProfile {
   opt_in_magic?: boolean | null;
 }
 
+export type ConciergeActionType =
+  | 'book_flow'
+  | 'magic_content'
+  | 'check_reservation'
+  | 'book_tour'
+  | 'check_availability'
+  | 'trip_planner'
+  | 'request_dining'
+  | 'complaint';
+
 export interface WhatsAppSessionContext {
   messages: Array<{ role: 'user' | 'assistant'; content: string; ts: string }>;
   pending_action?: {
-    type: 'book_flow' | 'magic_content';
+    type: ConciergeActionType;
     data?: Record<string, any>;
   } | null;
 }
@@ -32,7 +42,7 @@ export interface WhatsAppAgentInput {
 
 export interface WhatsAppAgentOutput {
   replyText: string;
-  action: { type: 'book_flow' | 'magic_content'; payload?: Record<string, any> } | null;
+  action: { type: ConciergeActionType; payload?: Record<string, any> } | null;
   updatedContext: WhatsAppSessionContext;
 }
 
@@ -43,7 +53,7 @@ const ConciergeState = Annotation.Root({
   sessionContext: Annotation<WhatsAppSessionContext>,
   refinementHint: Annotation<string | undefined>,
   replyText: Annotation<string>,
-  action: Annotation<{ type: 'book_flow' | 'magic_content'; payload?: Record<string, any> } | null>,
+  action: Annotation<{ type: ConciergeActionType; payload?: Record<string, any> } | null>,
 });
 
 function buildSystemPrompt(profile: WhatsAppProfile | null, refinementHint?: string) {
@@ -98,6 +108,15 @@ function detectAction(message: string, context: WhatsAppSessionContext) {
     return pending;
   }
 
+  // Reservation lookup — "my reservation", "confirmation", "LP-XXXXXX"
+  const reservationKeywords = [
+    'my reservation', 'my booking', 'confirmation', 'lp-',
+    'check my', 'lookup', 'look up', 'status',
+  ];
+  if (reservationKeywords.some(kw => lower.includes(kw))) {
+    return { type: 'check_reservation' as const, data: {} };
+  }
+
   // Booking intent — rooms, stays, dates, availability
   const bookingKeywords = [
     'book', 'reserv', 'room', 'bungalow', 'villa', 'suite', 'stay',
@@ -105,7 +124,46 @@ function detectAction(message: string, context: WhatsAppSessionContext) {
     'price', 'rate', 'cost', 'how much', 'per night', 'nights',
   ];
   if (bookingKeywords.some(kw => lower.includes(kw))) {
-    return { type: 'book_flow', data: {} } as const;
+    return { type: 'book_flow' as const, data: {} };
+  }
+
+  // Tour booking — explicit tour intent
+  const tourKeywords = [
+    'tour', 'snorkel', 'fishing', 'dive', 'diving', 'kayak',
+    'ruins', 'cenote', 'island hop', 'hol chan', 'blue hole',
+    'excursion', 'activity', 'activities',
+  ];
+  if (tourKeywords.some(kw => lower.includes(kw))) {
+    return { type: 'book_tour' as const, data: {} };
+  }
+
+  // Trip planner — itinerary building
+  const plannerKeywords = [
+    'itinerary', 'plan my trip', 'plan our trip', 'what should we do',
+    'trip plan', 'schedule', 'what to do', 'suggest activities',
+  ];
+  if (plannerKeywords.some(kw => lower.includes(kw))) {
+    return { type: 'trip_planner' as const, data: {} };
+  }
+
+  // Dining requests
+  const diningKeywords = [
+    'dinner', 'lunch', 'breakfast', 'restaurant', 'room service',
+    'table', 'reservation at', 'eat', 'menu', 'food',
+    'palapa', 'reef restaurant',
+  ];
+  if (diningKeywords.some(kw => lower.includes(kw))) {
+    return { type: 'request_dining' as const, data: {} };
+  }
+
+  // Complaint handling
+  const complaintKeywords = [
+    'complaint', 'problem', 'issue', 'broken', 'not working',
+    'disappointed', 'unhappy', 'terrible', 'worst', 'unacceptable',
+    'manager', 'refund', 'compensat',
+  ];
+  if (complaintKeywords.some(kw => lower.includes(kw))) {
+    return { type: 'complaint' as const, data: {} };
   }
 
   // Magic content intent — songs, videos, celebrations
@@ -114,7 +172,13 @@ function detectAction(message: string, context: WhatsAppSessionContext) {
     'surprise', 'celebration', 'personalized', 'custom music',
   ];
   if (magicKeywords.some(kw => lower.includes(kw))) {
-    return { type: 'magic_content', data: {} } as const;
+    return { type: 'magic_content' as const, data: {} };
+  }
+
+  // Availability check without full booking
+  const availKeywords = ['any rooms', 'anything available', 'open dates', 'vacancy'];
+  if (availKeywords.some(kw => lower.includes(kw))) {
+    return { type: 'check_availability' as const, data: {} };
   }
 
   return null;
@@ -248,12 +312,37 @@ export async function runWhatsAppConciergeAgent(
     updatedContext.messages.push({ role: 'assistant', content: result.replyText, ts: now });
   }
 
-  if (result.action?.type === 'book_flow') {
+  if (result.action?.type === 'book_flow' || result.action?.type === 'check_availability') {
     const data = extractBookingDetails(input.message, input.sessionContext.pending_action?.data);
-    updatedContext.pending_action = { type: 'book_flow', data };
+    updatedContext.pending_action = { type: result.action.type, data };
   } else if (result.action?.type === 'magic_content') {
     const data = extractMagicDetails(input.message, input.sessionContext.pending_action?.data);
     updatedContext.pending_action = { type: 'magic_content', data };
+  } else if (result.action?.type === 'check_reservation') {
+    // Extract confirmation number (LP-XXXXXX pattern)
+    const lpMatch = input.message.match(/LP-[A-Z0-9]{6}/i);
+    updatedContext.pending_action = {
+      type: 'check_reservation',
+      data: { confirmationNumber: lpMatch?.[0]?.toUpperCase() || null },
+    };
+  } else if (result.action?.type === 'book_tour') {
+    updatedContext.pending_action = {
+      type: 'book_tour',
+      data: extractBookingDetails(input.message, input.sessionContext.pending_action?.data),
+    };
+  } else if (result.action?.type === 'trip_planner') {
+    const data = extractBookingDetails(input.message, input.sessionContext.pending_action?.data);
+    updatedContext.pending_action = { type: 'trip_planner', data };
+  } else if (result.action?.type === 'request_dining') {
+    updatedContext.pending_action = {
+      type: 'request_dining',
+      data: { request: input.message },
+    };
+  } else if (result.action?.type === 'complaint') {
+    updatedContext.pending_action = {
+      type: 'complaint',
+      data: { description: input.message },
+    };
   } else {
     updatedContext.pending_action = null;
   }

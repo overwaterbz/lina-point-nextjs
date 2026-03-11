@@ -206,6 +206,17 @@ export interface Database {
           maya_interests: string[] | null;
           opt_in_magic: boolean | null;
           magic_profile: string | null;
+          language: string | null;
+          country: string | null;
+          dietary_restrictions: string[] | null;
+          accessibility_needs: string | null;
+          travel_style: string | null;
+          loyalty_tier: string | null;
+          total_stays: number | null;
+          total_spend: number | null;
+          referral_code: string | null;
+          ai_preferences: Json | null;
+          last_stay_at: string | null;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -223,6 +234,17 @@ export interface Database {
           maya_interests?: string[] | null;
           opt_in_magic?: boolean | null;
           magic_profile?: string | null;
+          language?: string | null;
+          country?: string | null;
+          dietary_restrictions?: string[] | null;
+          accessibility_needs?: string | null;
+          travel_style?: string | null;
+          loyalty_tier?: string | null;
+          total_stays?: number | null;
+          total_spend?: number | null;
+          referral_code?: string | null;
+          ai_preferences?: Json | null;
+          last_stay_at?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -240,8 +262,89 @@ export interface Database {
           maya_interests?: string[] | null;
           opt_in_magic?: boolean | null;
           magic_profile?: string | null;
+          language?: string | null;
+          country?: string | null;
+          dietary_restrictions?: string[] | null;
+          accessibility_needs?: string | null;
+          travel_style?: string | null;
+          loyalty_tier?: string | null;
+          total_stays?: number | null;
+          total_spend?: number | null;
+          referral_code?: string | null;
+          ai_preferences?: Json | null;
+          last_stay_at?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
+        };
+      };
+      guest_interactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          interaction_type: string;
+          channel: string;
+          summary: string | null;
+          sentiment: string | null;
+          metadata: Json | null;
+          reservation_id: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          interaction_type: string;
+          channel?: string;
+          summary?: string | null;
+          sentiment?: string | null;
+          metadata?: Json | null;
+          reservation_id?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          interaction_type?: string;
+          channel?: string;
+          summary?: string | null;
+          sentiment?: string | null;
+          metadata?: Json | null;
+          reservation_id?: string | null;
+          created_at?: string | null;
+        };
+      };
+      pre_arrival_packets: {
+        Row: {
+          id: string;
+          reservation_id: string;
+          user_id: string;
+          sent_via: string;
+          weather_forecast: Json | null;
+          recommended_tours: Json | null;
+          dining_suggestions: Json | null;
+          personalized_tips: string | null;
+          sent_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          reservation_id: string;
+          user_id: string;
+          sent_via?: string;
+          weather_forecast?: Json | null;
+          recommended_tours?: Json | null;
+          dining_suggestions?: Json | null;
+          personalized_tips?: string | null;
+          sent_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          reservation_id?: string;
+          user_id?: string;
+          sent_via?: string;
+          weather_forecast?: Json | null;
+          recommended_tours?: Json | null;
+          dining_suggestions?: Json | null;
+          personalized_tips?: string | null;
+          sent_at?: string | null;
         };
       };
       whatsapp_messages: {
