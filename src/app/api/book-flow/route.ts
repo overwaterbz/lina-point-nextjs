@@ -6,6 +6,8 @@ import type { UserPreferences } from "@/lib/experienceCuratorAgent";
 import { randomUUID } from "crypto";
 import { createAgentRun, finishAgentRun } from "@/lib/agents/agentRunLogger";
 import { generateMagicContent } from "@/lib/magicContent";
+import { createReservation } from "@/lib/bookingFulfillment";
+import { confirmationEmailHtml, adminNotificationHtml } from "@/lib/emailTemplates";
 
 const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
@@ -293,6 +295,82 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
     const diningTour = curatorResult.tours.find((t: any) => t.type === "dining");
     const diningPrice = diningTour?.price || 85;
 
+    const packageTotal =
+      priceScoutResult.bestPrice +
+      curatorResult.totalPrice +
+      (diningTour ? 0 : diningPrice);
+
+    // ──────── Create Reservation (Room Inventory) ────────
+    let confirmationNumber: string | null = null;
+    try {
+      const reservation = await createReservation(supabase as any, {
+        guestId: user.id,
+        roomTypeInput: body.roomType,
+        checkIn: body.checkInDate,
+        checkOut: body.checkOutDate,
+        guestsCount: body.groupSize,
+        totalAmount: packageTotal,
+        bookingId,
+        specialRequests: (body as any).specialRequests || undefined,
+      });
+      confirmationNumber = reservation.confirmationNumber;
+      debugLog(`[BookFlow] Reservation created: ${confirmationNumber}`);
+
+      // Send confirmation email
+      try {
+        const { Resend } = await import('resend');
+        const resendKey = process.env.RESEND_API_KEY;
+        if (resendKey && user.email) {
+          const resend = new Resend(resendKey);
+          const tours = curatorResult.tours
+            .filter((t: any) => t.type !== 'dining')
+            .map((t: any) => ({ name: t.name, price: t.price }));
+
+          await resend.emails.send({
+            from: process.env.MAGIC_FROM_EMAIL || 'reservations@linapoint.com',
+            to: user.email,
+            subject: `\u{1F334} Booking Confirmed — ${confirmationNumber}`,
+            html: confirmationEmailHtml({
+              guestName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Guest',
+              confirmation: reservation,
+              tours,
+              dinnerName: diningTour?.name || 'Sunset Beachfront Dinner',
+              dinnerPrice: diningPrice,
+              totalAmount: packageTotal,
+              checkIn: body.checkInDate,
+              checkOut: body.checkOutDate,
+            }),
+          });
+          debugLog(`[BookFlow] Confirmation email sent to ${user.email}`);
+
+          // Admin notification
+          const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').filter(Boolean);
+          if (adminEmails.length > 0) {
+            await resend.emails.send({
+              from: process.env.MAGIC_FROM_EMAIL || 'reservations@linapoint.com',
+              to: adminEmails,
+              subject: `New Booking: ${confirmationNumber} — ${reservation.roomName}`,
+              html: adminNotificationHtml({
+                confirmationNumber: reservation.confirmationNumber,
+                guestEmail: user.email || 'unknown',
+                roomName: reservation.roomName,
+                checkIn: body.checkInDate,
+                checkOut: body.checkOutDate,
+                nights: reservation.nights,
+                totalAmount: packageTotal,
+                guestsCount: body.groupSize,
+              }),
+            });
+          }
+        }
+      } catch (emailErr) {
+        console.warn('[BookFlow] Email send failed:', emailErr);
+      }
+    } catch (resErr) {
+      console.warn('[BookFlow] Reservation creation failed:', resErr);
+      // Don't fail the entire flow — continue with response
+    }
+
     // Compile response
     const response: BookFlowResponse = {
       success: true,
@@ -316,10 +394,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
           name: diningTour?.name || "Sunset Beachfront Dinner",
           price: diningPrice,
         },
-        total:
-          priceScoutResult.bestPrice +
-          curatorResult.totalPrice +
-          (diningTour ? 0 : diningPrice),
+        total: packageTotal,
         affiliate_links: curatorResult.affiliateLinks,
       },
       recommendations: curatorResult.recommendations,
@@ -407,6 +482,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
     // Include client_secret in response when available
     const responseWithPayment = { ...response } as any;
     if (clientSecret) responseWithPayment.client_secret = clientSecret;
+    if (confirmationNumber) responseWithPayment.confirmationNumber = confirmationNumber;
+    responseWithPayment.bookingId = bookingId;
 
     return NextResponse.json(responseWithPayment, { status: 200 });
   } catch (error) {
