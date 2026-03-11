@@ -12,6 +12,7 @@ import { createClient } from '@supabase/supabase-js'
 import { findUpcomingArrivals, generatePreArrivalPacket, sendPreArrivalPacket } from '@/lib/agents/preArrivalAgent'
 import { updateGuestIntelligence, logInteraction } from '@/lib/agents/guestIntelligenceAgent'
 import { generateUpsellOffers, sendUpsellOffer } from '@/lib/upsellEngine'
+import { runPostStayFlow } from '@/lib/agents/postStayLoyaltyAgent'
 import { sendWhatsAppMessage } from '@/lib/whatsapp'
 import type { RoomType } from '@/lib/inventory'
 
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
       preArrival: { sent: 0, errors: 0 },
       upsells: { offered: 0 },
       morningGreeting: { sent: 0, errors: 0 },
-      postCheckout: { processed: 0 },
+      postCheckout: { processed: 0, loyalty: 0, reviewsSent: 0 } as Record<string, number>,
     }
 
     // ── 1. Pre-arrival packets (7 days out) ─────────────────
@@ -159,7 +160,7 @@ export async function GET(request: NextRequest) {
 
     const { data: checkedOut } = await supabase
       .from('reservations')
-      .select('id, guest_id')
+      .select('id, guest_id, total_amount')
       .eq('check_out_date', yesterdayStr)
       .in('status', ['confirmed', 'checked_out'])
 
@@ -174,6 +175,31 @@ export async function GET(request: NextRequest) {
           sentiment: 'neutral',
           reservationId: res.id,
         })
+
+        // Run post-stay loyalty flow: points, review request, referral offer
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('phone_number, full_name')
+          .eq('user_id', res.guest_id)
+          .maybeSingle()
+
+        const { data: authUser } = await supabase.auth.admin.getUserById(res.guest_id)
+
+        try {
+          const postStay = await runPostStayFlow(supabase, {
+            guestId: res.guest_id,
+            reservationId: res.id,
+            guestName: profile?.full_name || 'Guest',
+            phone: profile?.phone_number || null,
+            email: authUser?.user?.email || null,
+            totalAmount: Number(res.total_amount) || 0,
+          })
+          results.postCheckout.loyalty = (results.postCheckout.loyalty || 0) + postStay.pointsAccrued
+          results.postCheckout.reviewsSent = (results.postCheckout.reviewsSent || 0) + (postStay.reviewSent ? 1 : 0)
+        } catch (loyaltyErr) {
+          console.error(`[DailyGuestOps] Post-stay loyalty error for ${res.id}:`, loyaltyErr)
+        }
+
         results.postCheckout.processed++
       } catch (err) {
         console.error(`[DailyGuestOps] Post-checkout error for ${res.id}:`, err)

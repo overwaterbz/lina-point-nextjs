@@ -12,19 +12,33 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { isAdminEmail } from '@/lib/admin'
 
 export async function GET(request: NextRequest) {
   try {
-    // Admin auth
+    // Admin auth: accept cron secret OR admin session
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
-    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',')
+    let authorized = false
 
-    // Accept either cron secret or admin session
     if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
-      // OK — cron or admin API key
+      authorized = true
     } else {
-      // TODO: verify session token against adminEmails
+      // Check Supabase session
+      try {
+        const sessionSupabase = await createServerSupabaseClient()
+        const { data: { user } } = await sessionSupabase.auth.getUser()
+        if (user && isAdminEmail(user.email)) {
+          authorized = true
+        }
+      } catch {
+        // session check failed
+      }
+    }
+
+    if (!authorized) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const supabase = createClient(

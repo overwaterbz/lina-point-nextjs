@@ -48,6 +48,22 @@ export default async function AdminDashboardPage() {
           <p className="text-gray-600">System metrics, agent performance, and manual triggers.</p>
         </header>
 
+        {/* Quick Navigation */}
+        <section className="grid gap-4 md:grid-cols-3">
+          <a href="/admin/revenue" className="bg-gradient-to-br from-teal-500 to-teal-700 rounded-lg shadow p-6 text-white hover:shadow-lg transition-shadow">
+            <h2 className="text-xl font-semibold">📊 Revenue Dashboard</h2>
+            <p className="text-sm mt-1 opacity-90">Occupancy, revenue breakdown, upsell performance</p>
+          </a>
+          <a href="/admin/marketing-dashboard" className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg shadow p-6 text-white hover:shadow-lg transition-shadow">
+            <h2 className="text-xl font-semibold">📱 Marketing Dashboard</h2>
+            <p className="text-sm mt-1 opacity-90">Campaigns, social media, content calendar</p>
+          </a>
+          <a href="/admin/whatsapp" className="bg-gradient-to-br from-green-500 to-green-700 rounded-lg shadow p-6 text-white hover:shadow-lg transition-shadow">
+            <h2 className="text-xl font-semibold">💬 WhatsApp Concierge</h2>
+            <p className="text-sm mt-1 opacity-90">Guest conversations, automated responses</p>
+          </a>
+        </section>
+
         <section className="grid gap-6 md:grid-cols-2">
           <form action={triggerN8nAction} className="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 className="text-xl font-semibold text-gray-900">Trigger n8n Workflow</h2>

@@ -121,3 +121,80 @@ export function adminNotificationHtml(opts: {
   <p><a href="https://lina-point.vercel.app/admin/dashboard">Open Admin Dashboard</a></p>
 </div>`
 }
+
+/**
+ * Post-stay thank-you email with review request and referral code.
+ */
+export function postStayEmailHtml(opts: {
+  guestName: string
+  referralCode: string
+  pointsEarned: number
+  totalPoints: number
+  loyaltyTier: string
+  reviewUrl: string
+}): string {
+  const tierLabels: Record<string, string> = {
+    new: 'New Guest',
+    returning: 'Returning Guest',
+    loyal: 'Loyal Guest',
+    vip: 'VIP Guest',
+  }
+  const tierColors: Record<string, string> = {
+    new: '#6b7280',
+    returning: '#0d9488',
+    loyal: '#7c3aed',
+    vip: '#d97706',
+  }
+  const tierColor = tierColors[opts.loyaltyTier] || '#0d9488'
+  const tierLabel = tierLabels[opts.loyaltyTier] || 'Guest'
+
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/></head>
+<body style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9fafb;padding:20px">
+  <div style="background:linear-gradient(135deg,#0d9488 0%,#0e7490 100%);color:white;padding:32px;border-radius:12px 12px 0 0;text-align:center">
+    <h1 style="margin:0;font-size:28px">Thank You, ${opts.guestName.split(' ')[0]}!</h1>
+    <p style="margin:8px 0 0;opacity:0.9;font-size:14px">We loved having you at Lina Point Resort</p>
+  </div>
+
+  <div style="background:white;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+    <p>We hope your stay was everything you dreamed of. Here's a quick recap of your loyalty rewards:</p>
+
+    <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:20px;margin:24px 0;text-align:center">
+      <p style="font-size:12px;color:#6b7280;margin:0 0 4px">POINTS EARNED THIS STAY</p>
+      <p style="font-size:36px;font-weight:bold;color:#0d9488;margin:0">+${'$'}{opts.pointsEarned.toLocaleString()}</p>
+      <p style="font-size:14px;color:#6b7280;margin:8px 0 0">Total Balance: <strong>${'$'}{opts.totalPoints.toLocaleString()} points</strong></p>
+      <div style="display:inline-block;margin-top:12px;padding:4px 16px;border-radius:20px;background:${'$'}{tierColor};color:white;font-size:12px;font-weight:600">
+        ${'$'}{tierLabel}
+      </div>
+    </div>
+
+    <h3 style="color:#374151;border-bottom:2px solid #e5e7eb;padding-bottom:8px">⭐ Share Your Experience</h3>
+    <p style="font-size:14px;color:#4b5563">Your feedback helps fellow travelers discover our paradise. It only takes a minute:</p>
+    <div style="text-align:center;margin:20px 0">
+      <a href="${'$'}{opts.reviewUrl}" style="display:inline-block;background:#0d9488;color:white;padding:12px 32px;border-radius:24px;text-decoration:none;font-weight:600;font-size:16px">Leave a Review</a>
+    </div>
+
+    <h3 style="color:#374151;border-bottom:2px solid #e5e7eb;padding-bottom:8px">🎟️ Share the Love</h3>
+    <p style="font-size:14px;color:#4b5563">Give your friends <strong>$25 off</strong> their first stay, and you'll earn <strong>$50 credit</strong> for each friend who books!</p>
+    <div style="background:#eff6ff;border:2px dashed #3b82f6;border-radius:8px;padding:16px;margin:16px 0;text-align:center">
+      <p style="font-size:12px;color:#6b7280;margin:0 0 4px">YOUR REFERRAL CODE</p>
+      <p style="font-size:28px;font-weight:bold;color:#1e40af;margin:0;letter-spacing:3px">${'$'}{opts.referralCode}</p>
+    </div>
+
+    <div style="background:#fef3c7;border-radius:8px;padding:16px;margin:24px 0;text-align:center">
+      <p style="font-size:14px;color:#92400e;margin:0"><strong>Ready to come back?</strong></p>
+      <p style="font-size:13px;color:#92400e;margin:4px 0 12px">Loyal guests enjoy exclusive rates and priority room selection.</p>
+      <a href="https://lina-point.vercel.app/booking" style="display:inline-block;background:#d97706;color:white;padding:10px 24px;border-radius:24px;text-decoration:none;font-weight:600;font-size:14px">Book Your Next Stay</a>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
+    <p style="font-size:12px;color:#9ca3af;text-align:center">
+      Lina Point Resort — San Pedro, Ambergris Caye, Belize<br/>
+      BZ +501.632.9205 | <a href="mailto:reservations@linapoint.com" style="color:#6b7280">reservations@linapoint.com</a>
+    </p>
+  </div>
+</body>
+</html>`
+}

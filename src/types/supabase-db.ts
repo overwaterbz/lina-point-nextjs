@@ -212,6 +212,7 @@ export interface Database {
           accessibility_needs: string | null;
           travel_style: string | null;
           loyalty_tier: string | null;
+          loyalty_points: number | null;
           total_stays: number | null;
           total_spend: number | null;
           referral_code: string | null;
@@ -240,6 +241,7 @@ export interface Database {
           accessibility_needs?: string | null;
           travel_style?: string | null;
           loyalty_tier?: string | null;
+          loyalty_points?: number | null;
           total_stays?: number | null;
           total_spend?: number | null;
           referral_code?: string | null;
@@ -268,6 +270,7 @@ export interface Database {
           accessibility_needs?: string | null;
           travel_style?: string | null;
           loyalty_tier?: string | null;
+          loyalty_points?: number | null;
           total_stays?: number | null;
           total_spend?: number | null;
           referral_code?: string | null;
@@ -618,6 +621,129 @@ export interface Database {
           offered_via?: string | null;
           offered_at?: string | null;
           responded_at?: string | null;
+        };
+      };
+      review_requests: {
+        Row: {
+          id: string;
+          reservation_id: string | null;
+          guest_id: string;
+          platform: string;
+          sent_via: string;
+          sent_at: string | null;
+          review_url: string | null;
+          completed: boolean;
+          completed_at: string | null;
+          rating: number | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          reservation_id?: string | null;
+          guest_id: string;
+          platform: string;
+          sent_via: string;
+          sent_at?: string | null;
+          review_url?: string | null;
+          completed?: boolean;
+          completed_at?: string | null;
+          rating?: number | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          reservation_id?: string | null;
+          guest_id?: string;
+          platform?: string;
+          sent_via?: string;
+          sent_at?: string | null;
+          review_url?: string | null;
+          completed?: boolean;
+          completed_at?: string | null;
+          rating?: number | null;
+          created_at?: string | null;
+        };
+      };
+      referrals: {
+        Row: {
+          id: string;
+          referrer_id: string;
+          referral_code: string;
+          referee_email: string | null;
+          referee_id: string | null;
+          status: string;
+          referrer_reward_type: string;
+          referrer_reward_value: number;
+          referee_reward_type: string;
+          referee_reward_value: number;
+          created_at: string | null;
+          converted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          referrer_id: string;
+          referral_code: string;
+          referee_email?: string | null;
+          referee_id?: string | null;
+          status?: string;
+          referrer_reward_type?: string;
+          referrer_reward_value?: number;
+          referee_reward_type?: string;
+          referee_reward_value?: number;
+          created_at?: string | null;
+          converted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          referrer_id?: string;
+          referral_code?: string;
+          referee_email?: string | null;
+          referee_id?: string | null;
+          status?: string;
+          referrer_reward_type?: string;
+          referrer_reward_value?: number;
+          referee_reward_type?: string;
+          referee_reward_value?: number;
+          created_at?: string | null;
+          converted_at?: string | null;
+        };
+      };
+      loyalty_rewards: {
+        Row: {
+          id: string;
+          user_id: string;
+          reward_type: string;
+          value: number;
+          description: string | null;
+          status: string;
+          expires_at: string | null;
+          redeemed_at: string | null;
+          reservation_id: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          reward_type: string;
+          value: number;
+          description?: string | null;
+          status?: string;
+          expires_at?: string | null;
+          redeemed_at?: string | null;
+          reservation_id?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          reward_type?: string;
+          value?: number;
+          description?: string | null;
+          status?: string;
+          expires_at?: string | null;
+          redeemed_at?: string | null;
+          reservation_id?: string | null;
+          created_at?: string | null;
         };
       };
       // Add other tables here as needed
