@@ -66,6 +66,18 @@ export async function POST(req: Request) {
         const { createServerSupabaseClient } = await import('@/lib/supabase-server')
         const supabase = await createServerSupabaseClient()
 
+        // Idempotency: check if already processed
+        const { data: existing } = await supabase
+          .from('tour_bookings')
+          .select('status')
+          .eq('booking_id', bookingId)
+          .eq('status', 'paid')
+          .limit(1)
+        if (existing && existing.length > 0) {
+          if (!isProd) console.log(`[Square Webhook] Booking ${bookingId} already paid, skipping`)
+          return NextResponse.json({ received: true })
+        }
+
         const { error: updateErr } = await supabase
           .from('tour_bookings')
           .update({
@@ -80,6 +92,10 @@ export async function POST(req: Request) {
         } else if (!isProd) {
           console.log(`[Square Webhook] Marked tour_bookings paid for ${bookingId}`)
         }
+
+        // Mark reservation as paid
+        const { markReservationPaid } = await import('@/lib/bookingFulfillment')
+        await markReservationPaid(supabase as any, bookingId, paymentId, 'square')
 
         // Send confirmation email
         await sendBookingConfirmation(supabase, bookingId, paymentId, 'square')

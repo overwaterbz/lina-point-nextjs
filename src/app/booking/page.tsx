@@ -239,6 +239,17 @@ async function retryWithBackoff<T>(
   throw new Error('Max retries exceeded');
 }
 
+interface AvailabilityItem {
+  roomType: string;
+  label: string;
+  totalRooms: number;
+  availableRooms: number;
+  baseRate: number;
+  nights: number;
+  estimatedTotal: number;
+  available: boolean;
+}
+
 export default function BookingPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -247,6 +258,8 @@ export default function BookingPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [paymentMode, setPaymentMode] = useState<"square" | "stripe">("square");
   const [squareSdkReady, setSquareSdkReady] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilityItem[] | null>(null);
+  const [availLoading, setAvailLoading] = useState(false);
 
   // Memoize stripePromise to prevent reloading on every render
   const stripePromise = useMemo(() => 
@@ -284,7 +297,7 @@ export default function BookingPage() {
     }
   }, [result]);
   const [formData, setFormData] = useState({
-    roomType: "overwater bungalow",
+    roomType: "overwater_suite",
     checkInDate: "",
     checkOutDate: "",
     location: "Belize",
@@ -293,6 +306,28 @@ export default function BookingPage() {
     interests: ["snorkeling", "dining"],
     activityLevel: "medium" as const,
   });
+
+  // Fetch availability when dates change
+  useEffect(() => {
+    if (!formData.checkInDate || !formData.checkOutDate) {
+      setAvailability(null);
+      return;
+    }
+    const ci = new Date(formData.checkInDate);
+    const co = new Date(formData.checkOutDate);
+    if (co <= ci) return;
+
+    let cancelled = false;
+    setAvailLoading(true);
+    fetch(`/api/availability?checkIn=${formData.checkInDate}&checkOut=${formData.checkOutDate}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!cancelled && data.availability) setAvailability(data.availability);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setAvailLoading(false); });
+    return () => { cancelled = true; };
+  }, [formData.checkInDate, formData.checkOutDate]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -434,10 +469,19 @@ export default function BookingPage() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="overwater bungalow">Overwater Bungalow — from $299/night</option>
-                      <option value="reef suite">Reef Suite — from $249/night</option>
-                      <option value="beach villa">Beach Villa — from $199/night</option>
+                      {(availability || [
+                        { roomType: 'overwater_suite', label: 'Overwater Suite', baseRate: 299, availableRooms: -1, available: true },
+                        { roomType: 'suite_2nd_floor', label: 'Reef Suite (2nd Floor)', baseRate: 249, availableRooms: -1, available: true },
+                        { roomType: 'cabana_1br', label: '1-Bedroom Cabana', baseRate: 199, availableRooms: -1, available: true },
+                        { roomType: 'cabana_2br', label: '2-Bedroom Family Cabana', baseRate: 349, availableRooms: -1, available: true },
+                      ]).map((r: any) => (
+                        <option key={r.roomType} value={r.roomType} disabled={!r.available}>
+                          {r.label} — ${r.baseRate}/night
+                          {r.availableRooms >= 0 ? (r.available ? ` (${r.availableRooms} left)` : ' — SOLD OUT') : ''}
+                        </option>
+                      ))}
                     </select>
+                    {availLoading && <p className="text-xs text-blue-500 mt-1">Checking availability…</p>}
                   </div>
 
                   {/* Dates Row */}
@@ -779,14 +823,26 @@ export default function BookingPage() {
                       <SquareCardForm
                         amount={result.curated_package.total}
                         metadata={{ booking: "lina-point" }}
-                        onSuccess={() => { setShowPayment(false); toast.success("Payment successful!"); }}
+                        onSuccess={() => {
+                          setShowPayment(false);
+                          toast.success("Payment successful!");
+                          if ((result as any)?.confirmationNumber) {
+                            router.push(`/booking/confirmation/${(result as any).confirmationNumber}`);
+                          }
+                        }}
                         onFallbackToStripe={() => fallbackToStripe()}
                       />
                     )}
 
                     {paymentMode === "stripe" && paymentOptions && stripePromise && (
                       <Elements stripe={stripePromise} options={{ clientSecret: paymentOptions.clientSecret }}>
-                        <CheckoutForm onSuccess={() => { setShowPayment(false); toast.success("Payment successful!"); }} />
+                        <CheckoutForm onSuccess={() => {
+                          setShowPayment(false);
+                          toast.success("Payment successful!");
+                          if ((result as any)?.confirmationNumber) {
+                            router.push(`/booking/confirmation/${(result as any).confirmationNumber}`);
+                          }
+                        }} />
                       </Elements>
                     )}
 

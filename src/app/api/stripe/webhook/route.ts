@@ -49,6 +49,19 @@ export async function POST(req: Request) {
         if (bookingId) {
           const { createServerSupabaseClient } = await import('@/lib/supabase-server')
           const supabase = await createServerSupabaseClient()
+
+          // Idempotency: check if already processed
+          const { data: existing } = await supabase
+            .from('tour_bookings')
+            .select('status')
+            .eq('booking_id', bookingId)
+            .eq('status', 'paid')
+            .limit(1)
+          if (existing && existing.length > 0) {
+            debugLog(`[Webhook] Booking ${bookingId} already paid, skipping`)
+            break
+          }
+
           const { error: updateErr } = await supabase
             .from('tour_bookings')
             .update({ 
@@ -61,6 +74,10 @@ export async function POST(req: Request) {
           if (updateErr) console.warn('[Webhook] Failed to mark tours paid:', updateErr.message)
           else debugLog(`[Webhook] Marked tour_bookings paid for booking ${bookingId} via ${processor}`)
 
+          // Mark reservation as paid
+          const { markReservationPaid } = await import('@/lib/bookingFulfillment')
+          await markReservationPaid(supabase as any, bookingId, pi.id, processor as 'square' | 'stripe')
+
           // Send booking confirmation email
           await sendBookingConfirmation(supabase, bookingId, pi.id, processor)
         }
@@ -70,6 +87,22 @@ export async function POST(req: Request) {
       break
     case 'payment_intent.payment_failed':
       console.warn('[Webhook] Payment failed:', event.data.object.id, 'processor:', event.data.object.metadata?.processor || 'stripe')
+      break
+    case 'charge.refunded':
+      try {
+        const refundPi = event.data.object.payment_intent
+        if (refundPi) {
+          const { createServerSupabaseClient } = await import('@/lib/supabase-server')
+          const supabase = await createServerSupabaseClient()
+          await supabase
+            .from('reservations')
+            .update({ payment_status: 'refunded', updated_at: new Date().toISOString() })
+            .eq('payment_id', refundPi)
+          debugLog(`[Webhook] Marked reservation refunded for payment ${refundPi}`)
+        }
+      } catch (refundErr) {
+        console.error('[Webhook] Refund processing error:', refundErr)
+      }
       break
     default:
       debugLog(`Unhandled event type ${event.type}`)
