@@ -47,7 +47,7 @@ CREATE TABLE tour_bookings (
   price DECIMAL(10, 2) NOT NULL,
   affiliate_link TEXT,
   commission_earned DECIMAL(10, 2),
-  booking_date DATE NOT NULL DEFAULT TODAY(),
+  booking_date DATE NOT NULL DEFAULT CURRENT_DATE,
   status TEXT DEFAULT 'pending', -- pending, booked, completed
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
