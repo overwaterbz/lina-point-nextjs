@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/auth/login', '/auth/signup', '/auth/verify-email', '/'];
+const PUBLIC_ROUTES = ['/auth/login', '/auth/signup', '/auth/verify-email', '/', '/rooms', '/experiences', '/concierge', '/gallery'];
 
 // API routes that handle their own auth (cron jobs, webhooks)
 const SELF_AUTH_API_ROUTES = [

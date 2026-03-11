@@ -22,3 +22,21 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/* Ken Burns zoom animation for hero images */
+@keyframes ken-burns {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.12); }
+}
+.animate-ken-burns {
+  animation: ken-burns 20s ease-in-out alternate infinite;
+}
+
+/* Hide scrollbar while keeping functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
