@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import Script from "next/script";
 
-// API call with timeout protection
+// ---------- helpers ----------
 async function fetchWithTimeout<T>(
   url: string,
   options: RequestInit = {},
@@ -38,6 +39,110 @@ async function fetchWithTimeout<T>(
   }
 }
 
+// ---------- Square Card Form ----------
+function SquareCardForm({
+  amount,
+  metadata,
+  onSuccess,
+  onFallbackToStripe,
+}: {
+  amount: number;
+  metadata: Record<string, string>;
+  onSuccess: () => void;
+  onFallbackToStripe: () => void;
+}) {
+  const cardRef = useRef<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function init() {
+      const appId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID;
+      if (!appId || typeof window === "undefined" || !(window as any).Square) return;
+
+      try {
+        const payments = (window as any).Square.payments(appId);
+        const card = await payments.card();
+        if (cancelled) return;
+        await card.attach("#square-card-container");
+        cardRef.current = card;
+        setReady(true);
+      } catch (err) {
+        console.error("[Square] Card form init failed:", err);
+        onFallbackToStripe();
+      }
+    }
+    // Small delay to let the Square SDK script finish loading
+    const timer = setTimeout(init, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [onFallbackToStripe]);
+
+  const handlePay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cardRef.current) return;
+    setLoading(true);
+
+    try {
+      const tokenResult = await cardRef.current.tokenize();
+      if (tokenResult.status !== "OK") {
+        toast.error(tokenResult.errors?.[0]?.message || "Card tokenization failed");
+        setLoading(false);
+        return;
+      }
+
+      // Send the token to our backend which calls Square Payments API
+      const data = await fetchWithTimeout<any>(
+        "/api/stripe/create-payment-intent",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount,
+            currency: "usd",
+            metadata,
+            sourceId: tokenResult.token,
+          }),
+        },
+        15000
+      );
+
+      if (data.error) throw new Error(data.error);
+
+      if (data.processor === "square") {
+        onSuccess();
+      } else if (data.processor === "stripe" && data.client_secret) {
+        // Backend fell back to Stripe — hand off to Stripe flow
+        onFallbackToStripe();
+      }
+    } catch (err) {
+      console.error("[Square] Payment failed:", err);
+      toast.error(err instanceof Error ? err.message : "Payment failed — trying backup processor");
+      onFallbackToStripe();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handlePay} className="space-y-4">
+      <div id="square-card-container" ref={containerRef} className="min-h-[50px] border border-gray-200 rounded-lg p-1" />
+      <button
+        type="submit"
+        disabled={!ready || loading}
+        className="w-full bg-teal-600 text-white py-2 rounded-lg font-semibold hover:bg-teal-700 disabled:bg-gray-400 transition-colors"
+      >
+        {loading ? "Processing..." : `Pay $${amount.toFixed(2)}`}
+      </button>
+      {!ready && (
+        <p className="text-xs text-gray-500 text-center">Loading secure card form…</p>
+      )}
+    </form>
+  );
+}
+
+// ---------- Stripe Checkout (fallback) ----------
 function CheckoutForm({ onSuccess }: { onSuccess: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -140,7 +245,9 @@ export default function BookingPage() {
   const [result, setResult] = useState<BookingResult | null>(null);
   const [paymentOptions, setPaymentOptions] = useState<any>(null);
   const [showPayment, setShowPayment] = useState(false);
-  
+  const [paymentMode, setPaymentMode] = useState<"square" | "stripe">("square");
+  const [squareSdkReady, setSquareSdkReady] = useState(false);
+
   // Memoize stripePromise to prevent reloading on every render
   const stripePromise = useMemo(() => 
     (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
@@ -148,6 +255,34 @@ export default function BookingPage() {
       : null,
     []
   );
+
+  const hasSquare = !!process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID;
+
+  const fallbackToStripe = useCallback(async () => {
+    if (!result) return;
+    setPaymentMode("stripe");
+    try {
+      const data = await fetchWithTimeout<any>(
+        '/api/stripe/create-payment-intent',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: result.curated_package.total,
+            currency: 'usd',
+            metadata: { booking: 'lina-point' },
+            useStripe: true,
+          }),
+        },
+        10000
+      );
+      if (data.error) throw new Error(data.error);
+      setPaymentOptions({ clientSecret: data.client_secret });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Payment setup failed');
+      setShowPayment(false);
+    }
+  }, [result]);
   const [formData, setFormData] = useState({
     roomType: "overwater bungalow",
     checkInDate: "",
@@ -254,37 +389,18 @@ export default function BookingPage() {
     }
   };
 
-  // Create payment intent and show payment element
+  // Open payment modal — Square is default, Stripe is fallback
   const handlePay = async () => {
     if (!result) return;
-    try {
-      setIsLoading(true);
+    setPaymentMode(hasSquare ? "square" : "stripe");
+    setPaymentOptions(null);
 
-      const data = await fetchWithTimeout<any>(
-        '/api/stripe/create-payment-intent',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            amount: result.curated_package.total, 
-            currency: 'usd', 
-            metadata: { booking: 'lina-point' } 
-          }),
-        },
-        10000 // Payment intent creation should be fast
-      );
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setPaymentOptions({ clientSecret: data.client_secret });
-      setShowPayment(true);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Payment setup failed');
-    } finally {
-      setIsLoading(false);
+    if (!hasSquare) {
+      // No Square configured — go straight to Stripe
+      await fallbackToStripe();
     }
+
+    setShowPayment(true);
   };
 
   return (
@@ -650,18 +766,53 @@ export default function BookingPage() {
                 </ul>
               </div>
 
-              {/* Payment Element Modal (simple inline) */}
-              {showPayment && paymentOptions && stripePromise ? (
+              {/* Payment Modal — Square (primary) or Stripe (fallback) */}
+              {showPayment && result && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                   <div className="bg-white rounded-lg p-6 max-w-lg w-full">
-                    <h3 className="text-lg font-bold mb-4">Complete Payment</h3>
-                    <Elements stripe={stripePromise} options={{ clientSecret: paymentOptions.clientSecret }}>
-                      <CheckoutForm onSuccess={() => { setShowPayment(false); toast.success('Payment successful!'); }} />
-                    </Elements>
-                    <button onClick={() => setShowPayment(false)} className="mt-4 text-sm text-gray-600">Cancel</button>
+                    <h3 className="text-lg font-bold mb-2">Complete Payment</h3>
+                    <p className="text-sm text-gray-500 mb-4">
+                      {paymentMode === "square" ? "Secured by Square" : "Secured by Stripe"}
+                    </p>
+
+                    {paymentMode === "square" && hasSquare && (
+                      <SquareCardForm
+                        amount={result.curated_package.total}
+                        metadata={{ booking: "lina-point" }}
+                        onSuccess={() => { setShowPayment(false); toast.success("Payment successful!"); }}
+                        onFallbackToStripe={() => fallbackToStripe()}
+                      />
+                    )}
+
+                    {paymentMode === "stripe" && paymentOptions && stripePromise && (
+                      <Elements stripe={stripePromise} options={{ clientSecret: paymentOptions.clientSecret }}>
+                        <CheckoutForm onSuccess={() => { setShowPayment(false); toast.success("Payment successful!"); }} />
+                      </Elements>
+                    )}
+
+                    {paymentMode === "stripe" && !paymentOptions && (
+                      <p className="text-sm text-gray-500 text-center py-4">Setting up Stripe…</p>
+                    )}
+
+                    <button onClick={() => setShowPayment(false)} className="mt-4 text-sm text-gray-600 hover:underline">
+                      Cancel
+                    </button>
                   </div>
                 </div>
-              ) : null}
+              )}
+
+              {/* Square SDK script — loaded only when needed */}
+              {hasSquare && (
+                <Script
+                  src={
+                    process.env.NODE_ENV === "production"
+                      ? "https://web.squarecdn.com/v1/square.js"
+                      : "https://sandbox.web.squarecdn.com/v1/square.js"
+                  }
+                  strategy="lazyOnload"
+                  onLoad={() => setSquareSdkReady(true)}
+                />
+              )}
             </div>
           )}
         </div>

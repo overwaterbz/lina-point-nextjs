@@ -46,43 +46,9 @@ export async function POST(req: NextRequest) {
   \n
   Output as a concise, engaging paragraph (80-180 words) followed by 3 short bullet suggestions (one-line each).`;
 
-    // Call OpenAI Grok-4 model
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    if (!OPENAI_API_KEY) {
-      return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
-    }
-
-    const resp = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({ model: 'grok-4', input: prompt, max_tokens: 500 }),
-    });
-
-    if (!resp.ok) {
-      const text = await resp.text();
-      return NextResponse.json({ error: 'LLM error', detail: text }, { status: 502 });
-    }
-
-    const data = await resp.json();
-    // Response shape: data.output[0].content etc - be defensive
-    let summary = '';
-    try {
-      // New responses API may provide output[0].content[0].text
-      if (data.output && Array.isArray(data.output) && data.output.length) {
-        const out = data.output[0];
-        if (typeof out === 'string') summary = out;
-        else if (out.content && Array.isArray(out.content)) {
-          summary = out.content.map((c: any) => c.text || c).join('');
-        } else if (out.text) summary = out.text;
-      } else if (data.output_text) {
-        summary = data.output_text;
-      }
-    } catch (e) {
-      summary = '';
-    }
+    // Call Grok-4 via grokIntegration
+    const { runGrokPrompt } = await import('@/lib/grokIntegration');
+    const summary = await runGrokPrompt(prompt);
 
     // Optionally save magic_profile if user opted in
     if (prefs.opt_in_magic) {

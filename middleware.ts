@@ -10,6 +10,7 @@ const SELF_AUTH_API_ROUTES = [
   '/api/whatsapp-webhook',
   '/api/whatsapp-proactive',
   '/api/stripe/webhook',
+  '/api/square/webhook',
   '/api/system/',
 ];
 

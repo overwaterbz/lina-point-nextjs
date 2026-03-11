@@ -47,7 +47,6 @@ export async function POST(req: Request) {
         const processor = pi.metadata?.processor || 'stripe'
         
         if (bookingId) {
-          // Update tour_bookings associated with this booking_id to paid
           const { createServerSupabaseClient } = await import('@/lib/supabase-server')
           const supabase = await createServerSupabaseClient()
           const { error: updateErr } = await supabase
@@ -61,6 +60,9 @@ export async function POST(req: Request) {
 
           if (updateErr) console.warn('[Webhook] Failed to mark tours paid:', updateErr.message)
           else debugLog(`[Webhook] Marked tour_bookings paid for booking ${bookingId} via ${processor}`)
+
+          // Send booking confirmation email
+          await sendBookingConfirmation(supabase, bookingId, pi.id, processor)
         }
       } catch (webhookErr) {
         console.error('Error handling payment_intent.succeeded webhook:', webhookErr)
@@ -74,4 +76,55 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ received: true })
+}
+
+async function sendBookingConfirmation(
+  supabase: any,
+  bookingId: string,
+  paymentId: string,
+  processor: string,
+) {
+  try {
+    const { data: bookings } = await supabase
+      .from('tour_bookings')
+      .select('user_id, tour_name, price')
+      .eq('booking_id', bookingId)
+
+    if (!bookings?.length) return
+
+    const userId = bookings[0].user_id
+    const { data: { user } } = await supabase.auth.admin.getUserById(userId)
+    if (!user?.email) return
+
+    const total = bookings.reduce((sum: number, b: any) => sum + (b.price || 0), 0)
+    const tourList = bookings.map((b: any) => `• ${b.tour_name} — $${b.price}`).join('\n')
+
+    const { Resend } = await import('resend')
+    const resendKey = process.env.RESEND_API_KEY
+    if (!resendKey) return
+
+    const resend = new Resend(resendKey)
+    await resend.emails.send({
+      from: process.env.MAGIC_FROM_EMAIL || 'magic@linapointresort.com',
+      to: user.email,
+      subject: '🌴 Lina Point Resort — Booking Confirmed!',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #0d9488;">Booking Confirmed!</h1>
+          <p>Thank you for choosing Lina Point Resort. Your payment has been processed via ${processor}.</p>
+          <h3>Your Experiences:</h3>
+          <pre style="background: #f9fafb; padding: 16px; border-radius: 8px;">${tourList}</pre>
+          <p><strong>Total: $${total.toFixed(2)}</strong></p>
+          <p style="font-size: 12px; color: #6b7280;">Payment ID: ${paymentId} | Booking: ${bookingId}</p>
+          <hr/>
+          <p style="color: #6b7280;">Lina Point Resort — San Pedro, Ambergris Caye, Belize<br/>
+          BZ +501.632.9205 | reservations@linapoint.com</p>
+        </div>
+      `,
+    })
+
+    debugLog(`[Stripe Webhook] Confirmation email sent to ${user.email}`)
+  } catch (err) {
+    console.warn('[Stripe Webhook] Email send failed:', err)
+  }
 }
