@@ -8,6 +8,7 @@ import Navbar from '@/components/resort/Navbar';
 import Footer from '@/components/resort/Footer';
 import SectionHeading from '@/components/resort/SectionHeading';
 import WhyBookDirect from '@/components/WhyBookDirect';
+import TestimonialsCarousel from '@/components/TestimonialsCarousel';
 
 const ROOMS = [
   {
@@ -333,6 +334,8 @@ export default function RoomsPage() {
           </div>
         </div>
       </section>
+
+      <TestimonialsCarousel />
 
       <Footer />
     </main>
