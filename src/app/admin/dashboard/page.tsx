@@ -1,180 +1,235 @@
-import { createClient } from "@supabase/supabase-js";
-import { requireAdmin } from "@/lib/admin";
-import { runSelfImproveAction, triggerN8nAction } from "./actions";
+'use client';
 
-export const metadata = {
-  title: "Admin Dashboard",
-};
+import { useAuth } from '@/hooks/useAuth';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
-export default async function AdminDashboardPage() {
-  await requireAdmin();
+interface KPIs {
+  activeReservations: number;
+  occupiedRooms: number;
+  totalRooms: number;
+  pendingHousekeeping: number;
+  unpaidInvoices: number;
+  unreadNotifications: number;
+  upcomingTours: number;
+}
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  if (!supabaseUrl || !serviceKey) {
-    throw new Error("Supabase service role not configured");
+interface RecentReservation {
+  id: string;
+  confirmation_number: string;
+  check_in: string;
+  check_out: string;
+  status: string;
+  rooms: { name: string } | null;
+}
+
+interface HousekeepingTask {
+  id: string;
+  task_type: string;
+  status: string;
+  priority: string;
+  rooms: { name: string } | null;
+}
+
+export default function AdminDashboardPage() {
+  const { user, profile, loading } = useAuth();
+  const [kpis, setKpis] = useState<KPIs | null>(null);
+  const [recentRes, setRecentRes] = useState<RecentReservation[]>([]);
+  const [housekeeping, setHousekeeping] = useState<HousekeepingTask[]>([]);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createBrowserSupabaseClient();
+    const today = new Date().toISOString().split('T')[0];
+
+    (async () => {
+      try {
+        const [
+          { count: activeRes },
+          { count: totalRooms },
+          { count: occupiedRooms },
+          { count: pendingHK },
+          { count: unpaidInv },
+          { count: unreadNotif },
+          { count: upcomingTours },
+          { data: recent },
+          { data: hkTasks },
+        ] = await Promise.all([
+          supabase.from('reservations').select('id', { count: 'exact', head: true })
+            .in('status', ['confirmed', 'checked_in']),
+          supabase.from('rooms').select('id', { count: 'exact', head: true }),
+          supabase.from('room_inventory').select('id', { count: 'exact', head: true })
+            .eq('date', today).eq('status', 'booked'),
+          supabase.from('housekeeping_tasks').select('id', { count: 'exact', head: true })
+            .eq('date', today).in('status', ['pending', 'in_progress']),
+          supabase.from('invoices').select('id', { count: 'exact', head: true })
+            .in('status', ['draft', 'sent']),
+          supabase.from('notifications').select('id', { count: 'exact', head: true })
+            .or(`user_id.eq.${user.id},user_id.is.null`).eq('read', false),
+          supabase.from('tour_bookings').select('id', { count: 'exact', head: true })
+            .gte('tour_date', today).eq('status', 'confirmed'),
+          supabase.from('reservations').select('id, confirmation_number, check_in, check_out, status, rooms(name)')
+            .order('check_in', { ascending: false }).limit(5),
+          supabase.from('housekeeping_tasks').select('id, task_type, status, priority, rooms(name)')
+            .eq('date', today).order('priority', { ascending: true }).limit(5),
+        ]);
+
+        setKpis({
+          activeReservations: activeRes || 0,
+          totalRooms: totalRooms || 0,
+          occupiedRooms: occupiedRooms || 0,
+          pendingHousekeeping: pendingHK || 0,
+          unpaidInvoices: unpaidInv || 0,
+          unreadNotifications: unreadNotif || 0,
+          upcomingTours: upcomingTours || 0,
+        });
+        setRecentRes((recent || []) as unknown as RecentReservation[]);
+        setHousekeeping((hkTasks || []) as unknown as HousekeepingTask[]);
+      } catch (err) {
+        console.error('Dashboard fetch error:', err);
+      } finally {
+        setFetching(false);
+      }
+    })();
+  }, [user]);
+
+  if (loading || fetching) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+      </div>
+    );
   }
-  const supabase = createClient(supabaseUrl, serviceKey);
 
-  const { data: agentRuns } = await supabase
-    .from("agent_runs")
-    .select("id, agent_name, status, duration_ms, started_at")
-    .order("started_at", { ascending: false })
-    .limit(10);
-
-  const { data: bookingAnalytics } = await supabase
-    .from("booking_analytics")
-    .select("id, room_type, total_cost, savings_percent, created_at")
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  const { data: magicContent } = await supabase
-    .from("magic_content")
-    .select("id, content_type, status, created_at")
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  const { data: promptUpdates } = await supabase
-    .from("agent_prompts")
-    .select("id, agent_name, prompt_text, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(10);
+  const occupancyPct = kpis && kpis.totalRooms > 0
+    ? Math.round((kpis.occupiedRooms / kpis.totalRooms) * 100)
+    : 0;
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
-        <p className="text-sm text-gray-600">System metrics, agent performance, and manual triggers.</p>
+        <p className="text-sm text-gray-600">
+          Today&apos;s snapshot — {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+        </p>
       </header>
 
       {/* KPI cards */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white rounded-lg shadow p-5">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Reservations</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{(bookingAnalytics || []).length}</p>
-          <p className="text-xs text-gray-400 mt-1">Recent</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-5">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Agent Runs</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{(agentRuns || []).length}</p>
-          <p className="text-xs text-gray-400 mt-1">Last 10</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-5">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Magic Content</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{(magicContent || []).length}</p>
-          <p className="text-xs text-gray-400 mt-1">Items</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-5">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Prompt Updates</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{(promptUpdates || []).length}</p>
-          <p className="text-xs text-gray-400 mt-1">Latest</p>
-        </div>
+        <KpiCard label="Active Reservations" value={kpis?.activeReservations ?? 0} icon="🗓️" href="/admin/calendar" />
+        <KpiCard label="Occupancy Today" value={`${occupancyPct}%`} sub={`${kpis?.occupiedRooms ?? 0} / ${kpis?.totalRooms ?? 0} rooms`} icon="🏨" href="/admin/rooms" />
+        <KpiCard label="Housekeeping" value={kpis?.pendingHousekeeping ?? 0} sub="pending today" icon="🧹" href="/admin/housekeeping" />
+        <KpiCard label="Upcoming Tours" value={kpis?.upcomingTours ?? 0} icon="🌊" href="/admin/tours" />
+        <KpiCard label="Unpaid Invoices" value={kpis?.unpaidInvoices ?? 0} icon="💰" href="/admin/pricing" />
+        <KpiCard label="Notifications" value={kpis?.unreadNotifications ?? 0} sub="unread" icon="🔔" href="/admin/notifications" />
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2">
-          <form action={triggerN8nAction} className="bg-white rounded-lg shadow p-6 space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">Trigger n8n Workflow</h2>
-            <p className="text-sm text-gray-600">
-              Stubbed workflow: booking → curate → content → email/social.
-            </p>
-            <button
-              type="submit"
-              className="rounded bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
-            >
-              Trigger Workflow
-            </button>
-          </form>
-
-          <form action={runSelfImproveAction} className="bg-white rounded-lg shadow p-6 space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">Run Self-Improvement</h2>
-            <p className="text-sm text-gray-600">
-              Analyze logs, bookings, and preferences and persist prompt updates.
-            </p>
-            <button
-              type="submit"
-              className="rounded bg-emerald-600 px-4 py-2 text-white font-semibold hover:bg-emerald-700"
-            >
-              Run Self-Improve
-            </button>
-          </form>
-        </section>
-
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent Reservations */}
         <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Agent Runs</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-600">
-                  <th className="py-2">Agent</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2">Started</th>
-                  <th className="py-2">Duration</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(agentRuns || []).map((run) => (
-                  <tr key={run.id} className="border-t">
-                    <td className="py-2 text-gray-800">{run.agent_name}</td>
-                    <td className="py-2 text-gray-800">{run.status}</td>
-                    <td className="py-2 text-gray-500">
-                      {run.started_at ? new Date(run.started_at).toLocaleString() : "-"}
-                    </td>
-                    <td className="py-2 text-gray-500">{run.duration_ms ? `${run.duration_ms}ms` : "-"}</td>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Recent Reservations</h2>
+            <Link href="/admin/calendar" className="text-sm text-indigo-600 hover:underline">View all</Link>
+          </div>
+          {recentRes.length === 0 ? (
+            <p className="text-sm text-gray-400">No reservations yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500">
+                    <th className="py-2 pr-4">Confirmation</th>
+                    <th className="py-2 pr-4">Room</th>
+                    <th className="py-2 pr-4">Check-in</th>
+                    <th className="py-2">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {recentRes.map((r) => (
+                    <tr key={r.id} className="border-t border-gray-100">
+                      <td className="py-2 pr-4 font-mono text-xs">{r.confirmation_number}</td>
+                      <td className="py-2 pr-4">{r.rooms?.name ?? '—'}</td>
+                      <td className="py-2 pr-4 text-gray-500">{new Date(r.check_in).toLocaleDateString()}</td>
+                      <td className="py-2">
+                        <StatusBadge status={r.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
-        <section className="grid gap-6 md:grid-cols-2">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Bookings</h2>
-            <div className="space-y-3">
-              {(bookingAnalytics || []).map((booking) => (
-                <div key={booking.id} className="border rounded p-3 text-sm">
-                  <div className="text-gray-900">{booking.room_type}</div>
-                  <div className="text-gray-500">
-                    {booking.created_at ? new Date(booking.created_at).toLocaleString() : "-"}
-                  </div>
-                  <div className="text-gray-700">
-                    Total: ${booking.total_cost} | Savings: {booking.savings_percent}%
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Magic Content</h2>
-            <div className="space-y-3">
-              {(magicContent || []).map((item) => (
-                <div key={item.id} className="border rounded p-3 text-sm">
-                  <div className="text-gray-900 capitalize">{item.content_type}</div>
-                  <div className="text-gray-500">
-                    {item.created_at ? new Date(item.created_at).toLocaleString() : "-"}
-                  </div>
-                  <div className="text-gray-700">Status: {item.status}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
+        {/* Housekeeping Today */}
         <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Latest Prompt Updates</h2>
-          <div className="space-y-3">
-            {(promptUpdates || []).map((prompt) => (
-              <div key={prompt.id} className="border rounded p-3 text-sm">
-                <div className="text-gray-900">{prompt.agent_name}</div>
-                <div className="text-gray-500">
-                  {prompt.updated_at ? new Date(prompt.updated_at).toLocaleString() : "-"}
-                </div>
-                <p className="text-gray-700 mt-2">{prompt.prompt_text}</p>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Housekeeping Today</h2>
+            <Link href="/admin/housekeeping" className="text-sm text-indigo-600 hover:underline">View all</Link>
           </div>
+          {housekeeping.length === 0 ? (
+            <p className="text-sm text-gray-400">No tasks for today.</p>
+          ) : (
+            <div className="space-y-2">
+              {housekeeping.map((t) => (
+                <div key={t.id} className="flex items-center justify-between border rounded-lg px-3 py-2 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-900">{t.rooms?.name ?? '—'}</span>
+                    <span className="ml-2 text-gray-500 capitalize">{t.task_type.replace('_', ' ')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <PriorityDot priority={t.priority} />
+                    <StatusBadge status={t.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
+      </div>
     </div>
   );
+}
+
+function KpiCard({ label, value, sub, icon, href }: { label: string; value: string | number; sub?: string; icon: string; href?: string }) {
+  const content = (
+    <div className="bg-white rounded-lg shadow p-5 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
+        <span className="text-xl">{icon}</span>
+      </div>
+      <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
+      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    </div>
+  );
+  return href ? <Link href={href}>{content}</Link> : content;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    confirmed: 'bg-green-100 text-green-700',
+    checked_in: 'bg-blue-100 text-blue-700',
+    checked_out: 'bg-gray-100 text-gray-600',
+    cancelled: 'bg-red-100 text-red-700',
+    pending: 'bg-yellow-100 text-yellow-700',
+    in_progress: 'bg-blue-100 text-blue-700',
+    done: 'bg-green-100 text-green-700',
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || 'bg-gray-100 text-gray-600'}`}>
+      {status.replace('_', ' ')}
+    </span>
+  );
+}
+
+function PriorityDot({ priority }: { priority: string }) {
+  const colors: Record<string, string> = {
+    urgent: 'bg-red-500',
+    high: 'bg-orange-500',
+    normal: 'bg-blue-500',
+    low: 'bg-gray-400',
+  };
+  return <span className={`w-2 h-2 rounded-full inline-block ${colors[priority] || 'bg-gray-400'}`} title={priority} />;
 }
