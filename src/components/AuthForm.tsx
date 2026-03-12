@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { AuthError } from '@/types/supabase';
 
@@ -28,6 +28,8 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
 
   const { signIn, signUp } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo') || '/dashboard';
 
   const normalizePhone = (value: string) =>
     value.trim().replace(/^whatsapp:/i, '').replace(/\s+/g, '');
@@ -58,7 +60,7 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
 
         setSuccess(true);
         onSuccess?.();
-        router.push('/dashboard');
+        router.push(returnTo);
       } else {
         const { error: signUpError } = await signUp(email, password, fullName, prefs);
 
