@@ -42,7 +42,18 @@ CREATE INDEX IF NOT EXISTS idx_tours_category ON tours(category);
 DROP POLICY IF EXISTS "Users can view own tour bookings" ON tour_bookings;
 DROP POLICY IF EXISTS "Users can insert tour bookings" ON tour_bookings;
 DROP POLICY IF EXISTS "Users can update own tour bookings" ON tour_bookings;
-DROP TABLE IF EXISTS tour_bookings;
+DROP TABLE IF EXISTS tour_bookings CASCADE;
+
+-- CASCADE above drops FK constraints from magic_content & magic_questionnaire
+-- that incorrectly referenced tour_bookings instead of reservations.
+-- Re-add them pointing at reservations:
+ALTER TABLE magic_content
+  ADD CONSTRAINT magic_content_reservation_id_fkey
+  FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE SET NULL;
+
+ALTER TABLE magic_questionnaire
+  ADD CONSTRAINT magic_questionnaire_reservation_id_fkey
+  FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE SET NULL;
 
 -- ── Tour Bookings (new schema with FK to tours) ────────────
 CREATE TABLE tour_bookings (
