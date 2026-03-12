@@ -44,13 +44,13 @@ DROP POLICY IF EXISTS "Users can insert tour bookings" ON tour_bookings;
 DROP POLICY IF EXISTS "Users can update own tour bookings" ON tour_bookings;
 DROP TABLE IF EXISTS tour_bookings CASCADE;
 
--- CASCADE above drops FK constraints from magic_content & magic_questionnaire
--- that incorrectly referenced tour_bookings instead of reservations.
--- Re-add them pointing at reservations:
+-- Re-add FK constraints pointing at reservations (drop first if they already exist)
+ALTER TABLE magic_content DROP CONSTRAINT IF EXISTS magic_content_reservation_id_fkey;
 ALTER TABLE magic_content
   ADD CONSTRAINT magic_content_reservation_id_fkey
   FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE SET NULL;
 
+ALTER TABLE magic_questionnaire DROP CONSTRAINT IF EXISTS magic_questionnaire_reservation_id_fkey;
 ALTER TABLE magic_questionnaire
   ADD CONSTRAINT magic_questionnaire_reservation_id_fkey
   FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE SET NULL;
