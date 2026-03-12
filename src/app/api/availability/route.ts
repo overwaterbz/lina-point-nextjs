@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 import { checkAvailability } from '@/lib/inventory'
 import { calculateDynamicPrice } from '@/lib/dynamicPricing'
 import type { RoomType } from '@/lib/inventory'
@@ -7,6 +7,7 @@ import type { RoomType } from '@/lib/inventory'
 /**
  * GET /api/availability?checkIn=2026-04-01&checkOut=2026-04-05
  * Public endpoint — returns available room counts per type with dynamic pricing.
+ * Uses service role key since this is a public, unauthenticated endpoint.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -31,7 +32,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await createServerSupabaseClient()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } },
+    )
     const availability = await checkAvailability(supabase, checkIn, checkOut)
 
     // Enrich with dynamic pricing
