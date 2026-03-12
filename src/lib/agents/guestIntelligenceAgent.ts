@@ -152,7 +152,7 @@ Rules:
 }
 
 /**
- * Run full analysis and persist results back to the profile.
+ * Run full analysis, enrich with upsell affinity data, and persist results.
  */
 export async function updateGuestIntelligence(
   supabase: SupabaseClient,
@@ -160,17 +160,93 @@ export async function updateGuestIntelligence(
 ): Promise<GuestInsights> {
   const insights = await analyzeGuest(supabase, userId)
 
+  // Enrich with upsell optimization data
+  const upsellAffinity = await computeUpsellAffinity(supabase, userId, insights)
+
+  const enrichedPreferences = {
+    ...insights,
+    upsellAffinity,
+  }
+
   await supabase
     .from('profiles')
     .update({
       travel_style: insights.travelStyle,
       loyalty_tier: insights.loyaltyTier,
-      ai_preferences: insights as any,
+      ai_preferences: enrichedPreferences as any,
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', userId)
 
   return insights
+}
+
+/**
+ * Compute which upsells this guest is most likely to accept,
+ * based on their profile segment and historical acceptance rates.
+ */
+async function computeUpsellAffinity(
+  supabase: SupabaseClient,
+  userId: string,
+  insights: GuestInsights,
+): Promise<Record<string, number>> {
+  // Get this guest's past upsell responses
+  const { data: upsells } = await supabase
+    .from('upsell_offers')
+    .select('offer_type, status')
+    .eq('user_id', userId)
+
+  // Get segment-level acceptance rates for guests with same travel style
+  const { data: segmentUpsells } = await supabase
+    .from('upsell_offers')
+    .select('offer_type, status')
+    .limit(500)
+
+  const affinity: Record<string, number> = {}
+
+  // Personal acceptance rate (weighted 70%) + segment rate (weighted 30%)
+  const personalRates = computeAcceptanceRates(upsells || [])
+  const segmentRates = computeAcceptanceRates(segmentUpsells || [])
+
+  const allTypes = new Set([...Object.keys(personalRates), ...Object.keys(segmentRates)])
+
+  for (const offerType of allTypes) {
+    const personal = personalRates[offerType]
+    const segment = segmentRates[offerType]
+
+    if (personal !== undefined && segment !== undefined) {
+      affinity[offerType] = personal * 0.7 + segment * 0.3
+    } else if (personal !== undefined) {
+      affinity[offerType] = personal
+    } else if (segment !== undefined) {
+      affinity[offerType] = segment
+    }
+  }
+
+  // Boost based on loyalty tier
+  const tierBoost = { new: 0, returning: 0.05, loyal: 0.1, vip: 0.15 }
+  const boost = tierBoost[insights.loyaltyTier] || 0
+  for (const key of Object.keys(affinity)) {
+    affinity[key] = Math.min(1, affinity[key] + boost)
+  }
+
+  return affinity
+}
+
+function computeAcceptanceRates(
+  upsells: Array<{ offer_type: string; status: string }>,
+): Record<string, number> {
+  const counts: Record<string, { accepted: number; total: number }> = {}
+  for (const u of upsells) {
+    if (!counts[u.offer_type]) counts[u.offer_type] = { accepted: 0, total: 0 }
+    counts[u.offer_type].total++
+    if (u.status === 'accepted') counts[u.offer_type].accepted++
+  }
+  const rates: Record<string, number> = {}
+  for (const [type, c] of Object.entries(counts)) {
+    rates[type] = c.total > 0 ? c.accepted / c.total : 0
+  }
+  return rates
 }
 
 /**

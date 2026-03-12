@@ -8,16 +8,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { verifyCronSecret } from '@/lib/cronAuth';
 
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const denied = verifyCronSecret(request.headers.get('authorization'));
+    if (denied) return denied;
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

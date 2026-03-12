@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 
 interface AgentRun {
@@ -30,10 +30,44 @@ const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
 };
 
+interface PendingPrompt {
+  id: string;
+  agent_name: string;
+  prompt_text: string;
+  previous_prompt: string | null;
+  version: number;
+  change_type: string;
+  updated_at: string;
+}
+
 export default function AIMonitorPage() {
   const [runs, setRuns] = useState<AgentRun[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [pendingPrompts, setPendingPrompts] = useState<PendingPrompt[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const fetchPrompts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/ai');
+      if (res.ok) {
+        const data = await res.json();
+        setPendingPrompts(data.pending || []);
+      }
+    } catch (err) { console.error(err) }
+  }, []);
+
+  const handlePromptAction = useCallback(async (promptId: string, action: 'approve' | 'reject') => {
+    try {
+      const res = await fetch('/api/admin/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promptId, action }),
+      });
+      if (res.ok) {
+        setPendingPrompts(prev => prev.filter(p => p.id !== promptId));
+      }
+    } catch (err) { console.error(err) }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -53,11 +87,13 @@ export default function AIMonitorPage() {
         ]);
         setRuns(runsRes.data || []);
         setInsights(insightsRes.data || []);
-      } catch {} finally {
+      } catch (err) { console.error(err) } finally {
         setLoading(false);
       }
+      // Fetch pending prompts via API
+      await fetchPrompts();
     })();
-  }, []);
+  }, [fetchPrompts]);
 
   // Agent stats
   const agents = [...new Set(runs.map((r) => r.agent_name))];
@@ -149,6 +185,61 @@ export default function AIMonitorPage() {
                     <p className="text-[10px] text-gray-400 mt-1">
                       {new Date(insight.created_at).toLocaleString()}
                     </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Prompt Versioning — Pending Reviews */}
+          <div className="bg-white rounded-lg shadow p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-900">Prompt Updates — Pending Review</h2>
+              <span className="text-xs text-gray-500">Directional changes need your approval</span>
+            </div>
+            {pendingPrompts.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">No pending prompt updates</p>
+            ) : (
+              <div className="space-y-3">
+                {pendingPrompts.map((prompt) => (
+                  <div key={prompt.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{prompt.agent_name}</span>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                          v{prompt.version}
+                        </span>
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                          {prompt.change_type}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handlePromptAction(prompt.id, 'approve')}
+                          className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handlePromptAction(prompt.id, 'reject')}
+                          className="text-xs bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-600 bg-gray-50 rounded p-2 mb-2 max-h-24 overflow-y-auto whitespace-pre-wrap">
+                      {prompt.prompt_text}
+                    </div>
+                    {prompt.previous_prompt && (
+                      <details className="text-xs">
+                        <summary className="text-gray-400 cursor-pointer hover:text-gray-600">Previous prompt</summary>
+                        <div className="text-gray-500 bg-gray-50 rounded p-2 mt-1 max-h-20 overflow-y-auto whitespace-pre-wrap">
+                          {prompt.previous_prompt}
+                        </div>
+                      </details>
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-1">{new Date(prompt.updated_at).toLocaleString()}</p>
                   </div>
                 ))}
               </div>

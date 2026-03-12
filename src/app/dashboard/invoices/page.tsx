@@ -42,7 +42,7 @@ export default function InvoicesPage() {
           .eq('guest_id', user.id)
           .order('created_at', { ascending: false });
         setInvoices(data || []);
-      } catch {} finally {
+      } catch (err) { console.error(err) } finally {
         setLoading(false);
       }
     })();

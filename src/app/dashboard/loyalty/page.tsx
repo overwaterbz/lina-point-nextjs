@@ -62,7 +62,7 @@ export default function LoyaltyPage() {
         }
         setRewards(rewardsRes.data || []);
         setReferrals(referralsRes.data || []);
-      } catch {} finally {
+      } catch (err) { console.error(err) } finally {
         setLoading(false);
       }
     })();

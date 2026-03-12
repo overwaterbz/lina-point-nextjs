@@ -43,7 +43,7 @@ export default function NotificationsPage() {
         .order('created_at', { ascending: false })
         .limit(50);
       setNotifications(data || []);
-    } catch {} finally {
+    } catch (err) { console.error(err) } finally {
       setLoading(false);
     }
   };

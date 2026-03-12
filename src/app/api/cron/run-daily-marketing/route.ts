@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { runMarketingCrew } from "@/lib/agents/marketingAgentCrew";
+import { verifyCronSecret } from '@/lib/cronAuth';
 
 const debugLog = (...args: unknown[]) => {
   console.log("[Marketing Cron]", ...args);
@@ -20,12 +21,8 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
-    
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = verifyCronSecret(request.headers.get('authorization'));
+    if (denied) return denied;
 
     debugLog("🌙 [Cron] Running daily marketing campaigns...");
 

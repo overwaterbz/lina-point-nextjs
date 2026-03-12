@@ -32,7 +32,7 @@ export default function DashboardPage() {
           .order('check_in', { ascending: true })
           .limit(3);
         setReservations(data || []);
-      } catch {}
+      } catch (err) { console.error(err) }
     })();
   }, [user]);
 

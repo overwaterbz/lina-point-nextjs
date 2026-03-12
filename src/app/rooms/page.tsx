@@ -106,7 +106,7 @@ function RoomCard({ room, index }: { room: (typeof ROOMS)[0]; index: number }) {
       {/* Image block */}
       <div className={`relative ${isReversed ? 'md:[direction:ltr]' : ''}`}>
         <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
-          <Image src={room.image} alt={room.name} fill className="object-cover" unoptimized />
+          <Image src={room.image} alt={room.name} fill className="object-cover" />
           {room.badge && (
             <span className={`absolute top-4 left-4 bg-gradient-to-r ${room.accent} text-white text-[10px] tracking-[0.2em] uppercase font-bold px-4 py-1.5 rounded-full shadow-lg`}>
               {room.badge}
@@ -117,7 +117,7 @@ function RoomCard({ room, index }: { room: (typeof ROOMS)[0]; index: number }) {
         <div className="flex gap-2 mt-3">
           {room.gallery.map((src, i) => (
             <div key={i} className="relative flex-1 aspect-[3/2] rounded-lg overflow-hidden">
-              <Image src={src} alt={`${room.name} view ${i + 1}`} fill className="object-cover hover:scale-110 transition-transform duration-500" unoptimized />
+              <Image src={src} alt={`${room.name} view ${i + 1}`} fill className="object-cover hover:scale-110 transition-transform duration-500" />
             </div>
           ))}
         </div>
@@ -178,7 +178,6 @@ export default function RoomsPage() {
           fill
           className="object-cover"
           priority
-          unoptimized
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6">

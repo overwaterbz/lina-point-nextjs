@@ -30,7 +30,7 @@ export default function GuestsPage() {
           .order('created_at', { ascending: false })
           .limit(100);
         setGuests(data || []);
-      } catch {} finally {
+      } catch (err) { console.error(err) } finally {
         setLoading(false);
       }
     })();

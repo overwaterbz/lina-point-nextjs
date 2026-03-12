@@ -48,7 +48,7 @@ export default function HousekeepingPage() {
         room_number: (t.rooms as { room_number: string } | null)?.room_number || null,
       })) as Task[];
       setTasks(mapped);
-    } catch {} finally {
+    } catch (err) { console.error(err) } finally {
       setLoading(false);
     }
   };

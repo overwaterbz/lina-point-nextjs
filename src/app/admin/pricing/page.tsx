@@ -45,7 +45,7 @@ export default function PricingPage() {
       ]);
       setRooms(roomsRes.data || []);
       setOverrides(overridesRes.data || []);
-    } catch {} finally {
+    } catch (err) { console.error(err) } finally {
       setLoading(false);
     }
   };

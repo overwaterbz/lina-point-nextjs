@@ -95,7 +95,6 @@ export default function Home() {
             fill
             className="object-cover animate-ken-burns"
             priority
-            unoptimized
           />
         </motion.div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/70" />
@@ -197,7 +196,6 @@ export default function Home() {
                 alt="Overwater cabana at Lina Point"
                 fill
                 className="object-cover"
-                unoptimized
               />
             </div>
             {/* Floating accent image */}
@@ -207,7 +205,6 @@ export default function Home() {
                 alt="Resort deck"
                 fill
                 className="object-cover"
-                unoptimized
               />
             </div>
           </FadeInCard>
@@ -298,7 +295,6 @@ export default function Home() {
                     alt={a.title}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    unoptimized
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -319,7 +315,6 @@ export default function Home() {
           alt="Aerial view"
           fill
           className="object-cover"
-          unoptimized
         />
         <div className="absolute inset-0 bg-cyan-900/85" />
 
@@ -376,7 +371,6 @@ export default function Home() {
                   alt={img.alt}
                   fill
                   className="object-cover hover:scale-105 transition-transform duration-700"
-                  unoptimized
                 />
               </FadeInCard>
             ))}
@@ -414,7 +408,6 @@ export default function Home() {
           alt="Lina Point at night"
           fill
           className="object-cover"
-          unoptimized
         />
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative text-center text-white px-6">

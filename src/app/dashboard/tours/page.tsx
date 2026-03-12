@@ -49,7 +49,7 @@ export default function ToursPage() {
         ]);
         setTours(toursRes.data || []);
         setBookings((bookingsRes.data as TourBooking[]) || []);
-      } catch {} finally {
+      } catch (err) { console.error(err) } finally {
         setLoading(false);
       }
     })();

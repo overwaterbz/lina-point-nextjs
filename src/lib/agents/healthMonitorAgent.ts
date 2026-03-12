@@ -12,6 +12,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { grokLLM } from '@/lib/grokIntegration';
+import { runSelfImprovementAndPersist } from '@/lib/agents/selfImprovementAgent';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -287,6 +288,22 @@ export async function runHealthCheck(): Promise<DiagnosticReport> {
 
   // Phase 5: Store report
   await storeReport(report);
+
+  // Phase 6: Trigger self-improvement if critical or high failure rate
+  if (overallStatus === 'critical' || failureRate >= 10) {
+    console.log(`[HealthMonitor] ${overallStatus} status detected — triggering self-improvement agent`);
+    try {
+      const siResult = await runSelfImprovementAndPersist(supabase, {
+        logsSummary: `Health check triggered: ${overallStatus}. ${failureRate} failures in 24h. Patterns: ${patterns.join('; ')}`,
+        bookingSummary: `Auto-fixes applied: ${autoFixesApplied.join('; ')}`,
+        prefsSummary: `Recommendations: ${recommendations.join('; ')}`,
+        conversionSummary: `Endpoints: ${endpointChecks.map(e => `${e.endpoint}=${e.status}`).join(', ')}`,
+      });
+      console.log(`[HealthMonitor] Self-improvement complete: score=${siResult.score}, ${siResult.promptUpdates.length} prompt updates`);
+    } catch (siError) {
+      console.error('[HealthMonitor] Self-improvement trigger failed:', siError);
+    }
+  }
 
   console.log(`[HealthMonitor] Check complete: ${overallStatus} | ${recentFailures.length} failures | ${autoFixesApplied.length} auto-fixes`);
   return report;

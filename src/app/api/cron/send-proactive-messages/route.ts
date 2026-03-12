@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
+import { verifyCronSecret } from '@/lib/cronAuth';
 
 const isProd = process.env.NODE_ENV === 'production';
 const debugLog = (...args: unknown[]) => {
@@ -12,11 +13,9 @@ const debugLog = (...args: unknown[]) => {
 // Vercel Cron endpoint: sends proactive messages at 6 PM UTC daily
 export async function GET(req: NextRequest) {
   try {
-    // Verify Vercel Cron signature (https://vercel.com/docs/crons/manage-crons)
-    const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Verify Vercel Cron signature
+    const denied = verifyCronSecret(req.headers.get('authorization'));
+    if (denied) return denied;
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

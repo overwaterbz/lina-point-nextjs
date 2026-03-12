@@ -2,6 +2,7 @@ import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 import { grokLLM } from '@/lib/grokIntegration';
 import { spawnSync } from 'child_process';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { savePromptVersion, getActivePrompt } from '@/lib/agents/promptManager';
 
 export type SelfImproveInputs = {
   logsSummary: string;
@@ -194,13 +195,50 @@ export async function savePromptUpdates(
 ): Promise<void> {
   if (updates.length === 0) return;
 
-  await supabase.from('agent_prompts').insert(
-    updates.map((update) => ({
-      agent_name: update.agent_name,
-      prompt_text: update.prompt_text,
-      updated_at: new Date().toISOString(),
-    }))
-  );
+  for (const update of updates) {
+    // Get the current active prompt to store as previous
+    const currentPrompt = await getActivePrompt(update.agent_name, '');
+
+    // Classify change type: directional changes affect guest experience / brand
+    const changeType = await classifyChangeType(update.agent_name, update.prompt_text, currentPrompt);
+
+    await savePromptVersion(
+      update.agent_name,
+      update.prompt_text,
+      changeType,
+      currentPrompt || undefined,
+    );
+  }
+}
+
+/**
+ * Classify whether a prompt change is operational (auto-apply) or
+ * directional (needs admin review). Uses Grok for nuanced classification.
+ */
+async function classifyChangeType(
+  agentName: string,
+  newPrompt: string,
+  previousPrompt: string,
+): Promise<'operational' | 'directional'> {
+  try {
+    const classificationPrompt = `You are classifying an AI prompt change for the "${agentName}" agent at Lina Point hotel.
+
+Previous prompt: ${previousPrompt || '(none)'}
+New prompt: ${newPrompt}
+
+Classify this change as ONE of:
+- "operational" = performance tuning, wording polish, clarity fixes, bug fixes, efficiency improvements
+- "directional" = new features, pricing strategy changes, brand voice shifts, new guest-facing functionality, significant behavior changes
+
+Reply with ONLY the word "operational" or "directional".`;
+
+    const response = await grokLLM.invoke(classificationPrompt);
+    const text = typeof response === 'string' ? response : response?.content?.toString() || '';
+    return text.trim().toLowerCase().includes('directional') ? 'directional' : 'operational';
+  } catch {
+    // If classification fails, be safe and require review
+    return 'directional';
+  }
 }
 
 export async function runSelfImprovementAndPersist(

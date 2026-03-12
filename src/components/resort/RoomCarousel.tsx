@@ -61,7 +61,6 @@ export default function RoomCarousel() {
               alt={room.name}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
-              unoptimized
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 

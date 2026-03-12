@@ -64,7 +64,6 @@ export default function Footer() {
                 alt="Lina Point aerial"
                 fill
                 className="object-cover"
-                unoptimized
               />
             </div>
           </div>

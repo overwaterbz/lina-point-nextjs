@@ -52,7 +52,7 @@ export default function CalendarPage() {
           .lte('check_in', end)
           .order('check_in');
         setReservations(data || []);
-      } catch {} finally {
+      } catch (err) { console.error(err) } finally {
         setLoading(false);
       }
     })();

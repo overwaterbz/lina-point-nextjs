@@ -143,7 +143,6 @@ export default function ExperiencesPage() {
           fill
           className="object-cover"
           priority
-          unoptimized
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6">
@@ -197,7 +196,7 @@ export default function ExperiencesPage() {
                   className="group bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
                 >
                   <div className="relative aspect-[16/10] overflow-hidden">
-                    <Image src={tour.image} alt={tour.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" unoptimized />
+                    <Image src={tour.image} alt={tour.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                     <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white text-[10px] tracking-wider uppercase px-3 py-1 rounded-full">
                       {tour.duration}
                     </div>
@@ -236,7 +235,7 @@ export default function ExperiencesPage() {
             {DINNERS.map((dinner, i) => (
               <FadeCard key={dinner.name} delay={i * 0.15}>
                 <div className="group relative aspect-[4/5] rounded-xl overflow-hidden">
-                  <Image src={dinner.image} alt={dinner.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
+                  <Image src={dinner.image} alt={dinner.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-7">
                     <span className="text-3xl block mb-3">{dinner.icon}</span>
@@ -276,7 +275,7 @@ export default function ExperiencesPage() {
 
       {/* AI Concierge CTA */}
       <section className="relative py-24 overflow-hidden">
-        <Image src="https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg" alt="Aerial paradise" fill className="object-cover" unoptimized />
+        <Image src="https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg" alt="Aerial paradise" fill className="object-cover" />
         <div className="absolute inset-0 bg-cyan-900/85" />
         <div className="relative text-center text-white px-6">
           <FadeCard>

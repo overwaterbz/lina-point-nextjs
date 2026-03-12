@@ -16,6 +16,7 @@ import { runWithRecursion } from "@/lib/agents/agentRecursion";
 import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
 import { grokLLM } from "@/lib/grokIntegration";
 import { publishToSocial, type SocialPostResult } from "@/lib/socialMediaService";
+import { createClient } from '@supabase/supabase-js';
 
 const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
@@ -175,7 +176,7 @@ Return JSON with: { trends: [], competitors: [], influencers: [], opportunities:
 // ============================================================================
 
 async function generateMarketingContent(state: typeof MarketingCrewAnnotation.State) {
-  debugLog(`[ContentAgent] Iteration ${state.iteration}: Generating marketing content...`);
+  debugLog(`[ContentAgent] Iteration ${state.iteration}: Generating marketing content with recursive refinement...`);
   
   const contentBrief = `Create marketing content for Lina Point Resort using "The Magic is You" mantra and kundalini/mystical themes.
 
@@ -201,14 +202,37 @@ Generate 3 posts:
 
 Format as JSON array: [{ type, platform, content, hashtags, cta }]`;
 
-  try {
-    const response = await grokLLM.invoke([
-      { role: "system", content: "You are a creative marketing copywriter for a luxury Belize resort. Create content emphasizing magic, mystique, and transformation. IMPORTANT: Every piece must include a direct booking advantage — Lina Point beats OTA prices by 6%, promo code DIRECT10 saves 10%, and loyalty members earn exclusive perks. Drive traffic to lina-point.com, not OTAs. Return valid JSON array." },
-      { role: "user", content: contentBrief }
-    ]);
+  const goal = `High-quality marketing content for Lina Point Resort that emphasizes direct booking advantages, weaves in "The Magic is You" theme, and includes platform-appropriate formats.`;
 
-    const content = typeof response.content === 'string' ? response.content : String(response.content);
-    const contentArray = JSON.parse(content.match(/\[[\s\S]*\]/)?.[0] || '[]');
+  try {
+    // Use recursive refinement: generate → evaluate → refine up to 3 times
+    const recursionResult = await runWithRecursion<string>(
+      // Generate
+      async (_iteration) => {
+        const response = await grokLLM.invoke([
+          { role: "system", content: "You are a creative marketing copywriter for a luxury Belize resort. Create content emphasizing magic, mystique, and transformation. IMPORTANT: Every piece must include a direct booking advantage — Lina Point beats OTA prices by 6%, promo code DIRECT10 saves 10%, and loyalty members earn exclusive perks. Drive traffic to lina-point.com, not OTAs. Return valid JSON array." },
+          { role: "user", content: contentBrief }
+        ]);
+        return typeof response.content === 'string' ? response.content : String(response.content);
+      },
+      // Evaluate — must return { score, feedback, data }
+      async (output, _iteration) => {
+        const evalResult = await evaluateTextQuality(goal, output);
+        return { score: evalResult.score, feedback: evalResult.feedback, data: output };
+      },
+      // Refine
+      async (output, feedback, _iteration) => {
+        const refineResponse = await grokLLM.invoke([
+          { role: "system", content: "You are a creative marketing copywriter. Refine the content based on feedback. Return valid JSON array." },
+          { role: "user", content: `Improve this marketing content based on feedback:\n\nCurrent content:\n${output}\n\nFeedback:\n${feedback}\n\nReturn improved JSON array: [{ type, platform, content, hashtags, cta }]` }
+        ]);
+        return typeof refineResponse.content === 'string' ? refineResponse.content : String(refineResponse.content);
+      },
+      { maxIterations: 3, minScore: 0.8 }
+    );
+
+    const bestContent = recursionResult.result;
+    const contentArray = JSON.parse(bestContent.match(/\[[\s\S]*\]/)?.[0] || '[]');
 
     const generatedContent: MarketingContent[] = contentArray.map((item: any, idx: number) => ({
       type: item.type || "social_post",
@@ -345,28 +369,18 @@ async function setupEngagementCampaigns(state: typeof MarketingCrewAnnotation.St
 async function measureAndOptimize(state: typeof MarketingCrewAnnotation.State) {
   debugLog(`[SelfImprovementAgent] Iteration ${state.iteration}: Analyzing metrics and generating improvements...`);
   
-  // Mock metrics (in production, these would be fetched from Supabase)
-  const mockMetrics: CampaignMetrics = {
-    campaignId: state.campaignId,
-    impressions: Math.floor(Math.random() * 5000) + 1000,
-    clicks: Math.floor(Math.random() * 500) + 50,
-    engagements: Math.floor(Math.random() * 200) + 20,
-    conversions: Math.floor(Math.random() * 20) + 2,
-    emailsCollected: Math.floor(Math.random() * 100) + 10,
-    ctr: Math.random() * 0.08 + 0.02,
-    conversionRate: Math.random() * 0.05 + 0.01,
-    dateTracked: new Date()
-  };
+  // Fetch real metrics from Supabase
+  const realMetrics = await fetchRealCampaignMetrics(state.campaignId);
 
   const analysisPrompt = `Analyze these marketing metrics and suggest improvements:
     
 Metrics:
-- Impressions: ${mockMetrics.impressions}
-- Clicks: ${mockMetrics.clicks}
-- CTR: ${(mockMetrics.ctr * 100).toFixed(2)}%
-- Conversions: ${mockMetrics.conversions}
-- Conversion Rate: ${(mockMetrics.conversionRate * 100).toFixed(2)}%
-- Emails Collected: ${mockMetrics.emailsCollected}
+- Impressions: ${realMetrics.impressions}
+- Clicks: ${realMetrics.clicks}
+- CTR: ${(realMetrics.ctr * 100).toFixed(2)}%
+- Conversions: ${realMetrics.conversions}
+- Conversion Rate: ${(realMetrics.conversionRate * 100).toFixed(2)}%
+- Emails Collected: ${realMetrics.emailsCollected}
 
 Campaign Brief:
 - Objective: ${state.campaignBrief.objective}
@@ -391,7 +405,7 @@ Generate JSON with:
 
     return {
       ...state,
-      currentMetrics: mockMetrics,
+      currentMetrics: realMetrics,
       mlInsights: analysis.mlInsights || [],
       promptUpdates: analysis.promptUpdates || [],
       status: "optimizing" as const
@@ -400,11 +414,11 @@ Generate JSON with:
     debugLog("[SelfImprovementAgent] Error:", error);
     return {
       ...state,
-      currentMetrics: mockMetrics,
+      currentMetrics: realMetrics,
       mlInsights: [
-        "CTR is above 2% - strong copy performance",
-        "Conversion rate could improve by testing urgency CTAs",
-        "Email collection lower than expected - add signup incentive"
+        `CTR is ${(realMetrics.ctr * 100).toFixed(1)}% - ${realMetrics.ctr > 0.02 ? 'strong' : 'needs improvement'}`,
+        `Conversion rate: ${(realMetrics.conversionRate * 100).toFixed(1)}% - test urgency CTAs if below 3%`,
+        `${realMetrics.emailsCollected} emails collected this period`
       ],
       promptUpdates: [
         "Increase frequency of urgency-based CTAs",
@@ -413,6 +427,59 @@ Generate JSON with:
       ]
     };
   }
+}
+
+/** Fetch real campaign metrics from Supabase marketing_campaigns + promo_codes */
+async function fetchRealCampaignMetrics(campaignId: string): Promise<CampaignMetrics> {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  );
+
+  // Fetch the campaign's performance_metrics if stored
+  const { data: campaign } = await supabase
+    .from('marketing_campaigns')
+    .select('performance_metrics')
+    .eq('campaign_id', campaignId)
+    .maybeSingle();
+
+  if (campaign?.performance_metrics) {
+    const m = campaign.performance_metrics;
+    return {
+      campaignId,
+      impressions: m.impressions || 0,
+      clicks: m.clicks || 0,
+      engagements: m.engagements || 0,
+      conversions: m.conversions || 0,
+      emailsCollected: m.emailsCollected || 0,
+      ctr: m.impressions > 0 ? (m.clicks || 0) / m.impressions : 0,
+      conversionRate: m.clicks > 0 ? (m.conversions || 0) / m.clicks : 0,
+      dateTracked: new Date(),
+    };
+  }
+
+  // Fallback: aggregate from promo_codes and reservations for the recent period
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [promoResult, bookingResult] = await Promise.all([
+    supabase.from('promo_codes').select('usage_count').eq('active', true),
+    supabase.from('reservations').select('id').gte('created_at', weekAgo),
+  ]);
+
+  const totalPromoUses = (promoResult.data || []).reduce((s, p) => s + (p.usage_count || 0), 0);
+  const recentBookings = bookingResult.data?.length || 0;
+
+  return {
+    campaignId,
+    impressions: 0,
+    clicks: totalPromoUses,
+    engagements: 0,
+    conversions: recentBookings,
+    emailsCollected: 0,
+    ctr: 0,
+    conversionRate: totalPromoUses > 0 ? recentBookings / totalPromoUses : 0,
+    dateTracked: new Date(),
+  };
 }
 
 // ============================================================================

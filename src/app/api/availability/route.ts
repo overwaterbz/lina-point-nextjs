@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { checkAvailability } from '@/lib/inventory'
 import { calculateDynamicPrice } from '@/lib/dynamicPricing'
+import { checkRateLimit, rateLimitKey } from '@/lib/rateLimit'
 import type { RoomType } from '@/lib/inventory'
 
 /**
@@ -10,6 +11,9 @@ import type { RoomType } from '@/lib/inventory'
  * Uses service role key since this is a public, unauthenticated endpoint.
  */
 export async function GET(request: NextRequest) {
+  const limited = checkRateLimit(rateLimitKey(request), 30) // 30 req/min
+  if (limited) return limited
+
   const { searchParams } = new URL(request.url)
   const checkIn = searchParams.get('checkIn')
   const checkOut = searchParams.get('checkOut')

@@ -49,7 +49,7 @@ export default function GuestDetailPage() {
         ]);
         setGuest(profileRes.data);
         setReservations(resRes.data || []);
-      } catch {} finally {
+      } catch (err) { console.error(err) } finally {
         setLoading(false);
       }
     })();

@@ -33,7 +33,7 @@ export default function AdminToursPage() {
         .order('category')
         .order('name');
       setTours(data || []);
-    } catch {} finally {
+    } catch (err) { console.error(err) } finally {
       setLoading(false);
     }
   };

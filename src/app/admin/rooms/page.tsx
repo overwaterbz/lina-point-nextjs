@@ -55,7 +55,7 @@ export default function RoomsPage() {
         .select('id, name, room_number, fish_name, room_type, floor, status, base_rate_usd, capacity, amenities, description, ical_url, last_ical_sync')
         .order('sort_order');
       setRooms(data || []);
-    } catch {} finally {
+    } catch (err) { console.error(err) } finally {
       setLoading(false);
     }
   };

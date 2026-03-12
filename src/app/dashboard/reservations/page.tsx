@@ -42,7 +42,7 @@ export default function ReservationsPage() {
           .eq('user_id', user.id)
           .order('check_in', { ascending: false });
         setReservations(data || []);
-      } catch {} finally {
+      } catch (err) { console.error(err) } finally {
         setLoading(false);
       }
     })();

@@ -14,15 +14,13 @@ import { updateGuestIntelligence, logInteraction } from '@/lib/agents/guestIntel
 import { generateUpsellOffers, sendUpsellOffer } from '@/lib/upsellEngine'
 import { runPostStayFlow } from '@/lib/agents/postStayLoyaltyAgent'
 import { sendWhatsAppMessage } from '@/lib/whatsapp'
+import { verifyCronSecret } from '@/lib/cronAuth'
 import type { RoomType } from '@/lib/inventory'
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const denied = verifyCronSecret(request.headers.get('authorization'))
+    if (denied) return denied
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

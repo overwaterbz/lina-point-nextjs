@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { amount, currency = 'usd', metadata, useStripe = false, sourceId } = body
 
-    if (!amount || typeof amount !== 'number' || amount <= 0) {
-      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
+    if (!amount || typeof amount !== 'number' || amount <= 0 || amount > 1000000) {
+      return NextResponse.json({ error: 'Invalid amount (must be between $0.01 and $10,000)' }, { status: 400 })
     }
 
     // Try Square first (PRIMARY)

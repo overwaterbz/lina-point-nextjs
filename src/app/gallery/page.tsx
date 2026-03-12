@@ -53,7 +53,6 @@ function GalleryImage({ img, index, onClick }: { img: (typeof IMAGES)[0]; index:
         alt={img.alt}
         fill
         className="object-cover transition-transform duration-700 group-hover:scale-110"
-        unoptimized
       />
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300" />
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -93,7 +92,6 @@ export default function GalleryPage() {
           fill
           className="object-cover"
           priority
-          unoptimized
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6">
@@ -193,7 +191,6 @@ export default function GalleryPage() {
                 alt={lightboxImages[lightboxIndex].alt}
                 fill
                 className="object-contain"
-                unoptimized
               />
               <p className="absolute bottom-4 left-0 right-0 text-center text-white/60 text-sm">
                 {lightboxImages[lightboxIndex].alt}

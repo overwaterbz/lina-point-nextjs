@@ -37,7 +37,6 @@ export default function AnimatedImage({
           alt={alt}
           fill
           className={`object-cover ${kenBurns ? 'animate-ken-burns' : ''}`}
-          unoptimized
           priority={priority}
         />
       </motion.div>

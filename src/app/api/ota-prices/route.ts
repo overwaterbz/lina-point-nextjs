@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { fetchCompetitivePrices } from '@/lib/otaIntegration'
+import { checkRateLimit, rateLimitKey } from '@/lib/rateLimit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -16,6 +17,9 @@ const BEAT_PERCENTAGE = 0.06 // 6% below lowest OTA
 const MIN_RATE_FLOOR = 0.70 // never price below 70% of base rate
 
 export async function GET(request: NextRequest) {
+  const limited = checkRateLimit(rateLimitKey(request), 10) // 10 req/min
+  if (limited) return limited
+
   const { searchParams } = new URL(request.url)
   const roomType = searchParams.get('roomType')
   const checkIn = searchParams.get('checkIn')

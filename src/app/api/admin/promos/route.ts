@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { isAdminEmail } from '@/lib/admin'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-export async function GET() {
+async function requireAdmin(request: NextRequest): Promise<NextResponse | null> {
+  const authHeader = request.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET
+
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return null
+
+  try {
+    const sessionSupabase = await createServerSupabaseClient()
+    const { data: { user } } = await sessionSupabase.auth.getUser()
+    if (user && isAdminEmail(user.email)) return null
+  } catch { /* session check failed */ }
+
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+}
+
+export async function GET(request: NextRequest) {
+  const denied = await requireAdmin(request)
+  if (denied) return denied
+
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   const { data, error } = await supabase
@@ -20,6 +40,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await requireAdmin(request)
+  if (denied) return denied
+
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
   const body = await request.json()
 
@@ -50,6 +73,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const denied = await requireAdmin(request)
+  if (denied) return denied
+
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
   const body = await request.json()
 

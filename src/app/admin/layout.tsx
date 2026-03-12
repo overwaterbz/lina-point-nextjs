@@ -64,7 +64,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           .or(`user_id.eq.${user.id},user_id.is.null`)
           .eq('read', false);
         setUnreadCount(count || 0);
-      } catch {}
+      } catch (err) { console.error(err) }
     })();
   }, [user]);
 
