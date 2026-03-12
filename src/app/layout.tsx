@@ -103,6 +103,15 @@ const jsonLd = {
     "https://www.instagram.com/linapointsanpedro",
     "https://www.tiktok.com/@linapoint",
   ],
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "Room Types",
+    itemListElement: [
+      { "@type": "Offer", name: "Overwater Cabana", price: "199", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=overwater-cabana" },
+      { "@type": "Offer", name: "2nd Floor Suite", price: "249", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=2nd-floor-suite" },
+      { "@type": "Offer", name: "1st Floor Suite", price: "299", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=1st-floor-suite" },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -113,6 +122,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0284c7" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -124,6 +136,11 @@ export default function RootLayout({
         {children}
         <WhatsAppButton />
         <ToasterProvider />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js')})}`,
+          }}
+        />
       </body>
     </html>
   );

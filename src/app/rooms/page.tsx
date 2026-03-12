@@ -165,9 +165,57 @@ function RoomCard({ room, index }: { room: (typeof ROOMS)[0]; index: number }) {
   );
 }
 
+const roomsJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "LodgingBusiness",
+  name: "Lina Point Belize Overwater Resort",
+  url: "https://lina-point.vercel.app/rooms",
+  makesOffer: ROOMS.map((room) => ({
+    "@type": "Offer",
+    name: room.name,
+    description: room.description,
+    price: room.price,
+    priceCurrency: "USD",
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price: room.price,
+      priceCurrency: "USD",
+      unitText: "night",
+    },
+    url: `https://lina-point.vercel.app/booking?room=${room.slug}`,
+    itemOffered: {
+      "@type": "HotelRoom",
+      name: room.name,
+      description: room.description,
+      image: room.image,
+      amenityFeature: room.features.map((f) => ({
+        "@type": "LocationFeatureSpecification",
+        name: f,
+      })),
+    },
+  })),
+};
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://lina-point.vercel.app" },
+    { "@type": "ListItem", position: 2, name: "Rooms", item: "https://lina-point.vercel.app/rooms" },
+  ],
+};
+
 export default function RoomsPage() {
   return (
     <main className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(roomsJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <Navbar />
 
       {/* Hero */}

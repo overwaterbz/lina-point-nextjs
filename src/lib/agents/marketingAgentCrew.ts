@@ -14,6 +14,7 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { runWithRecursion } from "@/lib/agents/agentRecursion";
 import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
+import { getActivePrompt } from "@/lib/agents/promptManager";
 import { grokLLM } from "@/lib/grokIntegration";
 import { publishToSocial, type SocialPostResult } from "@/lib/socialMediaService";
 import { createClient } from '@supabase/supabase-js';
@@ -137,8 +138,9 @@ Campaign objective: ${state.campaignBrief.objective}
 Return JSON with: { trends: [], competitors: [], influencers: [], opportunities: [], marketingAngle: "" }`;
 
   try {
+    const researchSystemPrompt = await getActivePrompt('marketing_research', 'You are a marketing research assistant. Return only valid JSON.');
     const response = await grokLLM.invoke([
-      { role: "system", content: "You are a marketing research assistant. Return only valid JSON." },
+      { role: "system", content: researchSystemPrompt },
       { role: "user", content: prompt }
     ]);
 
@@ -206,11 +208,13 @@ Format as JSON array: [{ type, platform, content, hashtags, cta }]`;
 
   try {
     // Use recursive refinement: generate → evaluate → refine up to 3 times
+    const contentSystemPrompt = await getActivePrompt('marketing_content', 'You are a creative marketing copywriter for a luxury Belize resort. Create content emphasizing magic, mystique, and transformation. IMPORTANT: Every piece must include a direct booking advantage — Lina Point beats OTA prices by 6%, promo code DIRECT10 saves 10%, and loyalty members earn exclusive perks. Drive traffic to lina-point.com, not OTAs. Return valid JSON array.');
+    const refineSystemPrompt = await getActivePrompt('marketing_content_refine', 'You are a creative marketing copywriter. Refine the content based on feedback. Return valid JSON array.');
     const recursionResult = await runWithRecursion<string>(
       // Generate
       async (_iteration) => {
         const response = await grokLLM.invoke([
-          { role: "system", content: "You are a creative marketing copywriter for a luxury Belize resort. Create content emphasizing magic, mystique, and transformation. IMPORTANT: Every piece must include a direct booking advantage — Lina Point beats OTA prices by 6%, promo code DIRECT10 saves 10%, and loyalty members earn exclusive perks. Drive traffic to lina-point.com, not OTAs. Return valid JSON array." },
+          { role: "system", content: contentSystemPrompt },
           { role: "user", content: contentBrief }
         ]);
         return typeof response.content === 'string' ? response.content : String(response.content);
@@ -223,7 +227,7 @@ Format as JSON array: [{ type, platform, content, hashtags, cta }]`;
       // Refine
       async (output, feedback, _iteration) => {
         const refineResponse = await grokLLM.invoke([
-          { role: "system", content: "You are a creative marketing copywriter. Refine the content based on feedback. Return valid JSON array." },
+          { role: "system", content: refineSystemPrompt },
           { role: "user", content: `Improve this marketing content based on feedback:\n\nCurrent content:\n${output}\n\nFeedback:\n${feedback}\n\nReturn improved JSON array: [{ type, platform, content, hashtags, cta }]` }
         ]);
         return typeof refineResponse.content === 'string' ? refineResponse.content : String(refineResponse.content);
@@ -395,8 +399,9 @@ Generate JSON with:
 }`;
 
   try {
+    const analyticsSystemPrompt = await getActivePrompt('marketing_analytics', 'You are a marketing analytics expert. Return valid JSON.');
     const response = await grokLLM.invoke([
-      { role: "system", content: "You are a marketing analytics expert. Return valid JSON." },
+      { role: "system", content: analyticsSystemPrompt },
       { role: "user", content: analysisPrompt }
     ]);
 
