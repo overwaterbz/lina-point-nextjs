@@ -1,104 +1,142 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from 'react';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
+
+interface Reservation {
+  id: string;
+  confirmation_number: string;
+  room_type: string;
+  check_in: string;
+  check_out: string;
+  status: string;
+}
 
 export default function DashboardPage() {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
-  const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (!error) {
-      router.push('/auth/login');
-    }
-  };
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const supabase = createBrowserSupabaseClient();
+      try {
+        const { data } = await supabase
+          .from('reservations')
+          .select('id, confirmation_number, room_type, check_in, check_out, status')
+          .eq('user_id', user.id)
+          .order('check_in', { ascending: true })
+          .limit(3);
+        setReservations(data || []);
+      } catch {}
+    })();
+  }, [user]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return null;
+
+  const upcoming = reservations.filter(
+    (r) => r.status === 'confirmed' && new Date(r.check_in) >= new Date()
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <button
-              onClick={handleSignOut}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition"
-            >
-              Sign Out
-            </button>
-          </div>
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}!
+        </h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Here&apos;s what&apos;s happening with your Lina Point experience.
+        </p>
+      </header>
+
+      {/* Onboarding prompt */}
+      {!profile?.opt_in_magic && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <h3 className="font-semibold text-amber-800">Complete your profile ✨</h3>
+          <p className="text-sm text-amber-700 mt-1">
+            Enable agent permissions to unlock personalized songs, videos, and curated experiences.
+          </p>
+          <button
+            onClick={() => router.push('/onboarding')}
+            className="mt-3 rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+          >
+            Finish onboarding
+          </button>
         </div>
-      </nav>
+      )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-3xl font-bold mb-6 text-gray-900">Welcome!</h2>
+      {/* Quick actions */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Link
+          href="/dashboard/reservations"
+          className="bg-white rounded-lg shadow hover:shadow-md transition p-5 group"
+        >
+          <p className="text-2xl mb-2">🗓️</p>
+          <h3 className="font-semibold text-gray-900 group-hover:text-teal-700">My Reservations</h3>
+          <p className="text-sm text-gray-500 mt-1">View, modify, or cancel bookings</p>
+        </Link>
+        <Link
+          href="/dashboard/tours"
+          className="bg-white rounded-lg shadow hover:shadow-md transition p-5 group"
+        >
+          <p className="text-2xl mb-2">🌊</p>
+          <h3 className="font-semibold text-gray-900 group-hover:text-teal-700">Tours & Activities</h3>
+          <p className="text-sm text-gray-500 mt-1">Browse and book island adventures</p>
+        </Link>
+        <Link
+          href="/dashboard/magic"
+          className="bg-white rounded-lg shadow hover:shadow-md transition p-5 group"
+        >
+          <p className="text-2xl mb-2">✨</p>
+          <h3 className="font-semibold text-gray-900 group-hover:text-teal-700">Magic Content</h3>
+          <p className="text-sm text-gray-500 mt-1">Personalized songs & videos</p>
+        </Link>
+      </section>
 
-          {!profile?.opt_in_magic && (
-            <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <h3 className="text-lg font-semibold text-amber-800">Complete onboarding</h3>
-              <p className="text-sm text-amber-700">
-                Enable agent permissions and preferences to unlock personalized experiences.
-              </p>
-              <button
-                onClick={() => router.push('/onboarding')}
-                className="mt-3 inline-flex items-center rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
-              >
-                Finish onboarding
-              </button>
-            </div>
-          )}
-
-          {/* User info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">Profile Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Email</p>
-                <p className="text-lg font-medium text-gray-900">{user?.email || 'N/A'}</p>
-              </div>
-              {profile?.full_name && (
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Full Name</p>
-                  <p className="text-lg font-medium text-gray-900">{profile.full_name}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-sm text-gray-600 mb-1">User ID</p>
-                <p className="text-sm text-gray-700 break-all">{user?.id}</p>
-              </div>
-              {profile?.created_at && (
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Member Since</p>
-                  <p className="text-lg font-medium text-gray-900">
-                    {new Date(profile.created_at).toLocaleDateString()}
+      {/* Upcoming reservations */}
+      <section className="bg-white rounded-lg shadow p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900">Upcoming Stays</h2>
+          <Link href="/dashboard/reservations" className="text-sm text-teal-600 hover:text-teal-800">
+            View all →
+          </Link>
+        </div>
+        {upcoming.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-3xl mb-2">🏖️</p>
+            <p className="text-sm text-gray-500">No upcoming reservations. Ready to plan your next getaway?</p>
+            <Link
+              href="/rooms"
+              className="inline-block mt-3 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+            >
+              Browse Rooms
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {upcoming.map((r) => (
+              <div key={r.id} className="flex items-center gap-4 p-3 rounded-lg bg-slate-50">
+                <div className="text-2xl">🏨</div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 capitalize">
+                    {r.room_type.replace(/_/g, ' ')}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(r.check_in).toLocaleDateString()} – {new Date(r.check_out).toLocaleDateString()}
                   </p>
                 </div>
-              )}
-            </div>
+                <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  {r.confirmation_number}
+                </span>
+              </div>
+            ))}
           </div>
-
-          {/* Quick start guide */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">Next Steps</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li>✓ Authentication is working!</li>
-              <li>✓ User profile is loaded from the database</li>
-              <li>→ Create reservations and manage your data</li>
-              <li>→ Update your profile information</li>
-              <li>→ Connect with other users</li>
-            </ul>
-          </div>
-        </div>
-      </main>
+        )}
+      </section>
     </div>
   );
 }

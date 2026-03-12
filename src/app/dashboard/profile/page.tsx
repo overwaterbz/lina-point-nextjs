@@ -2,10 +2,6 @@ import { createServerSupabaseClient } from '@/lib/supabase-server';
 import ProfileForm from '@/components/ProfileForm';
 import { updateProfileAction } from './actions';
 
-export const metadata = {
-  title: 'Profile',
-};
-
 export default async function ProfilePage() {
   const supabase = await createServerSupabaseClient();
 
