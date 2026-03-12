@@ -3,8 +3,12 @@
  *
  * Consolidated daily cron that handles:
  * 1. Pre-arrival packets (7 days before check-in)
- * 2. During-stay morning greetings
- * 3. Post-checkout follow-up & intelligence update
+ * 2. 48-hour pre-arrival follow-up
+ * 3. During-stay morning greetings
+ * 4. Auto-checkout & housekeeping
+ * 5. Auto check-in
+ * 6. Pre-arrival inspections
+ * 7. Post-checkout follow-up & intelligence update
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -30,6 +34,7 @@ export async function GET(request: NextRequest) {
 
     const results = {
       preArrival: { sent: 0, errors: 0 },
+      followUp48h: { sent: 0, errors: 0 },
       upsells: { offered: 0 },
       morningGreeting: { sent: 0, errors: 0 },
       autoCheckout: { processed: 0, housekeeping: 0 },
@@ -96,7 +101,44 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 2. During-stay morning greetings ────────────────────
+    // ── 2. 48-hour pre-arrival follow-up ──────────────────
+    const arrivals48h = await findUpcomingArrivals(supabase, 2)
+
+    for (const res of arrivals48h) {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('phone_number, full_name')
+          .eq('user_id', res.guest_id)
+          .maybeSingle()
+
+        if (!profile?.phone_number) continue
+
+        // Only send if not already messaged in last 24h
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        const { data: recentMsg } = await supabase
+          .from('whatsapp_messages')
+          .select('id')
+          .eq('phone_number', profile.phone_number)
+          .eq('direction', 'outbound')
+          .gte('created_at', oneDayAgo)
+          .limit(1)
+
+        if (recentMsg && recentMsg.length > 0) continue
+
+        const firstName = profile.full_name?.split(' ')[0] || 'there'
+        const roomLabel = (res.room_type || 'room').replace(/_/g, ' ')
+        const msg = `Hi ${firstName}! 🌊 Your Lina Point stay is just 2 days away! Your ${roomLabel} is being prepared. Any last-minute requests or questions? Just reply here — I'm Maya, your AI concierge. 🌴`
+
+        await sendWhatsAppMessage(profile.phone_number, msg)
+        results.followUp48h.sent++
+      } catch (err) {
+        console.error(`[DailyGuestOps] 48h follow-up error for ${res.id}:`, err)
+        results.followUp48h.errors++
+      }
+    }
+
+    // ── 3. During-stay morning greetings ────────────────────
     const today = new Date().toISOString().split('T')[0]
 
     const { data: inHouseGuests } = await supabase
@@ -154,7 +196,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 3. Auto-checkout & housekeeping tasks ─────────────────
+    // ── 4. Auto-checkout & housekeeping tasks ─────────────────
     // Mark as checked_out + create turnover housekeeping tasks
     const { data: departures } = await supabase
       .from('reservations')
@@ -189,7 +231,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 4. Auto check-in ────────────────────────────────────
+    // ── 5. Auto check-in ────────────────────────────────────
     // Transition confirmed reservations arriving today to checked_in
     const { data: arrivals2 } = await supabase
       .from('reservations')
@@ -209,7 +251,7 @@ export async function GET(request: NextRequest) {
       // Create inspection task for arriving room
     }
 
-    // ── 5. Create inspection tasks for tomorrow's arrivals ──
+    // ── 6. Create inspection tasks for tomorrow's arrivals ──
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
     const tomorrowStr = tomorrow.toISOString().split('T')[0]
@@ -246,7 +288,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 6. Post-checkout intelligence update ────────────────
+    // ── 7. Post-checkout intelligence update ────────────────
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStr = yesterday.toISOString().split('T')[0]

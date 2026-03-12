@@ -8,6 +8,7 @@ import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { grokLLM } from "@/lib/grokIntegration";
 import { runWithRecursion } from "@/lib/agents/agentRecursion";
 import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
+import { getActivePrompt } from "@/lib/agents/promptManager";
 
 const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
@@ -125,16 +126,12 @@ async function generateLyricsWithGrok(state: typeof ContentGenAnnotation.State) 
   try {
     debugLog(`[ContentAgent] Calling Grok-4 to generate lyrics/script...`);
 
+    const defaultContentPrompt = "You are a magical content creator specializing in personalized songs, videos, and audio experiences with Maya/kundalini themes.";
+    const systemPrompt = await getActivePrompt('content_agent', defaultContentPrompt);
+
     const response = await grokLLM.invoke([
-      {
-        role: "system",
-        content:
-          "You are a magical content creator specializing in personalized songs, videos, and audio experiences with Maya/kundalini themes.",
-      },
-      {
-        role: "user",
-        content: state.grokPrompt,
-      },
+      { role: "system", content: systemPrompt },
+      { role: "user", content: state.grokPrompt },
     ]);
 
     const lyrics = typeof response.content === "string" ? response.content : String(response.content);

@@ -12,6 +12,9 @@
 
 import { grokLLM } from '@/lib/grokIntegration'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
+import { runWithRecursion } from '@/lib/agents/agentRecursion'
+import { evaluateTextQuality } from '@/lib/agents/recursionEvaluators'
+import { getActivePrompt } from '@/lib/agents/promptManager'
 import { sendWhatsAppMessage } from '@/lib/whatsapp'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -92,7 +95,7 @@ export async function generatePreArrivalPacket(
       (1000 * 60 * 60 * 24),
   )
 
-  const systemPrompt = `You are Maya, the AI concierge at Lina Point Resort in San Pedro, Belize.
+  const defaultPrompt = `You are Maya, the AI concierge at Lina Point Resort in San Pedro, Belize.
 Generate a pre-arrival packet for a guest arriving in 7 days.
 
 Return a JSON object:
@@ -107,6 +110,8 @@ Return a JSON object:
 Available tours: Hol Chan Snorkeling ($95-150), Sport Fishing ($250-500), Mayan Ruins ($120-200), Cenote Swimming ($80-180), Mangrove Kayaking ($60-120), Blue Hole Diving ($180-450), Island Hopping ($100-200).
 Dining: Reef Restaurant (seafood, 7AM-10PM), Palapa Bar (cocktails, 11AM-midnight), Room Service (7AM-9PM).
 Return ONLY valid JSON, no markdown fences.`
+
+  const systemPrompt = await getActivePrompt('pre_arrival', defaultPrompt)
 
   const guestContext = JSON.stringify({
     name: guestName,
@@ -123,11 +128,29 @@ Return ONLY valid JSON, no markdown fences.`
   })
 
   try {
-    const response = await grokLLM.invoke([
-      new SystemMessage(systemPrompt),
-      new HumanMessage(guestContext),
-    ])
-    const text = typeof response.content === 'string' ? response.content : String(response.content)
+    const { result: text } = await runWithRecursion<string>(
+      async () => {
+        const response = await grokLLM.invoke([
+          new SystemMessage(systemPrompt),
+          new HumanMessage(guestContext),
+        ])
+        return typeof response.content === 'string' ? response.content : String(response.content)
+      },
+      async (output) => {
+        const evalResult = await evaluateTextQuality(
+          'Generate a personalized pre-arrival packet as valid JSON with weather, tours, dining, tips, and WhatsApp message',
+          output,
+        )
+        return { ...evalResult, data: output }
+      },
+      async (_prev, feedback) => {
+        const response = await grokLLM.invoke([
+          new SystemMessage(systemPrompt),
+          new HumanMessage(`${guestContext}\n\nPrevious attempt feedback: ${feedback}\nPlease improve the output.`),
+        ])
+        return typeof response.content === 'string' ? response.content : String(response.content)
+      },
+    )
     const cleaned = text.replace(/```json\n?/g, '').replace(/```/g, '').trim()
     const packet = JSON.parse(cleaned)
 

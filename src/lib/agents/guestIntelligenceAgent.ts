@@ -8,6 +8,9 @@
 
 import { grokLLM } from '@/lib/grokIntegration'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
+import { runWithRecursion } from '@/lib/agents/agentRecursion'
+import { evaluateTextQuality } from '@/lib/agents/recursionEvaluators'
+import { getActivePrompt } from '@/lib/agents/promptManager'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface GuestInsights {
@@ -104,7 +107,7 @@ export async function analyzeGuest(
     2,
   )
 
-  const systemPrompt = `You are a luxury hospitality AI analyst for Lina Point Resort (San Pedro, Belize).
+  const defaultPrompt = `You are a luxury hospitality AI analyst for Lina Point Resort (San Pedro, Belize).
 Analyze this guest's complete history and return a JSON object with EXACTLY these fields:
 {
   "travelStyle": "adventure" | "relaxation" | "romantic" | "family" | "cultural",
@@ -123,12 +126,32 @@ Rules:
 - budgetTier: based on spending patterns and room choices
 - Return ONLY valid JSON, no markdown fences.`
 
+  const systemPrompt = await getActivePrompt('guest_intelligence', defaultPrompt)
+
   try {
-    const response = await grokLLM.invoke([
-      new SystemMessage(systemPrompt),
-      new HumanMessage(guestData),
-    ])
-    const text = typeof response.content === 'string' ? response.content : String(response.content)
+    const { result: text } = await runWithRecursion<string>(
+      async () => {
+        const response = await grokLLM.invoke([
+          new SystemMessage(systemPrompt),
+          new HumanMessage(guestData),
+        ])
+        return typeof response.content === 'string' ? response.content : String(response.content)
+      },
+      async (output) => {
+        const evalResult = await evaluateTextQuality(
+          'Analyze guest history and return detailed preference profile as valid JSON with all required fields',
+          output,
+        )
+        return { ...evalResult, data: output }
+      },
+      async (_prev, feedback) => {
+        const response = await grokLLM.invoke([
+          new SystemMessage(systemPrompt),
+          new HumanMessage(`${guestData}\n\nPrevious attempt feedback: ${feedback}\nPlease improve the analysis.`),
+        ])
+        return typeof response.content === 'string' ? response.content : String(response.content)
+      },
+    )
     const cleaned = text.replace(/```json\n?/g, '').replace(/```/g, '').trim()
     const insights: GuestInsights = JSON.parse(cleaned)
     return insights

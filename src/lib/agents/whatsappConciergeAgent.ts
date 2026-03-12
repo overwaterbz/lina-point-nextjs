@@ -3,6 +3,7 @@ import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages
 import { grokLLM } from '@/lib/grokIntegration';
 import { runWithRecursion } from '@/lib/agents/agentRecursion';
 import { evaluateTextQuality } from '@/lib/agents/recursionEvaluators';
+import { getActivePrompt } from '@/lib/agents/promptManager';
 
 export interface WhatsAppProfile {
   user_id?: string | null;
@@ -56,7 +57,18 @@ const ConciergeState = Annotation.Root({
   action: Annotation<{ type: ConciergeActionType; payload?: Record<string, any> } | null>,
 });
 
-function buildSystemPrompt(profile: WhatsAppProfile | null, refinementHint?: string) {
+const DEFAULT_CONCIERGE_PROMPT = `You are Maya, the AI concierge at Lina Point — an overwater resort on the Caribbean Sea in San Pedro, Ambergris Caye, Belize.
+
+RESORT KNOWLEDGE:
+- Rooms: Overwater Cabanas ($199+/night), 2nd Floor Suites ($249+), 1st Floor Suites ($299+). All have ocean views.
+- Check-in 3 PM, Check-out 11 AM. Minimum 2-night stay.
+- Dining: Reef Restaurant (seafood, 7AM-10PM), Palapa Bar (cocktails, 11AM-midnight), Room Service (7AM-9PM).
+- Tours: Hol Chan Marine Reserve snorkeling ($95-150), Sport Fishing ($250-500), Mayan Ruins day trip ($120-200), Cenote swimming ($80-180), Mangrove kayaking ($60-120).
+- Water taxi from Belize City ~90 min, or local flights via Tropic Air (~15 min).
+- Wi-Fi included. Kayaks & paddleboards complimentary. Dive shop on-site.
+- Magic Experiences: Personalized birthday/anniversary songs & videos created by AI. Guests can opt in.`;
+
+async function buildSystemPrompt(profile: WhatsAppProfile | null, refinementHint?: string) {
   const prefs = profile
     ? {
         name: profile.full_name,
@@ -72,16 +84,9 @@ function buildSystemPrompt(profile: WhatsAppProfile | null, refinementHint?: str
   const hasName = profile?.full_name;
   const refinement = refinementHint ? `\nRefinement: ${refinementHint}` : '';
 
-  return `You are Maya, the AI concierge at Lina Point — an overwater resort on the Caribbean Sea in San Pedro, Ambergris Caye, Belize.
+  const basePrompt = await getActivePrompt('whatsapp_concierge', DEFAULT_CONCIERGE_PROMPT);
 
-RESORT KNOWLEDGE:
-- Rooms: Overwater Cabanas ($199+/night), 2nd Floor Suites ($249+), 1st Floor Suites ($299+). All have ocean views.
-- Check-in 3 PM, Check-out 11 AM. Minimum 2-night stay.
-- Dining: Reef Restaurant (seafood, 7AM-10PM), Palapa Bar (cocktails, 11AM-midnight), Room Service (7AM-9PM).
-- Tours: Hol Chan Marine Reserve snorkeling ($95-150), Sport Fishing ($250-500), Mayan Ruins day trip ($120-200), Cenote swimming ($80-180), Mangrove kayaking ($60-120).
-- Water taxi from Belize City ~90 min, or local flights via Tropic Air (~15 min).
-- Wi-Fi included. Kayaks & paddleboards complimentary. Dive shop on-site.
-- Magic Experiences: Personalized birthday/anniversary songs & videos created by AI. Guests can opt in.
+  return `${basePrompt}
 
 GUEST PREFERENCES: ${JSON.stringify(prefs)}
 
@@ -253,7 +258,7 @@ export async function runWhatsAppConciergeAgent(
 ): Promise<WhatsAppAgentOutput> {
   const graph = new StateGraph(ConciergeState)
     .addNode('respond', async (state) => {
-      const systemPrompt = buildSystemPrompt(state.profile, state.refinementHint);
+      const systemPrompt = await buildSystemPrompt(state.profile, state.refinementHint);
       const history = state.sessionContext.messages.slice(-5).map((msg) =>
         msg.role === 'user'
           ? new HumanMessage(msg.content)

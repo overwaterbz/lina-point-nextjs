@@ -6,6 +6,7 @@
 import { grokLLM } from "@/lib/grokIntegration";
 import { runWithRecursion } from "@/lib/agents/agentRecursion";
 import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
+import { getActivePrompt } from "@/lib/agents/promptManager";
 
 // Export for type reference in book-flow
 export interface UserPreferences {
@@ -291,17 +292,18 @@ async function generateRecommendations(
   groupSize: number,
   hint?: string
 ): Promise<string[]> {
+  const defaultSystemPrompt = `You are a Belize travel expert at Lina Point Resort. Provide brief, personalized tour and activity recommendations. Return as JSON array of strings, max 100 chars each.`;
+  const systemPrompt = await getActivePrompt('experience_curator', defaultSystemPrompt);
+
   try {
-    const prompt = `As a Belize travel expert, provide 2-3 brief personalized recommendations for a ${groupSize}-person group with interests in: ${prefs.interests?.join(", ") || "general tourism"}. 
+    const prompt = `Provide 2-3 brief personalized recommendations for a ${groupSize}-person group with interests in: ${prefs.interests?.join(", ") || "general tourism"}. 
     Activity level: ${prefs.activityLevel || "medium"}. Budget tier: ${prefs.budget || "mid"}.
     ${hint ? `Refinement: ${hint}` : ""}
     Return as JSON array of strings, max 100 chars each.`;
 
     const response = await grokLLM.invoke([
-      {
-        role: "user",
-        content: prompt,
-      },
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt },
     ]);
 
     const content = response.content;

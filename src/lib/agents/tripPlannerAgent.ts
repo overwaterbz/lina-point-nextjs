@@ -7,6 +7,9 @@
 
 import { grokLLM } from '@/lib/grokIntegration'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
+import { runWithRecursion } from '@/lib/agents/agentRecursion'
+import { evaluateTextQuality } from '@/lib/agents/recursionEvaluators'
+import { getActivePrompt } from '@/lib/agents/promptManager'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface ItineraryDay {
@@ -54,7 +57,7 @@ export async function generateTripPlan(
   )
   const guestName = profile?.full_name?.split(' ')[0] || 'Guest'
 
-  const systemPrompt = `You are Maya, the AI concierge trip planner at Lina Point Resort, San Pedro, Belize.
+  const defaultPrompt = `You are Maya, the AI concierge trip planner at Lina Point Resort, San Pedro, Belize.
 
 Create a day-by-day itinerary. Return ONLY a valid JSON object:
 {
@@ -93,6 +96,8 @@ RULES:
 - WhatsApp formatted text should use *bold* and emojis, under 1600 chars
 - Return ONLY valid JSON, no markdown fences.`
 
+  const systemPrompt = await getActivePrompt('trip_planner', defaultPrompt)
+
   const context = JSON.stringify({
     guestName,
     checkIn: params.checkIn,
@@ -108,11 +113,29 @@ RULES:
   })
 
   try {
-    const response = await grokLLM.invoke([
-      new SystemMessage(systemPrompt),
-      new HumanMessage(context),
-    ])
-    const text = typeof response.content === 'string' ? response.content : String(response.content)
+    const { result: text } = await runWithRecursion<string>(
+      async () => {
+        const response = await grokLLM.invoke([
+          new SystemMessage(systemPrompt),
+          new HumanMessage(context),
+        ])
+        return typeof response.content === 'string' ? response.content : String(response.content)
+      },
+      async (output) => {
+        const evalResult = await evaluateTextQuality(
+          'Generate a detailed, personalized trip itinerary as valid JSON with days, costs, and WhatsApp formatting',
+          output,
+        )
+        return { ...evalResult, data: output }
+      },
+      async (_prev, feedback) => {
+        const response = await grokLLM.invoke([
+          new SystemMessage(systemPrompt),
+          new HumanMessage(`${context}\n\nPrevious attempt feedback: ${feedback}\nPlease improve the output.`),
+        ])
+        return typeof response.content === 'string' ? response.content : String(response.content)
+      },
+    )
     const cleaned = text.replace(/```json\n?/g, '').replace(/```/g, '').trim()
     return JSON.parse(cleaned)
   } catch {

@@ -12,6 +12,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { grokLLM } from '@/lib/grokIntegration';
+import { runWithRecursion } from '@/lib/agents/agentRecursion';
+import { evaluateTextQuality } from '@/lib/agents/recursionEvaluators';
+import { getActivePrompt } from '@/lib/agents/promptManager';
 import { runSelfImprovementAndPersist } from '@/lib/agents/selfImprovementAgent';
 
 const supabase = createClient(
@@ -131,31 +134,49 @@ async function analyzeErrorPatterns(
 
   const unhealthyEndpoints = endpointChecks.filter(c => c.status !== 'healthy');
 
-  try {
-    const response = await grokLLM.invoke([
-      {
-        role: 'system',
-        content: `You are a system diagnostics AI for Lina Point Resort. Analyze errors and return JSON:
+  const defaultPrompt = `You are a system diagnostics AI for Lina Point Resort. Analyze errors and return JSON:
 {
   "patterns": ["pattern1", "pattern2"],
   "recommendations": ["fix1", "fix2"],
   "severity": "low|medium|high|critical"
 }
 
-Be specific and actionable. Group related errors. Prioritize by impact on guest experience.`,
-      },
-      {
-        role: 'user',
-        content: JSON.stringify({
-          recentFailures: failureSummary,
-          unhealthyEndpoints,
-          totalFailures24h: failures.length,
-          failuresByAgent: groupBy(failures, 'agent_name'),
-        }),
-      },
-    ]);
+Be specific and actionable. Group related errors. Prioritize by impact on guest experience.`;
 
-    const content = typeof response.content === 'string' ? response.content : String(response.content);
+  const systemPrompt = await getActivePrompt('health_monitor', defaultPrompt);
+
+  const analysisInput = JSON.stringify({
+    recentFailures: failureSummary,
+    unhealthyEndpoints,
+    totalFailures24h: failures.length,
+    failuresByAgent: groupBy(failures, 'agent_name'),
+  });
+
+  try {
+    const { result: content } = await runWithRecursion<string>(
+      async () => {
+        const response = await grokLLM.invoke([
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: analysisInput },
+        ]);
+        return typeof response.content === 'string' ? response.content : String(response.content);
+      },
+      async (output) => {
+        const evalResult = await evaluateTextQuality(
+          'Analyze system errors and produce actionable diagnostic patterns and recommendations as valid JSON',
+          output,
+        );
+        return { ...evalResult, data: output };
+      },
+      async (_prev, feedback) => {
+        const response = await grokLLM.invoke([
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `${analysisInput}\n\nPrevious attempt feedback: ${feedback}\nPlease improve.` },
+        ]);
+        return typeof response.content === 'string' ? response.content : String(response.content);
+      },
+    );
+
     const parsed = JSON.parse(content.replace(/```json?\n?/g, '').replace(/```/g, '').trim());
     
     return {
