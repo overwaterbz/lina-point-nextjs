@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/hooks/useAuth";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import toast from "react-hot-toast";
@@ -72,18 +71,14 @@ export default function MagicPage() {
   };
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              ✨ Your Magic Moments
-            </h1>
-            <p className="text-lg text-gray-600">
-              Personalized songs and videos celebrating your Lina Point experience
-            </p>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <header>
+        <h1 className="text-2xl font-bold text-gray-900">✨ Your Magic Moments</h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Personalized songs and videos celebrating your Lina Point experience
+        </p>
+      </header>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -227,8 +222,6 @@ export default function MagicPage() {
               ))}
             </div>
           )}
-        </div>
-      </div>
-    </ProtectedRoute>
+    </div>
   );
 }

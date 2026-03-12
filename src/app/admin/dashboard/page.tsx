@@ -41,30 +41,37 @@ export default async function AdminDashboardPage() {
     .limit(10);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 px-6 py-10">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <header>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600">System metrics, agent performance, and manual triggers.</p>
-        </header>
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
+        <p className="text-sm text-gray-600">System metrics, agent performance, and manual triggers.</p>
+      </header>
 
-        {/* Quick Navigation */}
-        <section className="grid gap-4 md:grid-cols-3">
-          <a href="/admin/revenue" className="bg-gradient-to-br from-teal-500 to-teal-700 rounded-lg shadow p-6 text-white hover:shadow-lg transition-shadow">
-            <h2 className="text-xl font-semibold">📊 Revenue Dashboard</h2>
-            <p className="text-sm mt-1 opacity-90">Occupancy, revenue breakdown, upsell performance</p>
-          </a>
-          <a href="/admin/marketing-dashboard" className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg shadow p-6 text-white hover:shadow-lg transition-shadow">
-            <h2 className="text-xl font-semibold">📱 Marketing Dashboard</h2>
-            <p className="text-sm mt-1 opacity-90">Campaigns, social media, content calendar</p>
-          </a>
-          <a href="/admin/whatsapp" className="bg-gradient-to-br from-green-500 to-green-700 rounded-lg shadow p-6 text-white hover:shadow-lg transition-shadow">
-            <h2 className="text-xl font-semibold">💬 WhatsApp Concierge</h2>
-            <p className="text-sm mt-1 opacity-90">Guest conversations, automated responses</p>
-          </a>
-        </section>
+      {/* KPI cards */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="bg-white rounded-lg shadow p-5">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">Reservations</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{(bookingAnalytics || []).length}</p>
+          <p className="text-xs text-gray-400 mt-1">Recent</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-5">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">Agent Runs</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{(agentRuns || []).length}</p>
+          <p className="text-xs text-gray-400 mt-1">Last 10</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-5">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">Magic Content</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{(magicContent || []).length}</p>
+          <p className="text-xs text-gray-400 mt-1">Items</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-5">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">Prompt Updates</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{(promptUpdates || []).length}</p>
+          <p className="text-xs text-gray-400 mt-1">Latest</p>
+        </div>
+      </section>
 
-        <section className="grid gap-6 md:grid-cols-2">
+      <section className="grid gap-6 md:grid-cols-2">
           <form action={triggerN8nAction} className="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 className="text-xl font-semibold text-gray-900">Trigger n8n Workflow</h2>
             <p className="text-sm text-gray-600">
@@ -168,7 +175,6 @@ export default async function AdminDashboardPage() {
             ))}
           </div>
         </section>
-      </div>
     </div>
   );
 }
