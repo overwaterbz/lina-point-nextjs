@@ -156,7 +156,12 @@ export async function runPricingOptimization(): Promise<PricingOptimizationResul
       roomType: r.room_type,
       multiplier: r.multiplier,
       priority: r.priority,
-      conditions: r.conditions,
+      startDate: r.start_date,
+      endDate: r.end_date,
+      minOccupancy: r.min_occupancy_pct,
+      minDaysBefore: r.min_days_before,
+      maxDaysBefore: r.max_days_before,
+      loyaltyTier: r.loyalty_tier,
     })),
     propertyInfo: {
       totalRooms: 16,
