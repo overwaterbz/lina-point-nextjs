@@ -127,6 +127,7 @@ export async function createReservation(
 
 /**
  * Mark a reservation as paid after payment webhook confirms success.
+ * Also generates an invoice automatically.
  */
 export async function markReservationPaid(
   supabase: SupabaseClient,
@@ -144,7 +145,7 @@ export async function markReservationPaid(
     })
     .eq('booking_id', bookingId)
     .eq('payment_status', 'pending') // idempotent: only update if still pending
-    .select('id, confirmation_number')
+    .select('id, confirmation_number, guest_id, room_type, base_rate, nights, total_room_cost, total_amount, check_in, check_out')
     .maybeSingle()
 
   if (error) {
@@ -152,7 +153,95 @@ export async function markReservationPaid(
     return null
   }
 
-  return data?.confirmation_number || null
+  if (!data) return null
+
+  // Auto-generate invoice
+  try {
+    await generateInvoice(supabase, data)
+  } catch (invErr) {
+    console.warn('[BookingFulfillment] Invoice generation failed:', invErr)
+  }
+
+  return data.confirmation_number || null
+}
+
+/**
+ * Generate an invoice for a paid reservation.
+ */
+async function generateInvoice(
+  supabase: SupabaseClient,
+  reservation: {
+    id: string
+    confirmation_number: string
+    guest_id: string
+    room_type: string
+    base_rate: number
+    nights: number
+    total_room_cost: number
+    total_amount: number
+  },
+): Promise<void> {
+  // Check if invoice already exists for this reservation
+  const { data: existing } = await supabase
+    .from('invoices')
+    .select('id')
+    .eq('reservation_id', reservation.id)
+    .maybeSingle()
+
+  if (existing) return // already invoiced
+
+  const roomCost = Number(reservation.total_room_cost) || Number(reservation.total_amount) || 0
+  const taxRate = 0.125 // 12.5% Belize GST
+  const subtotal = roomCost
+  const taxAmount = Math.round(subtotal * taxRate * 100) / 100
+  const total = Math.round((subtotal + taxAmount) * 100) / 100
+
+  // Build line items
+  const items = [
+    {
+      description: `${reservation.room_type} — ${reservation.nights} night${reservation.nights === 1 ? '' : 's'} @ $${Number(reservation.base_rate).toFixed(2)}/night`,
+      quantity: reservation.nights,
+      unit_price: Number(reservation.base_rate),
+      total: Number(reservation.total_room_cost),
+    },
+  ]
+
+  // Check for tour bookings associated with same booking
+  const { data: tours } = await supabase
+    .from('tour_bookings')
+    .select('total_price, num_guests, tours(name)')
+    .eq('user_id', reservation.guest_id)
+    .eq('status', 'paid') as any
+
+  for (const tb of tours || []) {
+    if (tb.total_price > 0) {
+      items.push({
+        description: `Tour: ${tb.tours?.name || 'Activity'}`,
+        quantity: tb.num_guests || 1,
+        unit_price: Number(tb.total_price) / (tb.num_guests || 1),
+        total: Number(tb.total_price),
+      })
+    }
+  }
+
+  // Generate invoice number: INV-YYYYMMDD-XXXX
+  const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '')
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase()
+  const invoiceNumber = `INV-${dateStr}-${rand}`
+
+  await supabase.from('invoices').insert({
+    reservation_id: reservation.id,
+    guest_id: reservation.guest_id,
+    invoice_number: invoiceNumber,
+    items: JSON.stringify(items),
+    subtotal,
+    tax_rate: taxRate,
+    tax_amount: taxAmount,
+    total,
+    status: 'paid',
+    issued_at: new Date().toISOString(),
+    paid_at: new Date().toISOString(),
+  })
 }
 
 /**

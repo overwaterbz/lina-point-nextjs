@@ -94,6 +94,30 @@ export default function CalendarPage() {
     return reservations.filter((r) => r.room_type === roomType);
   };
 
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const handleStatusChange = async (resId: string, newStatus: string) => {
+    setActionLoading(resId);
+    try {
+      const res = await fetch(`/api/admin/reservations/${resId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Failed');
+        return;
+      }
+      // Refresh reservations
+      setReservations(prev => prev.map(r => r.id === resId ? { ...r, status: newStatus } : r));
+    } catch {
+      alert('Network error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -260,8 +284,22 @@ export default function CalendarPage() {
                 .filter((r) => r.check_in === today.toISOString().split('T')[0])
                 .map((r) => (
                   <div key={r.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">{r.guest_name || r.confirmation_number}</span>
-                    <span className="text-gray-500">{ROOM_LABELS[r.room_type]}</span>
+                    <div>
+                      <span className="text-gray-700">{r.guest_name || r.confirmation_number}</span>
+                      <span className="text-gray-400 text-xs ml-2">{ROOM_LABELS[r.room_type]}</span>
+                    </div>
+                    {r.status === 'confirmed' && (
+                      <button
+                        onClick={() => handleStatusChange(r.id, 'checked_in')}
+                        disabled={actionLoading === r.id}
+                        className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {actionLoading === r.id ? '…' : 'Check In'}
+                      </button>
+                    )}
+                    {r.status === 'checked_in' && (
+                      <span className="text-xs text-blue-600 font-medium">✓ Checked In</span>
+                    )}
                   </div>
                 ))}
             </div>
@@ -277,8 +315,22 @@ export default function CalendarPage() {
                 .filter((r) => r.check_out === today.toISOString().split('T')[0])
                 .map((r) => (
                   <div key={r.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">{r.guest_name || r.confirmation_number}</span>
-                    <span className="text-gray-500">{ROOM_LABELS[r.room_type]}</span>
+                    <div>
+                      <span className="text-gray-700">{r.guest_name || r.confirmation_number}</span>
+                      <span className="text-gray-400 text-xs ml-2">{ROOM_LABELS[r.room_type]}</span>
+                    </div>
+                    {(r.status === 'confirmed' || r.status === 'checked_in') && (
+                      <button
+                        onClick={() => handleStatusChange(r.id, 'checked_out')}
+                        disabled={actionLoading === r.id}
+                        className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 disabled:opacity-50"
+                      >
+                        {actionLoading === r.id ? '…' : 'Check Out'}
+                      </button>
+                    )}
+                    {r.status === 'checked_out' && (
+                      <span className="text-xs text-gray-500 font-medium">✓ Checked Out</span>
+                    )}
                   </div>
                 ))}
             </div>
