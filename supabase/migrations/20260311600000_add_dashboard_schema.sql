@@ -1,17 +1,11 @@
--- Phase 7: Dashboard Schema — roles, housekeeping, tours catalog, invoices, notifications, AI insights, admin activity
+-- Phase 8: Dashboard Schema — roles, housekeeping, tours catalog, invoices, notifications, AI insights, admin activity
 -- Run in Supabase SQL Editor
+-- SAFE TO RE-RUN: uses IF NOT EXISTS + DROP POLICY IF EXISTS throughout
 
 -- ── Add role column to profiles ─────────────────────────────
 ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'guest'
 CHECK (role IN ('owner', 'manager', 'front_desk', 'guest'));
-
--- Set owner role for the admin email
-UPDATE public.profiles
-SET role = 'owner'
-WHERE user_id IN (
-  SELECT id FROM auth.users WHERE email = ANY(string_to_array(current_setting('app.admin_emails', true), ','))
-);
 
 -- ── Tours Catalog ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS tours (
@@ -29,7 +23,7 @@ CREATE TABLE IF NOT EXISTS tours (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Seed the 7 Belize tours from the experience curator
+-- Seed the 7 Belize tours (skip if name already exists)
 INSERT INTO tours (name, description, provider, price, duration_hours, category, max_guests) VALUES
   ('Hol Chan & Shark Ray Alley', 'Snorkel the world-famous Hol Chan Marine Reserve and swim with nurse sharks and rays at Shark Ray Alley.', 'Dee Kay''s Tours', 75, 3, 'water', 12),
   ('Blue Hole Flight + Dive', 'Scenic flight over the Great Blue Hole followed by a guided dive into the ancient sinkhole.', 'Dee Kay''s Tours', 350, 6, 'water', 8),
@@ -42,6 +36,35 @@ ON CONFLICT DO NOTHING;
 
 CREATE INDEX IF NOT EXISTS idx_tours_active ON tours(active);
 CREATE INDEX IF NOT EXISTS idx_tours_category ON tours(category);
+
+-- ── Drop old tour_bookings from Phase 1 migration ──────────
+-- Old schema had tour_name/tour_type/price columns; new schema needs tour_id FK to tours table
+DROP POLICY IF EXISTS "Users can view own tour bookings" ON tour_bookings;
+DROP POLICY IF EXISTS "Users can insert tour bookings" ON tour_bookings;
+DROP POLICY IF EXISTS "Users can update own tour bookings" ON tour_bookings;
+DROP TABLE IF EXISTS tour_bookings;
+
+-- ── Tour Bookings (new schema with FK to tours) ────────────
+CREATE TABLE tour_bookings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  tour_id UUID NOT NULL REFERENCES tours(id),
+  tour_date DATE NOT NULL,
+  num_guests INT DEFAULT 1,
+  total_price NUMERIC(10,2) NOT NULL DEFAULT 0,
+  status TEXT DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tour_bookings_user ON tour_bookings(user_id);
+CREATE INDEX IF NOT EXISTS idx_tour_bookings_tour ON tour_bookings(tour_id);
+CREATE INDEX IF NOT EXISTS idx_tour_bookings_date ON tour_bookings(tour_date);
+
+ALTER TABLE tour_bookings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Guests see own tour bookings" ON tour_bookings FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Guests insert own tour bookings" ON tour_bookings FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Service role full access tour_bookings" ON tour_bookings FOR ALL USING (auth.role() = 'service_role');
 
 -- ── Housekeeping Tasks ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS housekeeping_tasks (
@@ -132,67 +155,6 @@ CREATE TABLE IF NOT EXISTS admin_activity (
 CREATE INDEX IF NOT EXISTS idx_admin_activity_user ON admin_activity(user_id);
 CREATE INDEX IF NOT EXISTS idx_admin_activity_page ON admin_activity(page);
 
--- ── RLS Policies ────────────────────────────────────────────
-
--- Tours: public read, admin write
-ALTER TABLE tours ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public can read active tours" ON tours FOR SELECT USING (active = true);
-CREATE POLICY "Service role full access tours" ON tours FOR ALL USING (auth.role() = 'service_role');
-
--- Housekeeping: staff+ can read/write
-ALTER TABLE housekeeping_tasks ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access housekeeping" ON housekeeping_tasks FOR ALL USING (auth.role() = 'service_role');
-CREATE POLICY "Staff can read housekeeping" ON housekeeping_tasks FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role IN ('owner', 'manager', 'front_desk'))
-);
-CREATE POLICY "Staff can update housekeeping" ON housekeeping_tasks FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role IN ('owner', 'manager', 'front_desk'))
-);
-
--- Invoices: guests see own, staff see all
-ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Guests see own invoices" ON invoices FOR SELECT USING (guest_id = auth.uid());
-CREATE POLICY "Service role full access invoices" ON invoices FOR ALL USING (auth.role() = 'service_role');
-
--- Notifications: users see own + broadcasts
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see own notifications" ON notifications FOR SELECT USING (user_id = auth.uid() OR user_id IS NULL);
-CREATE POLICY "Users mark own as read" ON notifications FOR UPDATE USING (user_id = auth.uid());
-CREATE POLICY "Service role full access notifications" ON notifications FOR ALL USING (auth.role() = 'service_role');
-
--- AI Insights: admin-only
-ALTER TABLE ai_insights ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access insights" ON ai_insights FOR ALL USING (auth.role() = 'service_role');
-CREATE POLICY "Staff can read insights" ON ai_insights FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role IN ('owner', 'manager'))
-);
-
--- Admin Activity: service role only
-ALTER TABLE admin_activity ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access admin_activity" ON admin_activity FOR ALL USING (auth.role() = 'service_role');
-
--- ── Tour Bookings ───────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS tour_bookings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  tour_id UUID NOT NULL REFERENCES tours(id),
-  tour_date DATE NOT NULL,
-  num_guests INT DEFAULT 1,
-  total_price NUMERIC(10,2) NOT NULL DEFAULT 0,
-  status TEXT DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_tour_bookings_user ON tour_bookings(user_id);
-CREATE INDEX IF NOT EXISTS idx_tour_bookings_tour ON tour_bookings(tour_id);
-CREATE INDEX IF NOT EXISTS idx_tour_bookings_date ON tour_bookings(tour_date);
-
-ALTER TABLE tour_bookings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Guests see own tour bookings" ON tour_bookings FOR SELECT USING (user_id = auth.uid());
-CREATE POLICY "Guests insert own tour bookings" ON tour_bookings FOR INSERT WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Service role full access tour_bookings" ON tour_bookings FOR ALL USING (auth.role() = 'service_role');
-
 -- ── Price Overrides ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS price_overrides (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -207,11 +169,68 @@ CREATE TABLE IF NOT EXISTS price_overrides (
 CREATE INDEX IF NOT EXISTS idx_price_overrides_dates ON price_overrides(date_start, date_end);
 CREATE INDEX IF NOT EXISTS idx_price_overrides_room_type ON price_overrides(room_type);
 
+-- ── RLS Policies ────────────────────────────────────────────
+-- Using DROP IF EXISTS + CREATE to be re-runnable
+
+-- Tours: public read, admin write
+ALTER TABLE tours ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can read active tours" ON tours;
+CREATE POLICY "Public can read active tours" ON tours FOR SELECT USING (active = true);
+DROP POLICY IF EXISTS "Service role full access tours" ON tours;
+CREATE POLICY "Service role full access tours" ON tours FOR ALL USING (auth.role() = 'service_role');
+
+-- Housekeeping: staff+ can read/write
+ALTER TABLE housekeeping_tasks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access housekeeping" ON housekeeping_tasks;
+CREATE POLICY "Service role full access housekeeping" ON housekeeping_tasks FOR ALL USING (auth.role() = 'service_role');
+DROP POLICY IF EXISTS "Staff can read housekeeping" ON housekeeping_tasks;
+CREATE POLICY "Staff can read housekeeping" ON housekeeping_tasks FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role IN ('owner', 'manager', 'front_desk'))
+);
+DROP POLICY IF EXISTS "Staff can update housekeeping" ON housekeeping_tasks;
+CREATE POLICY "Staff can update housekeeping" ON housekeeping_tasks FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role IN ('owner', 'manager', 'front_desk'))
+);
+
+-- Invoices: guests see own, staff see all
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Guests see own invoices" ON invoices;
+CREATE POLICY "Guests see own invoices" ON invoices FOR SELECT USING (guest_id = auth.uid());
+DROP POLICY IF EXISTS "Service role full access invoices" ON invoices;
+CREATE POLICY "Service role full access invoices" ON invoices FOR ALL USING (auth.role() = 'service_role');
+
+-- Notifications: users see own + broadcasts
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see own notifications" ON notifications;
+CREATE POLICY "Users see own notifications" ON notifications FOR SELECT USING (user_id = auth.uid() OR user_id IS NULL);
+DROP POLICY IF EXISTS "Users mark own as read" ON notifications;
+CREATE POLICY "Users mark own as read" ON notifications FOR UPDATE USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Service role full access notifications" ON notifications;
+CREATE POLICY "Service role full access notifications" ON notifications FOR ALL USING (auth.role() = 'service_role');
+
+-- AI Insights: admin-only
+ALTER TABLE ai_insights ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access insights" ON ai_insights;
+CREATE POLICY "Service role full access insights" ON ai_insights FOR ALL USING (auth.role() = 'service_role');
+DROP POLICY IF EXISTS "Staff can read insights" ON ai_insights;
+CREATE POLICY "Staff can read insights" ON ai_insights FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role IN ('owner', 'manager'))
+);
+
+-- Admin Activity: service role only
+ALTER TABLE admin_activity ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access admin_activity" ON admin_activity;
+CREATE POLICY "Service role full access admin_activity" ON admin_activity FOR ALL USING (auth.role() = 'service_role');
+
+-- Price Overrides
 ALTER TABLE price_overrides ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access price_overrides" ON price_overrides;
 CREATE POLICY "Service role full access price_overrides" ON price_overrides FOR ALL USING (auth.role() = 'service_role');
+DROP POLICY IF EXISTS "Staff can read price overrides" ON price_overrides;
 CREATE POLICY "Staff can read price overrides" ON price_overrides FOR SELECT USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role IN ('owner', 'manager'))
 );
+DROP POLICY IF EXISTS "Staff can manage price overrides" ON price_overrides;
 CREATE POLICY "Staff can manage price overrides" ON price_overrides FOR ALL USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role IN ('owner', 'manager'))
 );
