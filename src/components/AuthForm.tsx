@@ -146,7 +146,8 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
             </div>
           )}
 
-          {/* Preferences - birthday & anniversary */}
+          {/* Preferences - birthday & anniversary (signup only) */}
+          {!isLogin && (
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="birthday" className="block text-sm font-medium text-gray-700 mb-2">
@@ -176,8 +177,10 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
               />
             </div>
           </div>
+          )}
 
-          {/* Special events list */}
+          {/* Special events list (signup only) */}
+          {!isLogin && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Special Events</label>
             {specialEvents.map((ev, idx) => (
@@ -223,8 +226,10 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
               + Add event
             </button>
           </div>
+          )}
 
-          {/* Music style select */}
+          {/* Music style select (signup only) */}
+          {!isLogin && (
           <div>
             <label htmlFor="musicStyle" className="block text-sm font-medium text-gray-700 mb-2">Music Style</label>
             <select
@@ -240,8 +245,10 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
               <option value="Maya Fusion">Maya Fusion</option>
             </select>
           </div>
+          )}
 
-          {/* Maya interests multiselect (checkboxes) */}
+          {/* Maya interests multiselect - signup only */}
+          {!isLogin && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Maya Interests</label>
             <div className="flex flex-wrap gap-2">
@@ -261,8 +268,10 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
               ))}
             </div>
           </div>
+          )}
 
-          {/* Opt in magic */}
+          {/* Opt in magic (signup only) */}
+          {!isLogin && (
           <div className="flex items-center gap-2">
             <input
               id="optInMagic"
@@ -273,6 +282,7 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
             />
             <label htmlFor="optInMagic" className="text-sm text-gray-700">Opt in to magic recommendations</label>
           </div>
+          )}
 
           {/* Password input */}
           <div>
