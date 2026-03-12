@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/auth/login', '/auth/signup', '/auth/verify-email', '/', '/rooms', '/experiences', '/concierge', '/gallery'];
+const PUBLIC_ROUTES = ['/auth/login', '/auth/signup', '/auth/verify-email', '/', '/rooms', '/experiences', '/concierge', '/gallery', '/terms', '/privacy'];
 
 // SEO / static routes that should never hit auth
 const SEO_ROUTES = ['/sitemap.xml', '/robots.txt', '/favicon.ico', '/favicon.svg'];
@@ -10,6 +10,7 @@ const SEO_ROUTES = ['/sitemap.xml', '/robots.txt', '/favicon.ico', '/favicon.svg
 // API routes that handle their own auth (cron jobs, webhooks)
 const SELF_AUTH_API_ROUTES = [
   '/api/cron/',
+  '/api/availability',
   '/api/whatsapp-webhook',
   '/api/whatsapp-proactive',
   '/api/stripe/webhook',
