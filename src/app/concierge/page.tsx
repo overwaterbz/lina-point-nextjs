@@ -150,7 +150,7 @@ export default function ConciergePage() {
             </p>
           </div>
           <a
-            href="https://wa.me/5016329205?text=Hi%20Lina%20Point!%20I%27d%20like%20to%20plan%20my%20trip%20to%20Belize."
+            href="https://wa.me/5016327767?text=Hi%20Lina%20Point!%20I%27d%20like%20to%20plan%20my%20trip%20to%20Belize."
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 bg-white text-green-700 px-8 py-4 rounded-full text-sm font-bold hover:bg-white/90 transition shadow-lg flex-shrink-0"
@@ -227,7 +227,7 @@ export default function ConciergePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
               <p className="text-amber-400 text-sm font-semibold uppercase tracking-wider mb-2">Phone & WhatsApp</p>
-              <a href="tel:+5016329205" className="text-white/80 hover:text-white transition text-lg">+501 632-9205</a>
+              <a href="tel:+5016327767" className="text-white/80 hover:text-white transition text-lg">+501 632-7767</a>
             </div>
             <div>
               <p className="text-amber-400 text-sm font-semibold uppercase tracking-wider mb-2">Email</p>

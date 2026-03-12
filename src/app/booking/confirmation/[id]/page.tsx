@@ -172,7 +172,7 @@ export default async function ConfirmationPage({
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <a
-                href="https://wa.me/5016329205"
+                href="https://wa.me/5016327767"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 bg-green-500 hover:bg-green-600 text-white text-center py-3 rounded-xl font-semibold transition-colors"

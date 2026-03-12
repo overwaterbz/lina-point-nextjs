@@ -83,13 +83,13 @@ export function confirmationEmailHtml(opts: {
 
     <div style="background:#eff6ff;border-radius:8px;padding:16px;margin:24px 0;text-align:center">
       <p style="font-size:14px;color:#1e40af;margin:0 0 8px"><strong>Need help planning your trip?</strong></p>
-      <a href="https://wa.me/5016329205" style="display:inline-block;background:#25d366;color:white;padding:10px 24px;border-radius:24px;text-decoration:none;font-weight:600;font-size:14px">Chat with our AI Concierge on WhatsApp</a>
+      <a href="https://wa.me/5016327767" style="display:inline-block;background:#25d366;color:white;padding:10px 24px;border-radius:24px;text-decoration:none;font-weight:600;font-size:14px">Chat with our AI Concierge on WhatsApp</a>
     </div>
 
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
     <p style="font-size:12px;color:#9ca3af;text-align:center">
       Lina Point Resort — San Pedro, Ambergris Caye, Belize<br/>
-      BZ +501.632.9205 | <a href="mailto:reservations@linapoint.com" style="color:#6b7280">reservations@linapoint.com</a><br/>
+      BZ +501.632.7767 | <a href="mailto:reservations@linapoint.com" style="color:#6b7280">reservations@linapoint.com</a><br/>
       <a href="https://lina-point.vercel.app/booking/confirmation/${confirmation.confirmationNumber}" style="color:#0d9488">View your booking online</a>
     </p>
   </div>
@@ -192,7 +192,7 @@ export function postStayEmailHtml(opts: {
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
     <p style="font-size:12px;color:#9ca3af;text-align:center">
       Lina Point Resort — San Pedro, Ambergris Caye, Belize<br/>
-      BZ +501.632.9205 | <a href="mailto:reservations@linapoint.com" style="color:#6b7280">reservations@linapoint.com</a>
+      BZ +501.632.7767 | <a href="mailto:reservations@linapoint.com" style="color:#6b7280">reservations@linapoint.com</a>
     </p>
   </div>
 </body>

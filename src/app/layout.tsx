@@ -73,7 +73,7 @@ const jsonLd = {
   description:
     "Premier overwater resort in San Pedro, Ambergris Caye, Belize featuring glass bottom floors, infinity pool, and world-class diving.",
   url: "https://lina-point.vercel.app",
-  telephone: "+501-632-9205",
+  telephone: "+501-632-7767",
   email: "reservations@linapoint.com",
   address: {
     "@type": "PostalAddress",

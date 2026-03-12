@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 export default function WhatsAppButton() {
   const [tooltip, setTooltip] = useState(false);
-  const phone = '5016329205';
+  const phone = '5016327767';
   const message = encodeURIComponent(
     'Hi! I\'m interested in booking a stay at Lina Point. Can you help me plan my trip?'
   );

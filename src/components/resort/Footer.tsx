@@ -93,8 +93,8 @@ export default function Footer() {
                 Belize, Central America
               </li>
               <li>
-                <a href="tel:+5016329205" className="hover:text-amber-400 transition">
-                  BZ +501.632.9205
+                <a href="tel:+5016327767" className="hover:text-amber-400 transition">
+                  BZ +501.632.7767
                 </a>
               </li>
               <li>

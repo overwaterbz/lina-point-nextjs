@@ -151,7 +151,7 @@ async function sendBookingConfirmation(
           <p style="font-size: 12px; color: #6b7280;">Payment ID: ${paymentId} | Booking: ${bookingId}</p>
           <hr/>
           <p style="color: #6b7280;">Lina Point Resort — San Pedro, Ambergris Caye, Belize<br/>
-          BZ +501.632.9205 | reservations@linapoint.com</p>
+          BZ +501.632.7767 | reservations@linapoint.com</p>
         </div>
       `,
     })

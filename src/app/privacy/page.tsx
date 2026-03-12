@@ -138,7 +138,7 @@ export default function PrivacyPage() {
               <a href="mailto:reservations@linapoint.com" className="text-indigo-600 hover:text-indigo-800">
                 reservations@linapoint.com
               </a>{' '}
-              or call <a href="tel:+5016329205" className="text-indigo-600 hover:text-indigo-800">+501.632.9205</a>.
+              or call <a href="tel:+5016327767" className="text-indigo-600 hover:text-indigo-800">+501.632.7767</a>.
             </p>
             <p className="mt-2">
               Lina Point Overwater Resort<br />
