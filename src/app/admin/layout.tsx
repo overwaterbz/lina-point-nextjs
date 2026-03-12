@@ -76,9 +76,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Redirect unauthenticated users
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/auth/login');
+      router.push('/auth/login?returnTo=' + encodeURIComponent(pathname));
     }
-  }, [loading, user, router]);
+  }, [loading, user, router, pathname]);
 
   if (loading || !user) {
     return (
