@@ -282,6 +282,60 @@ async function scheduleAndPostContent(state: typeof MarketingCrewAnnotation.Stat
   const scheduleStatus: any[] = [];
 
   for (const content of state.generatedContent) {
+    // If content is a blog post, upsert into blog_posts table
+    if (content.type === 'blog') {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl, supabaseKey);
+          const slug = content.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')
+            .substring(0, 80);
+
+          const { error } = await supabase.from('blog_posts').upsert({
+            slug,
+            title: content.title,
+            excerpt: content.content.substring(0, 200),
+            content: content.content,
+            cover_image: content.mediaUrl || null,
+            author: 'Lina Point AI',
+            category: 'travel',
+            tags: content.hashtags || [],
+            meta_title: content.title,
+            meta_description: content.content.substring(0, 160),
+            published: true,
+            published_at: new Date().toISOString(),
+          }, { onConflict: 'slug' });
+
+          scheduleStatus.push({
+            platform: 'blog',
+            contentId: `${state.campaignId}-blog-${scheduleStatus.length}`,
+            title: content.title,
+            scheduledTime: new Date(),
+            status: error ? 'failed' : 'posted',
+            url: `/blog/${slug}`,
+            postId: slug,
+            error: error?.message || null,
+          });
+          debugLog(`[PostingAgent] blog: ${error ? '❌ ' + error.message : '✅ published to /blog/' + slug}`);
+        }
+      } catch (err: any) {
+        debugLog(`[PostingAgent] blog insert error:`, err.message);
+        scheduleStatus.push({
+          platform: 'blog',
+          contentId: `${state.campaignId}-blog-${scheduleStatus.length}`,
+          title: content.title,
+          scheduledTime: new Date(),
+          status: 'failed',
+          error: err.message,
+        });
+      }
+      continue;
+    }
+
     const platform = content.platform;
     const text = content.hashtags?.length
       ? `${content.content}\n\n${content.hashtags.join(' ')}`

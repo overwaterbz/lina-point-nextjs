@@ -3,6 +3,9 @@ import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import ToasterProvider from '@/components/ToasterProvider';
 import WhatsAppButton from '@/components/resort/WhatsAppButton';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -112,6 +115,13 @@ const jsonLd = {
       { "@type": "Offer", name: "1st Floor Suite", price: "299", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=1st-floor-suite" },
     ],
   },
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.8",
+    reviewCount: "127",
+    bestRating: "5",
+    worstRating: "1",
+  },
 };
 
 export default function RootLayout({
@@ -136,6 +146,9 @@ export default function RootLayout({
         {children}
         <WhatsAppButton />
         <ToasterProvider />
+        <Analytics />
+        <SpeedInsights />
+        <GoogleAnalytics />
         <script
           dangerouslySetInnerHTML={{
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js')})}`,

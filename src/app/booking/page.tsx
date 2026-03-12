@@ -9,6 +9,8 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import Script from "next/script";
 import OTAPriceComparison from "@/components/OTAPriceComparison";
 import WhyBookDirect from "@/components/WhyBookDirect";
+import { trackEvent, captureUtmParams, getUtmParams } from "@/lib/analytics";
+import SocialProofCounter from "@/components/SocialProofCounter";
 
 // ---------- helpers ----------
 async function fetchWithTimeout<T>(
@@ -290,6 +292,9 @@ export default function BookingPage() {
 
   const hasSquare = !!process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID;
 
+  // Capture UTM params on mount
+  useEffect(() => { captureUtmParams(); }, []);
+
   const fallbackToStripe = useCallback(async () => {
     if (!result) return;
     setPaymentMode("stripe");
@@ -494,6 +499,7 @@ export default function BookingPage() {
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
               Lina Point Resort Booking
             </h1>
+            <SocialProofCounter />
             <p className="text-lg text-gray-600 mb-8">
               AI-powered price comparison & experience curation — San Pedro, Belize
             </p>
@@ -968,6 +974,12 @@ export default function BookingPage() {
                         onSuccess={() => {
                           setShowPayment(false);
                           toast.success("Payment successful!");
+                          trackEvent('purchase', {
+                            value: result.curated_package.total,
+                            currency: 'USD',
+                            payment_method: 'square',
+                            ...getUtmParams(),
+                          });
                           if ((result as any)?.confirmationNumber) {
                             router.push(`/booking/confirmation/${(result as any).confirmationNumber}`);
                           }
@@ -981,6 +993,12 @@ export default function BookingPage() {
                         <CheckoutForm onSuccess={() => {
                           setShowPayment(false);
                           toast.success("Payment successful!");
+                          trackEvent('purchase', {
+                            value: result.curated_package.total,
+                            currency: 'USD',
+                            payment_method: 'stripe',
+                            ...getUtmParams(),
+                          });
                           if ((result as any)?.confirmationNumber) {
                             router.push(`/booking/confirmation/${(result as any).confirmationNumber}`);
                           }

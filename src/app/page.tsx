@@ -9,6 +9,8 @@ import Footer from '@/components/resort/Footer';
 import SectionHeading from '@/components/resort/SectionHeading';
 import RoomCarousel from '@/components/resort/RoomCarousel';
 import WhyBookDirect from '@/components/WhyBookDirect';
+import TestimonialsCarousel from '@/components/TestimonialsCarousel';
+import TrustBadges from '@/components/TrustBadges';
 
 /* ── Curated images from linapoint.com (owned content) ── */
 const IMG = {
@@ -308,6 +310,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ═══════════ TESTIMONIALS ═══════════ */}
+      <TestimonialsCarousel />
+
       {/* ═══════════ EXPERIENCES ═══════════ */}
       <section className="relative py-24 md:py-32 overflow-hidden">
         <Image
@@ -390,6 +395,7 @@ export default function Home() {
       <section className="py-20 md:py-28 bg-gradient-to-b from-white to-teal-50/30">
         <div className="max-w-7xl mx-auto px-6">
           <WhyBookDirect />
+          <TrustBadges />
           <div className="text-center mt-8">
             <Link
               href="/booking"

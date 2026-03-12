@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
 import { runMarketingCrew } from "@/lib/agents/marketingAgentCrew";
 import { verifyCronSecret } from '@/lib/cronAuth';
 
@@ -95,6 +96,9 @@ export async function GET(request: NextRequest) {
     }
 
     debugLog(`✅ [Cron] Daily marketing complete: ${processedCount}/${scheduledCampaigns.length} campaigns processed`);
+
+    // Revalidate blog page so new posts appear immediately
+    revalidatePath('/blog');
 
     // Run autonomous improvement daily
     await runDailyAutoImprovement();
