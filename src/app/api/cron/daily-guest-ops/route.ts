@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
       preArrival: { sent: 0, errors: 0 },
       upsells: { offered: 0 },
       morningGreeting: { sent: 0, errors: 0 },
+      autoCheckout: { processed: 0, housekeeping: 0 },
+      autoCheckin: { processed: 0 },
+      inspections: { created: 0 },
       postCheckout: { processed: 0, loyalty: 0, reviewsSent: 0 } as Record<string, number>,
     }
 
@@ -153,7 +156,99 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 3. Post-checkout intelligence update ────────────────
+    // ── 3. Auto-checkout & housekeeping tasks ─────────────────
+    // Mark as checked_out + create turnover housekeeping tasks
+    const { data: departures } = await supabase
+      .from('reservations')
+      .select('id, guest_id, room_id, total_amount, check_out_date, confirmation_number')
+      .eq('check_out_date', today)
+      .in('status', ['confirmed', 'checked_in'])
+
+    for (const res of departures || []) {
+      try {
+        // Transition to checked_out
+        await supabase
+          .from('reservations')
+          .update({ status: 'checked_out', updated_at: new Date().toISOString() })
+          .eq('id', res.id)
+
+        // Create turnover housekeeping task
+        if (res.room_id) {
+          await supabase.from('housekeeping_tasks').insert({
+            room_id: res.room_id,
+            date: today,
+            task_type: 'turnover',
+            status: 'pending',
+            priority: 'high',
+            notes: `Auto-created: checkout ${res.confirmation_number}`,
+          })
+          results.autoCheckout.housekeeping++
+        }
+
+        results.autoCheckout.processed++
+      } catch (err) {
+        console.error(`[DailyGuestOps] Auto-checkout error for ${res.id}:`, err)
+      }
+    }
+
+    // ── 4. Auto check-in ────────────────────────────────────
+    // Transition confirmed reservations arriving today to checked_in
+    const { data: arrivals2 } = await supabase
+      .from('reservations')
+      .select('id')
+      .eq('check_in_date', today)
+      .eq('status', 'confirmed')
+      .eq('payment_status', 'paid')
+
+    let autoCheckins = 0
+    for (const res of arrivals2 || []) {
+      await supabase
+        .from('reservations')
+        .update({ status: 'checked_in', updated_at: new Date().toISOString() })
+        .eq('id', res.id)
+      results.autoCheckin.processed++
+
+      // Create inspection task for arriving room
+    }
+
+    // ── 5. Create inspection tasks for tomorrow's arrivals ──
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowStr = tomorrow.toISOString().split('T')[0]
+
+    const { data: tomorrowArrivals } = await supabase
+      .from('reservations')
+      .select('room_id')
+      .eq('check_in_date', tomorrowStr)
+      .in('status', ['confirmed'])
+
+    let inspections = 0
+    for (const res of tomorrowArrivals || []) {
+      if (res.room_id) {
+        // Check if inspection already exists for this room tomorrow
+        const { data: existing } = await supabase
+          .from('housekeeping_tasks')
+          .select('id')
+          .eq('room_id', res.room_id)
+          .eq('date', tomorrowStr)
+          .eq('task_type', 'inspection')
+          .maybeSingle()
+
+        if (!existing) {
+          await supabase.from('housekeeping_tasks').insert({
+            room_id: res.room_id,
+            date: tomorrowStr,
+            task_type: 'inspection',
+            status: 'pending',
+            priority: 'normal',
+            notes: 'Auto-created: pre-arrival inspection',
+          })
+          results.inspections.created++
+        }
+      }
+    }
+
+    // ── 6. Post-checkout intelligence update ────────────────
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStr = yesterday.toISOString().split('T')[0]
@@ -162,7 +257,7 @@ export async function GET(request: NextRequest) {
       .from('reservations')
       .select('id, guest_id, total_amount')
       .eq('check_out_date', yesterdayStr)
-      .in('status', ['confirmed', 'checked_out'])
+      .eq('status', 'checked_out')
 
     for (const res of checkedOut || []) {
       try {

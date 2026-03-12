@@ -43,6 +43,7 @@ export default function RoomsPage() {
   const [icalEditId, setIcalEditId] = useState<string | null>(null);
   const [icalUrl, setIcalUrl] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => { fetchRooms(); }, []);
 
@@ -89,6 +90,13 @@ export default function RoomsPage() {
     }
   };
 
+  const copyFeedUrl = (room: Room) => {
+    const url = `${window.location.origin}/api/ical/${room.id}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(room.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   const roomsByType = rooms.reduce<Record<string, Room[]>>((acc, room) => {
     if (!acc[room.room_type]) acc[room.room_type] = [];
     acc[room.room_type].push(room);
@@ -114,7 +122,7 @@ export default function RoomsPage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Room Management</h1>
-          <p className="text-sm text-gray-600 mt-1">16 rooms across 4 types — FreeToBook iCal sync</p>
+          <p className="text-sm text-gray-600 mt-1">16 rooms across 4 types — FreeToBook iCal sync — paste Feed URLs into Airbnb/Booking.com</p>
         </div>
         <button
           onClick={handleSyncNow}
@@ -169,6 +177,7 @@ export default function RoomsPage() {
                       <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Status</th>
                       <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Rate</th>
                       <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">iCal Sync</th>
+                      <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Feed</th>
                       <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Actions</th>
                     </tr>
                   </thead>
@@ -217,6 +226,15 @@ export default function RoomsPage() {
                           ) : (
                             <span className="text-xs text-gray-400">Not linked</span>
                           )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => copyFeedUrl(room)}
+                            className="text-xs text-emerald-600 hover:text-emerald-800 font-medium"
+                            title="Copy outbound iCal feed URL for Airbnb/Booking.com"
+                          >
+                            {copiedId === room.id ? '✓ Copied!' : 'Copy Feed URL'}
+                          </button>
                         </td>
                         <td className="px-4 py-3 flex items-center gap-3">
                           <button
