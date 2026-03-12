@@ -101,5 +101,18 @@ UPDATE rooms SET sort_order = 14 WHERE room_number = '306';
 UPDATE rooms SET sort_order = 15 WHERE room_number = '307';
 UPDATE rooms SET sort_order = 16 WHERE room_number = '401';
 
+-- ── Set FreeToBook iCal feed URLs per room type ─────────────
+-- These are type-level feeds: a date appears blocked when ALL units of that type are sold
+-- 1st Floor Hotel Suites (101-104) — 4 units
+UPDATE rooms SET ical_url = 'https://www.freetobook.com/ical/unit-feed/959b1a7222.ics' WHERE room_number IN ('101','102','103','104');
+-- 2nd Floor Hotel Suites (201-204) — 4 units
+UPDATE rooms SET ical_url = 'https://www.freetobook.com/ical/unit-feed/5f7dc5153c.ics' WHERE room_number IN ('201','202','203','204');
+-- 1BR Honeymoon Cabana (301 Conch) — 1 unit
+UPDATE rooms SET ical_url = 'https://www.freetobook.com/ical/unit-feed/a6f2e1c857.ics' WHERE room_number = '301';
+-- 1BR Overwater Cabana Duplex (302-307) — 6 units
+UPDATE rooms SET ical_url = 'https://www.freetobook.com/ical/unit-feed/a93a839179.ics' WHERE room_number IN ('302','303','304','305','306','307');
+-- 2BR Overwater Cabana (401 Starfish) — 1 unit
+UPDATE rooms SET ical_url = 'https://www.freetobook.com/ical/unit-feed/d340dad73c.ics' WHERE room_number = '401';
+
 -- ── Create index on ical_url for sync queries ───────────────
 CREATE INDEX IF NOT EXISTS idx_rooms_ical ON rooms(ical_url) WHERE ical_url IS NOT NULL;
