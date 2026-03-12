@@ -40,18 +40,8 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
     setLoading(true);
 
     try {
-      const prefs = {
-        phone_number: phoneNumber ? normalizePhone(phoneNumber) : null,
-        birthday: birthday || null,
-        anniversary: anniversary || null,
-        special_events: specialEvents.length ? specialEvents : null,
-        music_style: musicStyle,
-        maya_interests: mayaInterests.length ? mayaInterests : null,
-        opt_in_magic: optInMagic,
-      } as any;
-
       if (isLogin) {
-        const { error: signInError } = await signIn(email, password, prefs);
+        const { error: signInError } = await signIn(email, password);
 
         if (signInError) {
           setError(signInError.message || 'Failed to sign in');
@@ -60,8 +50,20 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
 
         setSuccess(true);
         onSuccess?.();
-        router.push(returnTo);
+        // Full page load to ensure auth cookies are picked up
+        window.location.href = returnTo;
+        return;
       } else {
+        const prefs = {
+          phone_number: phoneNumber ? normalizePhone(phoneNumber) : null,
+          birthday: birthday || null,
+          anniversary: anniversary || null,
+          special_events: specialEvents.length ? specialEvents : null,
+          music_style: musicStyle,
+          maya_interests: mayaInterests.length ? mayaInterests : null,
+          opt_in_magic: optInMagic,
+        } as any;
+
         const { error: signUpError } = await signUp(email, password, fullName, prefs);
 
         if (signUpError) {
