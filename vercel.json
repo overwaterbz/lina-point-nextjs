@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/daily-guest-ops",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/revenue-snapshot",
+      "schedule": "55 23 * * *"
     }
   ]
 }

@@ -11,8 +11,8 @@ const FOOTER_LINKS = [
 ];
 
 const LEGAL = [
-  { label: 'Terms of Service', href: 'https://linapoint.com/terms-of-service' },
-  { label: 'Privacy Policy', href: 'https://linapoint.com/privacy-policy' },
+  { label: 'Terms of Service', href: '/terms' },
+  { label: 'Privacy Policy', href: '/privacy' },
 ];
 
 const SOCIAL = [
