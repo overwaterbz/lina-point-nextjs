@@ -73,14 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/auth/login');
   };
 
-  // Redirect unauthenticated users
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth/login?returnTo=' + encodeURIComponent(pathname));
-    }
-  }, [loading, user, router, pathname]);
-
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
