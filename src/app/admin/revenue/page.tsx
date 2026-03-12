@@ -30,14 +30,14 @@ interface RevenueData {
 }
 
 const ROOM_LABELS: Record<string, string> = {
-  overwater_suite: 'Overwater Suite',
-  suite_2nd_floor: 'Reef Suite',
+  suite_1st_floor: '1st Floor Suite',
+  suite_2nd_floor: '2nd Floor Suite',
   cabana_1br: '1BR Cabana',
   cabana_2br: '2BR Cabana',
 }
 
 const ROOM_COLORS: Record<string, string> = {
-  overwater_suite: '#0d9488',
+  suite_1st_floor: '#0d9488',
   suite_2nd_floor: '#7c3aed',
   cabana_1br: '#2563eb',
   cabana_2br: '#d97706',

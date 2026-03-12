@@ -10,12 +10,12 @@ import SectionHeading from '@/components/resort/SectionHeading';
 
 const ROOMS = [
   {
-    name: 'Overwater Bungalow',
-    slug: 'overwater-bungalow',
+    name: 'Overwater Cabana',
+    slug: 'overwater-cabana',
     tagline: 'Our Signature Experience',
-    price: 299,
+    price: 199,
     description:
-      'Step into paradise with glass bottom floors revealing the vibrant reef below. Your private overwater deck features direct ladder access to the Caribbean Sea, a hammock for lazy afternoons, and uninterrupted sunrise views.',
+      'Step into paradise with glass bottom floors revealing the vibrant reef below. Your private overwater deck features direct ladder access to the Caribbean Sea, a hammock for lazy afternoons, and uninterrupted sunrise views. Seven cabanas named after Belizean fish — Conch, Dorado, Marlin, Sailfish, Wahoo, Bonito, and Mahi Mahi.',
     features: [
       'Glass bottom floor panels',
       'Private overwater deck',
@@ -36,12 +36,12 @@ const ROOMS = [
     badge: 'Most Popular',
   },
   {
-    name: 'Reef Suite',
-    slug: 'reef-suite',
-    tagline: 'Premium Overwater Living',
+    name: '2nd Floor Suite',
+    slug: '2nd-floor-suite',
+    tagline: 'Premium Elevated Living',
     price: 249,
     description:
-      'Elevated luxury with expanded living space directly above the barrier reef. Floor-to-ceiling windows frame the turquoise Caribbean, while your spacious private balcony offers the perfect spot for morning coffee or evening cocktails.',
+      'Elevated luxury with expanded living space in the main building, second floor. Floor-to-ceiling windows frame the turquoise Caribbean, while your private balcony offers the perfect spot for morning coffee or evening cocktails. Four suites named Bonefish, Snook, Tarpon, and Permit.',
     features: [
       'Panoramic reef views',
       'Expanded living area',
@@ -62,17 +62,17 @@ const ROOMS = [
     badge: null,
   },
   {
-    name: 'Beach Villa',
-    slug: 'beach-villa',
-    tagline: 'Perfect for Families',
-    price: 199,
+    name: '1st Floor Suite',
+    slug: '1st-floor-suite',
+    tagline: 'Main Building Luxury',
+    price: 299,
     description:
-      'Spacious beachfront living with a full kitchen, ideal for families and extended stays. Step outside to white sand and swaying palms, with the overwater walkway just steps away to the resort\'s infinity pool and Hooked Rooftop restaurant.',
+      'Spacious ground-floor suites in the main building with direct ocean views and beach access. The most premium rooms at Lina Point, featuring generous living space and top-tier amenities. Four suites named Baracuda, Snapper, Jack, and Grouper.',
     features: [
+      'Direct beach access',
       'Full kitchen',
       'Two bedrooms',
-      'Private beach access',
-      'Outdoor patio & grill',
+      'Private patio & grill',
       'Washer & dryer',
       'Family-size living room',
       'Smart TV & Wi-Fi',
@@ -85,7 +85,7 @@ const ROOMS = [
       'https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg',
     ],
     accent: 'from-teal-500 to-teal-600',
-    badge: 'Best Value',
+    badge: 'Premium',
   },
 ];
 

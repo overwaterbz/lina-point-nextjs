@@ -108,7 +108,7 @@ export async function analyzeGuest(
 Analyze this guest's complete history and return a JSON object with EXACTLY these fields:
 {
   "travelStyle": "adventure" | "relaxation" | "romantic" | "family" | "cultural",
-  "preferredRoomType": "overwater_suite" | "suite_2nd_floor" | "cabana_1br" | "cabana_2br" | null,
+  "preferredRoomType": "suite_1st_floor" | "suite_2nd_floor" | "cabana_1br" | "cabana_2br" | null,
   "dietaryPreferences": ["array of dietary notes"],
   "activityInterests": ["snorkeling", "fishing", etc.],
   "budgetTier": "budget" | "mid" | "luxury",

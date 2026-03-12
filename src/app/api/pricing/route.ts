@@ -1,5 +1,5 @@
 /**
- * GET /api/pricing?checkIn=2026-04-01&checkOut=2026-04-05&roomType=overwater_suite
+ * GET /api/pricing?checkIn=2026-04-01&checkOut=2026-04-05&roomType=suite_1st_floor
  * Returns dynamic pricing breakdown for a specific room type and date range.
  */
 

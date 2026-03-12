@@ -1,33 +1,39 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
-export type RoomType = 'cabana_1br' | 'cabana_2br' | 'suite_2nd_floor' | 'overwater_suite'
+export type RoomType = 'cabana_1br' | 'cabana_2br' | 'suite_2nd_floor' | 'suite_1st_floor'
 
 /** Maps the booking page's display names to DB enum values */
 const ROOM_TYPE_MAP: Record<string, RoomType> = {
-  'beach villa': 'cabana_1br',
+  'overwater cabana': 'cabana_1br',
   'cabana 1br': 'cabana_1br',
   'cabana_1br': 'cabana_1br',
   'cabana 2br': 'cabana_2br',
   'cabana_2br': 'cabana_2br',
   'family cabana': 'cabana_2br',
+  '2nd floor suite': 'suite_2nd_floor',
   'reef suite': 'suite_2nd_floor',
   'suite_2nd_floor': 'suite_2nd_floor',
-  'overwater bungalow': 'overwater_suite',
-  'overwater suite': 'overwater_suite',
-  'overwater_suite': 'overwater_suite',
+  '1st floor suite': 'suite_1st_floor',
+  'hotel suite': 'suite_1st_floor',
+  'suite_1st_floor': 'suite_1st_floor',
+  // Legacy aliases
+  'overwater bungalow': 'cabana_1br',
+  'overwater suite': 'suite_1st_floor',
+  'overwater_suite': 'suite_1st_floor',
+  'beach villa': 'cabana_1br',
 }
 
 /** Room type display labels and total counts */
 const ROOM_TYPE_INFO: Record<RoomType, { label: string; total: number; baseRate: number }> = {
-  cabana_1br: { label: '1-Bedroom Cabana', total: 7, baseRate: 199 },
-  cabana_2br: { label: '2-Bedroom Family Cabana', total: 1, baseRate: 349 },
-  suite_2nd_floor: { label: 'Reef Suite (2nd Floor)', total: 4, baseRate: 249 },
-  overwater_suite: { label: 'Overwater Suite', total: 4, baseRate: 299 },
+  suite_1st_floor: { label: '1st Floor Hotel Suite', total: 4, baseRate: 299 },
+  suite_2nd_floor: { label: '2nd Floor Hotel Suite', total: 4, baseRate: 249 },
+  cabana_1br: { label: '1BR Overwater Cabana', total: 7, baseRate: 199 },
+  cabana_2br: { label: '2BR Overwater Cabana', total: 1, baseRate: 349 },
 }
 
 export function resolveRoomType(input: string): RoomType {
   const key = input.toLowerCase().trim()
-  return ROOM_TYPE_MAP[key] || 'overwater_suite'
+  return ROOM_TYPE_MAP[key] || 'suite_1st_floor'
 }
 
 export function getRoomTypeInfo(rt: RoomType) {

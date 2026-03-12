@@ -20,10 +20,10 @@ interface PriceOverride {
 }
 
 const ROOM_LABELS: Record<string, string> = {
+  suite_1st_floor: '1st Floor Suite',
+  suite_2nd_floor: '2nd Floor Suite',
   cabana_1br: '1BR Cabana',
   cabana_2br: '2BR Cabana',
-  suite_2nd_floor: 'Reef Suite',
-  overwater_suite: 'Overwater Suite',
 };
 
 const ROOM_TYPES = Object.keys(ROOM_LABELS);

@@ -23,7 +23,7 @@ const IMAGES = [
   { src: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg', alt: 'Resort deck and walkway', cat: 'resort', span: '' },
   { src: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg', alt: 'Overwater suites', cat: 'rooms', span: '' },
   { src: 'https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg', alt: 'Bird\'s eye view of the resort', cat: 'resort', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg', alt: 'Beach villa exterior', cat: 'rooms', span: '' },
+  { src: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg', alt: '1st floor suite exterior', cat: 'rooms', span: '' },
 ];
 
 type Category = 'all' | 'resort' | 'rooms' | 'dining' | 'experiences';

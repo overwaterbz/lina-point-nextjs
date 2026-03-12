@@ -15,12 +15,12 @@ interface Reservation {
   num_guests: number | null;
 }
 
-const ROOM_TYPES = ['cabana_1br', 'cabana_2br', 'suite_2nd_floor', 'overwater_suite'] as const;
+const ROOM_TYPES = ['cabana_1br', 'cabana_2br', 'suite_2nd_floor', 'suite_1st_floor'] as const;
 const ROOM_LABELS: Record<string, string> = {
+  suite_1st_floor: '1st Floor Suite',
+  suite_2nd_floor: '2nd Floor Suite',
   cabana_1br: '1BR Cabana',
   cabana_2br: '2BR Cabana',
-  suite_2nd_floor: 'Reef Suite',
-  overwater_suite: 'Overwater Suite',
 };
 const STATUS_COLORS: Record<string, string> = {
   confirmed: 'bg-green-500',

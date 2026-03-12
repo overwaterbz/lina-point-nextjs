@@ -16,28 +16,28 @@ export interface RoomType {
 
 const ROOMS: RoomType[] = [
   {
-    name: 'Overwater Bungalow',
-    slug: 'overwater-bungalow',
+    name: 'Overwater Cabana',
+    slug: 'overwater-cabana',
     tagline: 'Glass bottom floors meet Caribbean sunrise',
-    price: 'From $299/night',
+    price: 'From $199/night',
     image: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg',
     highlights: ['Glass Bottom Floor', 'Private Deck', 'Ocean View'],
   },
   {
-    name: 'Reef Suite',
-    slug: 'reef-suite',
+    name: '2nd Floor Suite',
+    slug: '2nd-floor-suite',
     tagline: 'Elevated luxury on the barrier reef',
     price: 'From $249/night',
     image: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg',
-    highlights: ['Premium Furnishings', 'Reef Access', 'Room Service'],
+    highlights: ['Premium Furnishings', 'Reef Views', 'Balcony'],
   },
   {
-    name: 'Beach Villa',
-    slug: 'beach-villa',
-    tagline: 'Island living for families and groups',
-    price: 'From $199/night',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-4-scaled.jpg',
-    highlights: ['Family Friendly', 'Beach Access', 'Full Kitchen'],
+    name: '1st Floor Suite',
+    slug: '1st-floor-suite',
+    tagline: 'Spacious main building luxury',
+    price: 'From $299/night',
+    image: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg',
+    highlights: ['Ground Floor', 'Beach Access', 'Full Amenities'],
   },
 ];
 

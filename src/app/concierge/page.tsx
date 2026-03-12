@@ -60,7 +60,7 @@ const FAQS = [
   },
   {
     q: 'Can I bring my kids?',
-    a: 'Of course! Our Beach Villas are perfect for families, and we offer a Kids Club Activity Pack ($60). The reef and island excursions are family-friendly.',
+    a: 'Of course! Our Overwater Cabanas and Suites are perfect for families, and we offer a Kids Club Activity Pack ($60). The reef and island excursions are family-friendly.',
   },
   {
     q: 'What currency is used in Belize?',

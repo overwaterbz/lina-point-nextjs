@@ -419,7 +419,7 @@ export async function POST(request: NextRequest) {
             userId: profile.user_id,
             checkIn: data.checkInDate,
             checkOut: data.checkOutDate,
-            roomType: data.roomType || 'overwater_suite',
+            roomType: data.roomType || 'suite_1st_floor',
             groupSize: data.groupSize || 2,
           });
           replyText = plan.whatsAppFormatted;

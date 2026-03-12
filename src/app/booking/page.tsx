@@ -301,7 +301,7 @@ export default function BookingPage() {
     }
   }, [result]);
   const [formData, setFormData] = useState({
-    roomType: "overwater_suite",
+    roomType: "suite_1st_floor",
     checkInDate: "",
     checkOutDate: "",
     location: "Belize",
@@ -474,10 +474,10 @@ export default function BookingPage() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       {(availability || [
-                        { roomType: 'overwater_suite', label: 'Overwater Suite', baseRate: 299, availableRooms: -1, available: true },
-                        { roomType: 'suite_2nd_floor', label: 'Reef Suite (2nd Floor)', baseRate: 249, availableRooms: -1, available: true },
-                        { roomType: 'cabana_1br', label: '1-Bedroom Cabana', baseRate: 199, availableRooms: -1, available: true },
-                        { roomType: 'cabana_2br', label: '2-Bedroom Family Cabana', baseRate: 349, availableRooms: -1, available: true },
+                        { roomType: 'suite_1st_floor', label: '1st Floor Hotel Suite', baseRate: 299, availableRooms: -1, available: true },
+                        { roomType: 'suite_2nd_floor', label: '2nd Floor Hotel Suite', baseRate: 249, availableRooms: -1, available: true },
+                        { roomType: 'cabana_1br', label: '1BR Overwater Cabana', baseRate: 199, availableRooms: -1, available: true },
+                        { roomType: 'cabana_2br', label: '2BR Overwater Cabana', baseRate: 349, availableRooms: -1, available: true },
                       ]).map((r: any) => (
                         <option key={r.roomType} value={r.roomType} disabled={!r.available}>
                           {r.label} — ${r.dynamicRate ?? r.baseRate}/night

@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
           const offers = await generateUpsellOffers(supabase, {
             userId: res.guest_id,
             reservationId: res.id,
-            roomType: (res.room_type || 'overwater_suite') as RoomType,
+            roomType: (res.room_type || 'suite_1st_floor') as RoomType,
             checkIn: res.check_in_date,
             checkOut: res.check_out_date,
             nights,
