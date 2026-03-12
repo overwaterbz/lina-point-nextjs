@@ -23,6 +23,7 @@ export interface CreateReservationInput {
   totalAmount: number // room + tours + dining
   bookingId: string // links to tour_bookings
   specialRequests?: string
+  promoCode?: string // optional promo code to apply
 }
 
 export interface ReservationResult {
@@ -34,6 +35,8 @@ export interface ReservationResult {
   baseRate: number
   nights: number
   totalRoomCost: number
+  promoDiscount?: number
+  promoCodeApplied?: string
 }
 
 /**
@@ -85,6 +88,60 @@ export async function createReservation(
   }
   if (!confirmationNumber) throw new Error('Failed to generate unique confirmation number')
 
+  // Validate and apply promo code if provided
+  let promoDiscount = 0
+  let promoCodeId: string | null = null
+  let promoCodeApplied: string | undefined
+
+  if (input.promoCode) {
+    const code = input.promoCode.trim().toUpperCase()
+    const { data: promo } = await supabase
+      .from('promo_codes')
+      .select('*')
+      .eq('code', code)
+      .eq('active', true)
+      .maybeSingle()
+
+    if (promo) {
+      const now = new Date()
+      const validFrom = promo.valid_from ? new Date(promo.valid_from) : null
+      const validTo = promo.valid_to ? new Date(promo.valid_to) : null
+      const withinDates = (!validFrom || now >= validFrom) && (!validTo || now <= validTo)
+      const withinUses = !promo.max_uses || promo.current_uses < promo.max_uses
+      const roomOk = !promo.room_type || promo.room_type === roomType
+      const meetsMin = !promo.min_booking_amount || input.totalAmount >= promo.min_booking_amount
+
+      if (withinDates && withinUses && roomOk && meetsMin) {
+        // Check single-use-per-guest
+        let singleUseOk = true
+        if (promo.single_use_per_guest) {
+          const { data: prior } = await supabase
+            .from('promo_code_usage')
+            .select('id')
+            .eq('promo_code_id', promo.id)
+            .eq('user_id', input.guestId)
+            .maybeSingle()
+          if (prior) singleUseOk = false
+        }
+
+        if (singleUseOk) {
+          if (promo.discount_type === 'percent') {
+            promoDiscount = Math.round(input.totalAmount * (promo.discount_value / 100) * 100) / 100
+          } else {
+            promoDiscount = Number(promo.discount_value)
+          }
+          if (promo.max_discount && promoDiscount > promo.max_discount) {
+            promoDiscount = Number(promo.max_discount)
+          }
+          promoCodeId = promo.id
+          promoCodeApplied = code
+        }
+      }
+    }
+  }
+
+  const finalAmount = Math.round((input.totalAmount - promoDiscount) * 100) / 100
+
   // Insert reservation
   const { data: reservation, error: resErr } = await supabase
     .from('reservations')
@@ -99,16 +156,39 @@ export async function createReservation(
       guests_count: input.guestsCount,
       base_rate: baseRate,
       total_room_cost: totalRoomCost,
-      total_amount: input.totalAmount,
+      total_amount: finalAmount,
       payment_status: 'pending',
       booking_id: input.bookingId,
       special_requests: input.specialRequests || null,
       status: 'confirmed',
+      ...(promoCodeId ? { promo_code_id: promoCodeId, promo_discount: promoDiscount } : {}),
     })
     .select('id')
     .single()
 
   if (resErr || !reservation) throw new Error('Failed to create reservation: ' + (resErr?.message || 'unknown'))
+
+  // Record promo usage & increment counter
+  if (promoCodeId) {
+    await supabase.from('promo_code_usage').insert({
+      promo_code_id: promoCodeId,
+      user_id: input.guestId,
+      reservation_id: reservation.id,
+      discount_applied: promoDiscount,
+    })
+    // Increment current_uses on the promo code
+    const { data: currentPromo } = await supabase
+      .from('promo_codes')
+      .select('current_uses')
+      .eq('id', promoCodeId)
+      .single()
+    if (currentPromo) {
+      await supabase
+        .from('promo_codes')
+        .update({ current_uses: (currentPromo.current_uses || 0) + 1 })
+        .eq('id', promoCodeId)
+    }
+  }
 
   // Mark inventory dates as booked
   await markDatesBooked(supabase, roomId, input.checkIn, input.checkOut, reservation.id)
@@ -122,6 +202,7 @@ export async function createReservation(
     baseRate,
     nights,
     totalRoomCost,
+    ...(promoDiscount > 0 ? { promoDiscount, promoCodeApplied } : {}),
   }
 }
 
@@ -145,7 +226,7 @@ export async function markReservationPaid(
     })
     .eq('booking_id', bookingId)
     .eq('payment_status', 'pending') // idempotent: only update if still pending
-    .select('id, confirmation_number, guest_id, room_type, base_rate, nights, total_room_cost, total_amount, check_in, check_out')
+    .select('id, confirmation_number, guest_id, room_type, base_rate, nights, total_room_cost, total_amount, check_in, check_out, promo_discount')
     .maybeSingle()
 
   if (error) {
@@ -191,13 +272,14 @@ async function generateInvoice(
   if (existing) return // already invoiced
 
   const roomCost = Number(reservation.total_room_cost) || Number(reservation.total_amount) || 0
+  const promoDiscount = Number((reservation as any).promo_discount) || 0
   const taxRate = 0.125 // 12.5% Belize GST
-  const subtotal = roomCost
+  const subtotal = roomCost - promoDiscount
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100
   const total = Math.round((subtotal + taxAmount) * 100) / 100
 
   // Build line items
-  const items = [
+  const items: { description: string; quantity: number; unit_price: number; total: number }[] = [
     {
       description: `${reservation.room_type} — ${reservation.nights} night${reservation.nights === 1 ? '' : 's'} @ $${Number(reservation.base_rate).toFixed(2)}/night`,
       quantity: reservation.nights,
@@ -205,6 +287,15 @@ async function generateInvoice(
       total: Number(reservation.total_room_cost),
     },
   ]
+
+  if (promoDiscount > 0) {
+    items.push({
+      description: 'Promo Code Discount',
+      quantity: 1,
+      unit_price: -promoDiscount,
+      total: -promoDiscount,
+    })
+  }
 
   // Check for tour bookings associated with same booking
   const { data: tours } = await supabase

@@ -7,6 +7,7 @@ import { useRef } from 'react';
 import Navbar from '@/components/resort/Navbar';
 import Footer from '@/components/resort/Footer';
 import SectionHeading from '@/components/resort/SectionHeading';
+import WhyBookDirect from '@/components/WhyBookDirect';
 
 const ROOMS = [
   {
@@ -214,6 +215,21 @@ export default function RoomsPage() {
           {ROOMS.map((room, i) => (
             <RoomCard key={room.slug} room={room} index={i} />
           ))}
+        </div>
+      </section>
+
+      {/* Why Book Direct */}
+      <section className="py-16 md:py-20 bg-gradient-to-b from-white to-teal-50/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <WhyBookDirect />
+          <div className="text-center mt-8">
+            <Link
+              href="/booking"
+              className="inline-block bg-teal-600 hover:bg-teal-700 text-white px-10 py-4 rounded text-xs tracking-[0.25em] uppercase font-bold transition shadow-lg"
+            >
+              Compare OTA Prices & Book Direct
+            </Link>
+          </div>
         </div>
       </section>
 

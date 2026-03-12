@@ -184,20 +184,26 @@ Target: ${state.campaignBrief.targetAudience}
 Platforms: ${state.campaignBrief.platforms.join(", ")}
 Key Messages: ${state.campaignBrief.keyMessages.join(", ")}
 
+DIRECT BOOKING ADVANTAGE — weave this into every piece:
+- Lina Point guarantees 6% below any OTA (Expedia, Booking.com, Agoda)
+- Use promo code DIRECT10 for 10% off first direct booking
+- Loyalty program: earn points on every stay, unlock VIP perks
+- "Why pay Expedia's markup? Book direct at lina-point.com and save."
+
 Research insights:
 - Trends: ${state.researchData.trends.join(", ")}
 - Opportunities: ${state.researchData.opportunities.join(", ")}
 
 Generate 3 posts:
-1. Instagram post (caption + hashtags)
-2. TikTok script (9-15 sec, trending sounds)
-3. Email subject line & opening
+1. Instagram post (caption + hashtags) — emphasize price transparency
+2. TikTok script (9-15 sec, trending sounds) — "POV: you found out you've been overpaying on Expedia"
+3. Email subject line & opening — direct booking savings hook
 
 Format as JSON array: [{ type, platform, content, hashtags, cta }]`;
 
   try {
     const response = await grokLLM.invoke([
-      { role: "system", content: "You are a creative marketing copywriter. Create content emphasizing magic, mystique, and transformation. Return valid JSON array." },
+      { role: "system", content: "You are a creative marketing copywriter for a luxury Belize resort. Create content emphasizing magic, mystique, and transformation. IMPORTANT: Every piece must include a direct booking advantage — Lina Point beats OTA prices by 6%, promo code DIRECT10 saves 10%, and loyalty members earn exclusive perks. Drive traffic to lina-point.com, not OTAs. Return valid JSON array." },
       { role: "user", content: contentBrief }
     ]);
 
@@ -210,7 +216,7 @@ Format as JSON array: [{ type, platform, content, hashtags, cta }]`;
       title: item.title || `Post ${idx + 1}`,
       content: item.content || "",
       hashtags: item.hashtags || [],
-      callToAction: item.cta || "Book your magic experience now",
+      callToAction: item.cta || "Book direct at lina-point.com — guaranteed 6% below any OTA",
       status: "draft"
     }));
 
@@ -298,7 +304,8 @@ async function setupEngagementCampaigns(state: typeof MarketingCrewAnnotation.St
       name: "Smart Comment Replies",
       prompt: `Reply to comments on ${state.campaignBrief.platforms.join("/")} posts about Lina Point.
         Use "The Magic is You" theme. Keep replies personalized and 2-3 sentences.
-        Always include a soft CTA to DM or visit website.`,
+        Always include a soft CTA to book direct at lina-point.com (we beat OTA prices by 6%).
+        If someone mentions finding us on Expedia/Booking.com, let them know they save more booking direct.`,
       status: "active",
       response: "Reply generator activated for top posts"
     },
@@ -306,9 +313,9 @@ async function setupEngagementCampaigns(state: typeof MarketingCrewAnnotation.St
       type: "email_drip" as const,
       name: "Welcome Email Sequence",
       prompt: `Create 3-email drip sequence for new bookings from this campaign.
-        Email 1: Welcome + magic experience preview
-        Email 2: Testimonials + exclusive offer
-        Email 3: Last-minute deal for return visitors`,
+        Email 1: Welcome + magic experience preview + mention promo code DIRECT10 for 10% off
+        Email 2: Price comparison showing we beat Expedia by 6% + loyalty program benefits
+        Email 3: Last-minute deal for return visitors + exclusive promo code for loyal guests`,
       status: "configured",
       response: "Email drip sequence configured"
     },
@@ -317,7 +324,8 @@ async function setupEngagementCampaigns(state: typeof MarketingCrewAnnotation.St
       name: "Proactive DM Campaign",
       prompt: `Send friendly DMs to commenters and followers interested in travel.
         Ask about their travel style, then suggest if Lina Point matches their vibe.
-        Include direct booking link only if they show clear interest.`,
+        When they show interest, share that booking direct saves 6% vs any OTA.
+        Include direct booking link to lina-point.com/booking.`,
       status: "pending_activation",
       response: "DM campaign template ready"
     }
