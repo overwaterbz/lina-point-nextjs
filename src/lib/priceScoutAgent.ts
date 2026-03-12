@@ -1,6 +1,6 @@
 /**
  * PriceScoutAgent: Multi-iteration price comparison for Lina Point Overwater Resort
- * Uses LangGraph to scan OTAs via Tavily and beat competitors by 3%
+ * Uses LangGraph to scan OTAs via Tavily and beat competitors by 6%
  */
 
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
@@ -86,12 +86,14 @@ async function scanOTAs(state: typeof PriceScoutAnnotation.State) {
 }
 
 /**
- * Step 2: Calculate beat price (3% lower)
+ * Step 2: Calculate beat price (6% lower, with floor protection)
  */
 async function calculateBeatPrice(state: typeof PriceScoutAnnotation.State) {
-  const beatPrice = Math.round(state.bestPrice * 0.97 * 100) / 100; // 3% discount
+  const rawBeat = Math.round(state.bestPrice * 0.94 * 100) / 100; // 6% discount
+  // Floor: never go below 70% of typical base rate ($139 for cheapest room)
+  const beatPrice = Math.max(rawBeat, 139);
   const savings = Math.round((state.bestPrice - beatPrice) * 100) / 100;
-  const savingsPercent = 3;
+  const savingsPercent = state.bestPrice > 0 ? Math.round((savings / state.bestPrice) * 100 * 10) / 10 : 6;
 
   debugLog(
     `[PriceScout] Beat price: $${beatPrice} (save $${savings}, ${savingsPercent}% off $${state.bestPrice})`
@@ -203,13 +205,18 @@ export async function runPriceScout(
   );
 
   debugLog(`✅ [PriceScout] Complete. Best OTA: ${finalState.bestOTA} @ $${finalState.bestPrice}`);
-  debugLog(`💰 [PriceScout] Direct booking price: $${finalState.beatPrice} (Save 3%!)`);
+  debugLog(`💰 [PriceScout] Direct booking price: $${finalState.beatPrice} (Save 6%!)`);
+
+  const actualSavings = Math.round((finalState.bestPrice - finalState.beatPrice) * 100) / 100;
+  const actualSavingsPercent = finalState.bestPrice > 0
+    ? Math.round((actualSavings / finalState.bestPrice) * 100 * 10) / 10
+    : 6;
 
   return {
     bestPrice: finalState.bestPrice,
     bestOTA: finalState.bestOTA,
     beatPrice: finalState.beatPrice,
-    savingsPercent: 3,
+    savingsPercent: actualSavingsPercent,
     savings: Math.round((finalState.bestPrice - finalState.beatPrice) * 100) / 100,
     iterations,
     priceUrl: finalState.priceUrl || `https://linapoint.com/book?check_in=${checkInDate}&check_out=${checkOutDate}&guests=2&room_type=${encodeURIComponent(roomType)}`,

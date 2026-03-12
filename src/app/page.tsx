@@ -8,6 +8,7 @@ import Navbar from '@/components/resort/Navbar';
 import Footer from '@/components/resort/Footer';
 import SectionHeading from '@/components/resort/SectionHeading';
 import RoomCarousel from '@/components/resort/RoomCarousel';
+import WhyBookDirect from '@/components/WhyBookDirect';
 
 /* ── Curated images from linapoint.com (owned content) ── */
 const IMG = {
@@ -386,6 +387,21 @@ export default function Home() {
               className="text-cyan-700 hover:text-cyan-600 text-xs tracking-[0.2em] uppercase font-semibold transition"
             >
               View Full Gallery &rarr;
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ WHY BOOK DIRECT ═══════════ */}
+      <section className="py-20 md:py-28 bg-gradient-to-b from-white to-teal-50/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <WhyBookDirect />
+          <div className="text-center mt-8">
+            <Link
+              href="/booking"
+              className="inline-block bg-teal-600 hover:bg-teal-700 text-white px-10 py-4 rounded text-xs tracking-[0.25em] uppercase font-bold transition shadow-lg"
+            >
+              Compare Prices & Book Direct
             </Link>
           </div>
         </div>

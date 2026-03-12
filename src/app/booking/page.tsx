@@ -7,6 +7,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Script from "next/script";
+import OTAPriceComparison from "@/components/OTAPriceComparison";
+import WhyBookDirect from "@/components/WhyBookDirect";
 
 // ---------- helpers ----------
 async function fetchWithTimeout<T>(
@@ -265,6 +267,19 @@ export default function BookingPage() {
   const [availability, setAvailability] = useState<AvailabilityItem[] | null>(null);
   const [availLoading, setAvailLoading] = useState(false);
 
+  // Promo code state
+  const [promoCode, setPromoCode] = useState("");
+  const [promoResult, setPromoResult] = useState<{
+    valid: boolean;
+    promoId?: string;
+    code?: string;
+    description?: string;
+    discount?: number;
+    error?: string;
+  } | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [showPromo, setShowPromo] = useState(false);
+
   // Memoize stripePromise to prevent reloading on every render
   const stripePromise = useMemo(() => 
     (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
@@ -300,6 +315,36 @@ export default function BookingPage() {
       setShowPayment(false);
     }
   }, [result]);
+  
+  // Validate promo code
+  const validatePromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    try {
+      const selected = availability?.find(r => r.roomType === formData.roomType);
+      const res = await fetch("/api/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: promoCode,
+          roomType: formData.roomType,
+          bookingAmount: selected?.totalForStay || selected?.estimatedTotal || 0,
+        }),
+      });
+      const data = await res.json();
+      setPromoResult(data);
+      if (data.valid) {
+        toast.success(`Promo applied: ${data.description || data.code}`);
+      } else {
+        toast.error(data.error || "Invalid promo code");
+      }
+    } catch {
+      toast.error("Failed to validate promo code");
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
     roomType: "suite_1st_floor",
     checkInDate: "",
@@ -641,6 +686,78 @@ export default function BookingPage() {
                     </div>
                   </div>
 
+                  {/* OTA Price Comparison — shows after dates selected */}
+                  {formData.checkInDate && formData.checkOutDate && (() => {
+                    const ci = new Date(formData.checkInDate);
+                    const co = new Date(formData.checkOutDate);
+                    const n = Math.round((co.getTime() - ci.getTime()) / (1000 * 60 * 60 * 24));
+                    return n >= 2 ? (
+                      <OTAPriceComparison
+                        roomType={formData.roomType}
+                        checkIn={formData.checkInDate}
+                        checkOut={formData.checkOutDate}
+                        nights={n}
+                      />
+                    ) : null;
+                  })()}
+
+                  {/* Promo Code */}
+                  <div>
+                    {!showPromo ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowPromo(true)}
+                        className="text-sm text-teal-600 hover:text-teal-800 font-medium"
+                      >
+                        Have a promo code? &rarr;
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={promoCode}
+                          onChange={(e) => {
+                            setPromoCode(e.target.value.toUpperCase());
+                            setPromoResult(null);
+                          }}
+                          placeholder="Enter promo code"
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm uppercase focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        />
+                        <button
+                          type="button"
+                          onClick={validatePromo}
+                          disabled={promoLoading || !promoCode.trim()}
+                          className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700 disabled:bg-gray-300 transition-colors"
+                        >
+                          {promoLoading ? "..." : "Apply"}
+                        </button>
+                      </div>
+                    )}
+                    {promoResult?.valid && (
+                      <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-green-800">{promoResult.description}</p>
+                          {promoResult.discount ? (
+                            <p className="text-xs text-green-600">-${promoResult.discount.toFixed(2)} discount</p>
+                          ) : null}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setPromoResult(null); setPromoCode(""); }}
+                          className="text-xs text-gray-400 hover:text-gray-600"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                    {promoResult && !promoResult.valid && (
+                      <p className="mt-1 text-xs text-red-500">{promoResult.error}</p>
+                    )}
+                  </div>
+
+                  {/* Why Book Direct — compact version */}
+                  <WhyBookDirect compact />
+
                   {/* Submit Button */}
                   <button
                     type="submit"
@@ -665,7 +782,7 @@ export default function BookingPage() {
                     </h3>
                     <p className="text-gray-600 text-sm mt-2">
                       Scans Agoda, Expedia & Booking.com across up to 3 iterations to find the
-                      best deal, then beats it by 3%.
+                      best deal, then beats it by 6%.
                     </p>
                   </div>
 

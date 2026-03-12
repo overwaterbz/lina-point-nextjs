@@ -29,10 +29,10 @@ interface ReferralRecord {
 }
 
 const TIER_THRESHOLDS = [
-  { name: 'Bronze', min: 0, color: 'text-amber-700 bg-amber-100' },
-  { name: 'Silver', min: 500, color: 'text-gray-600 bg-gray-200' },
-  { name: 'Gold', min: 2000, color: 'text-yellow-700 bg-yellow-100' },
-  { name: 'Platinum', min: 5000, color: 'text-purple-700 bg-purple-100' },
+  { name: 'New', min: 0, color: 'text-gray-600 bg-gray-200', discount: 0, perks: ['Base rate pricing'] },
+  { name: 'Returning', min: 500, color: 'text-blue-700 bg-blue-100', discount: 5, perks: ['5% off all stays', '1 pt per $1'] },
+  { name: 'Loyal', min: 2000, color: 'text-purple-700 bg-purple-100', discount: 10, perks: ['10% off all stays', '1.5x points', 'Free early check-in'] },
+  { name: 'VIP', min: 5000, color: 'text-amber-700 bg-amber-100', discount: 15, perks: ['15% off all stays', '2x points', 'Free upgrades', 'Welcome gift', 'Priority concierge'] },
 ];
 
 export default function LoyaltyPage() {
@@ -149,6 +149,17 @@ export default function LoyaltyPage() {
           >
             Copy Link
           </button>
+          <button
+            onClick={() => {
+              const msg = encodeURIComponent(
+                `Book at Lina Point Resort with my code ${loyalty?.referral_code} for $25 off! ${window.location.origin}?ref=${loyalty?.referral_code}`
+              );
+              window.open(`https://wa.me/?text=${msg}`, '_blank');
+            }}
+            className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700"
+          >
+            WhatsApp
+          </button>
         </div>
         {referrals.length > 0 && (
           <div className="mt-4 space-y-2">
@@ -165,6 +176,36 @@ export default function LoyaltyPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Tier Benefits */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="font-semibold text-gray-900 mb-3">Tier Benefits</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Book direct to save 6% below any OTA — plus unlock loyalty discounts up to 15% off.
+        </p>
+        <div className="space-y-2">
+          {TIER_THRESHOLDS.map((tier) => (
+            <div
+              key={tier.name}
+              className={`p-3 rounded-lg border ${
+                tier.name.toLowerCase() === (loyalty?.tier?.toLowerCase() || 'new')
+                  ? 'bg-teal-50 border-teal-300'
+                  : 'bg-gray-50 border-gray-100'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${tier.color}`}>
+                  {tier.name.toLowerCase() === (loyalty?.tier?.toLowerCase() || 'new') ? '► ' : ''}{tier.name}
+                </span>
+                <span className="text-xs text-gray-500">{tier.min}+ points</span>
+              </div>
+              <ul className="text-xs text-gray-600 space-y-0.5 mt-1">
+                {tier.perks.map(p => <li key={p}>• {p}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Rewards catalog */}
