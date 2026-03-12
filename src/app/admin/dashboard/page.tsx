@@ -40,7 +40,10 @@ export default function AdminDashboardPage() {
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setFetching(false);
+      return;
+    }
     const supabase = createBrowserSupabaseClient();
     const today = new Date().toISOString().split('T')[0];
 
@@ -95,12 +98,16 @@ export default function AdminDashboardPage() {
     })();
   }, [user]);
 
-  if (loading || fetching) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
       </div>
     );
+  }
+
+  if (!user) {
+    return null; // Layout handles redirect
   }
 
   const occupancyPct = kpis && kpis.totalRooms > 0

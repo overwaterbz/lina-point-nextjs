@@ -73,7 +73,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/auth/login');
   };
 
-  if (loading) {
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth/login');
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
@@ -117,6 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </p>
               {section.items
                 .filter((item) => {
+                  if (!profile?.role) return true; // Show all while profile loads
                   const minLevel = ROLE_LEVEL[(item as { minRole?: string }).minRole || 'front_desk'] ?? 1;
                   return userRoleLevel >= minLevel;
                 })
