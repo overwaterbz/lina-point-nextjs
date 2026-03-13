@@ -121,7 +121,34 @@ function applyRules(
 }
 
 /**
+ * Check if we have a fresh OTA-beaten rate for this room+date.
+ * Returns the "beat by 6%" rate if scraped within 24 hours, else null.
+ */
+async function getOTABeatRate(
+  supabase: SupabaseClient,
+  roomType: RoomType,
+  date: string,
+): Promise<number | null> {
+  const twentyFourHoursAgo = new Date()
+  twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+
+  const { data } = await supabase
+    .from('daily_ota_rates')
+    .select('our_rate, scraped_at')
+    .eq('room_type', roomType)
+    .eq('date', date)
+    .gt('scraped_at', twentyFourHoursAgo.toISOString())
+    .not('our_rate', 'is', null)
+    .order('scraped_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return data?.our_rate ? Number(data.our_rate) : null
+}
+
+/**
  * Calculate dynamic pricing for a full stay.
+ * Priority: OTA-beaten rate (fresh) > rule-based pricing > base rate.
  */
 export async function calculateDynamicPrice(
   supabase: SupabaseClient,
@@ -161,19 +188,42 @@ export async function calculateDynamicPrice(
       (start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     )
 
-    const occupancy = await getOccupancyForDate(supabase, dateStr)
-    const { rate, applied } = applyRules(
-      baseRate,
-      dateStr,
-      applicableRules,
-      occupancy,
-      daysBeforeCheckin,
-      loyaltyTier || null,
-    )
+    // Priority 1: Check for fresh OTA-beaten rate
+    const otaBeatRate = await getOTABeatRate(supabase, roomType, dateStr)
 
-    nightlyRates.push({ date: dateStr, rate })
-    for (const a of applied) {
-      allApplied.set(a.name, a.multiplier)
+    if (otaBeatRate) {
+      // Apply loyalty discounts on top of OTA-beaten rate
+      const loyaltyRules = applicableRules.filter(r => r.rule_type === 'loyalty')
+      let finalRate = otaBeatRate
+      const applied: Array<{ name: string; multiplier: number }> = [
+        { name: 'OTA Beat Rate (−6%)', multiplier: 0.94 },
+      ]
+      for (const rule of loyaltyRules) {
+        if (rule.loyalty_tier && loyaltyTier && rule.loyalty_tier === loyaltyTier) {
+          finalRate = Math.round(finalRate * rule.multiplier * 100) / 100
+          applied.push({ name: rule.rule_name, multiplier: rule.multiplier })
+        }
+      }
+      nightlyRates.push({ date: dateStr, rate: Math.max(finalRate, 50) })
+      for (const a of applied) {
+        allApplied.set(a.name, a.multiplier)
+      }
+    } else {
+      // Priority 2: Fall back to rule-based pricing
+      const occupancy = await getOccupancyForDate(supabase, dateStr)
+      const { rate, applied } = applyRules(
+        baseRate,
+        dateStr,
+        applicableRules,
+        occupancy,
+        daysBeforeCheckin,
+        loyaltyTier || null,
+      )
+
+      nightlyRates.push({ date: dateStr, rate })
+      for (const a of applied) {
+        allApplied.set(a.name, a.multiplier)
+      }
     }
 
     current.setDate(current.getDate() + 1)

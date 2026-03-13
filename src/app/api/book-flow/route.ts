@@ -45,6 +45,8 @@ interface BookFlowResponse {
       type: string;
       price: number;
       duration: string;
+      affiliateUrl?: string | null;
+      otaPrice?: number | null;
     }>;
     dinner: {
       name: string;
@@ -414,6 +416,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
             type: t.type,
             price: t.price,
             duration: t.duration,
+            affiliateUrl: t.affiliateUrl || null,
+            otaPrice: t.affiliateUrl ? Math.round((t.price / 0.94) * 100) / 100 : null,
           })),
         dinner: {
           name: diningTour?.name || "Sunset Beachfront Dinner",

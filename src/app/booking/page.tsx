@@ -210,6 +210,8 @@ interface BookingResult {
       type: string;
       price: number;
       duration: string;
+      affiliateUrl?: string | null;
+      otaPrice?: number | null;
     }>;
     dinner: {
       name: string;
@@ -904,9 +906,20 @@ export default function BookingPage() {
                     {result.curated_package.tours.map((tour, idx) => (
                       <div key={idx} className="bg-gray-50 rounded p-3">
                         <p className="font-semibold text-gray-900">{tour.name}</p>
-                        <p className="text-sm text-gray-600">
-                          {tour.duration} • ${tour.price}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {tour.otaPrice && tour.otaPrice > tour.price ? (
+                            <>
+                              <span className="text-sm text-red-400 line-through">${tour.otaPrice} OTA</span>
+                              <span className="text-sm font-bold text-green-600">${tour.price}</span>
+                              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                Save {Math.round(((tour.otaPrice - tour.price) / tour.otaPrice) * 100)}%
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-sm text-gray-600">${tour.price}</span>
+                          )}
+                          <span className="text-xs text-gray-400">• {tour.duration}</span>
+                        </div>
                       </div>
                     ))}
                     <div className="bg-orange-50 rounded p-3">

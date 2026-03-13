@@ -1,12 +1,14 @@
 /**
  * ExperienceCuratorAgent: Customizes tour bundles based on user preferences
- * Suggests Belize experiences and generates affiliate links
+ * Suggests Belize experiences and generates affiliate links.
+ * Tours are loaded from the DB (tours + tour_ota_prices tables).
  */
 
 import { grokLLM } from "@/lib/grokIntegration";
 import { runWithRecursion } from "@/lib/agents/agentRecursion";
 import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
 import { getActivePrompt } from "@/lib/agents/promptManager";
+import { createClient } from "@supabase/supabase-js";
 
 // Export for type reference in book-flow
 export interface UserPreferences {
@@ -54,104 +56,73 @@ export interface CuratedExperience {
   }>;
 }
 
-// Mock tour database for Belize experiences
-const BELIZE_TOURS = {
-  snorkeling: {
-    name: "Half-Day Snorkeling & Coral Reef",
-    type: "snorkeling",
-    description: "Explore pristine barrier reef with marine life",
-    duration: "4 hours",
-    budget_price: 65,
-    mid_price: 95,
-    luxury_price: 150,
-    groupSize: 4,
-  },
-  fishing: {
-    name: "Guided Sport Fishing Adventure",
-    type: "fishing",
-    description: "Catch tarpon, permit, or bonefish",
-    duration: "6 hours",
-    budget_price: 250,
-    mid_price: 350,
-    luxury_price: 500,
-    groupSize: 2,
-  },
-  mainland: {
-    name: "Mainland Jungle & Mayan Ruins Day Tour",
-    type: "cultural",
-    description: "Visit ancient ruins and jungle canopy",
-    duration: "8 hours",
-    budget_price: 75,
-    mid_price: 120,
-    luxury_price: 200,
-    groupSize: 6,
-  },
-  cenote: {
-    name: "Cenote Swimming & Cave Exploration",
-    type: "adventure",
-    description: "Underground cenote with crystal-clear waters",
-    duration: "5 hours",
-    budget_price: 80,
-    mid_price: 130,
-    luxury_price: 180,
-    groupSize: 8,
-  },
-  kayaking: {
-    name: "Mangrove Kayaking & Wildlife Spotting",
-    type: "nature",
-    description: "Paddle through mangroves, spot crocodiles & birds",
-    duration: "3 hours",
-    budget_price: 50,
-    mid_price: 85,
-    luxury_price: 140,
-    groupSize: 4,
-  },
-  diving: {
-    name: "Scuba Diving - Blue Hole Day Trip",
-    type: "diving",
-    description: "World-famous Blue Hole dive site",
-    duration: "8 hours",
-    budget_price: 180,
-    mid_price: 280,
-    luxury_price: 450,
-    groupSize: 6,
-  },
-  island: {
-    name: "Island Hopping & Beach Picnic",
-    type: "beach",
-    description: "Visit multiple islands with beach lunch",
-    duration: "6 hours",
-    budget_price: 55,
-    mid_price: 95,
-    luxury_price: 150,
-    groupSize: 8,
-  },
-};
+// ── DB-backed tour & dinner loading ──────────────────────────────────
 
-// Dinner options
-const DINNERS = {
-  casual: {
-    name: "Beachfront Seafood BBQ",
-    price_budget: 35,
-    price_mid: 55,
-    price_luxury: 85,
-    description: "Fresh grilled fish with tropical sides",
-  },
-  romantic: {
-    name: "Candlelit Overwater Dining",
-    price_budget: 75,
-    price_mid: 120,
-    price_luxury: 200,
-    description: "Private dinner on the dock sunset",
-  },
-  traditional: {
-    name: "Belizean Traditional Feast",
-    price_budget: 40,
-    price_mid: 65,
-    price_luxury: 110,
-    description: "Authentic Creole & Maya cuisine",
-  },
-};
+interface DBTour {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  slug: string;
+  duration_hours: number;
+  max_guests: number;
+  budget_price: number | null;
+  mid_price: number | null;
+  luxury_price: number | null;
+  price: number;
+  tour_ota_prices?: Array<{
+    platform: string;
+    ota_price: number;
+    our_price: number;
+    ota_url: string;
+  }>;
+}
+
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+  );
+}
+
+/**
+ * Load active tours from the DB with their OTA prices.
+ */
+async function loadToursFromDB(): Promise<DBTour[]> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from("tours")
+      .select("*, tour_ota_prices(platform, ota_price, our_price, ota_url)")
+      .eq("active", true)
+      .order("category");
+
+    if (error || !data) {
+      console.warn("[Curator] Failed to load tours from DB:", error?.message);
+      return [];
+    }
+    return data as DBTour[];
+  } catch {
+    return [];
+  }
+}
+
+// Fallback hardcoded tours (used only if DB is empty)
+const FALLBACK_TOURS: DBTour[] = [
+  { id: "fb-1", name: "Half-Day Snorkeling & Coral Reef", description: "Explore pristine barrier reef with marine life", category: "water", slug: "snorkeling", duration_hours: 4, max_guests: 4, budget_price: 65, mid_price: 95, luxury_price: 150, price: 95 },
+  { id: "fb-2", name: "Guided Sport Fishing Adventure", description: "Catch tarpon, permit, or bonefish", category: "water", slug: "fishing", duration_hours: 6, max_guests: 2, budget_price: 250, mid_price: 350, luxury_price: 500, price: 350 },
+  { id: "fb-3", name: "Mainland Jungle & Mayan Ruins Day Tour", description: "Visit ancient ruins and jungle canopy", category: "culture", slug: "mainland", duration_hours: 8, max_guests: 6, budget_price: 75, mid_price: 120, luxury_price: 200, price: 120 },
+  { id: "fb-4", name: "Cenote Swimming & Cave Exploration", description: "Underground cenote with crystal-clear waters", category: "adventure", slug: "cenote", duration_hours: 5, max_guests: 8, budget_price: 80, mid_price: 130, luxury_price: 180, price: 130 },
+  { id: "fb-5", name: "Mangrove Kayaking & Wildlife Spotting", description: "Paddle through mangroves, spot crocodiles & birds", category: "nature", slug: "kayaking", duration_hours: 3, max_guests: 4, budget_price: 50, mid_price: 85, luxury_price: 140, price: 85 },
+  { id: "fb-6", name: "Scuba Diving - Blue Hole Day Trip", description: "World-famous Blue Hole dive site", category: "water", slug: "diving", duration_hours: 8, max_guests: 6, budget_price: 180, mid_price: 280, luxury_price: 450, price: 280 },
+  { id: "fb-7", name: "Island Hopping & Beach Picnic", description: "Visit multiple islands with beach lunch", category: "nature", slug: "island", duration_hours: 6, max_guests: 8, budget_price: 55, mid_price: 95, luxury_price: 150, price: 95 },
+];
+
+const FALLBACK_DINNERS: DBTour[] = [
+  { id: "fd-1", name: "Beachfront Seafood BBQ", description: "Fresh grilled fish with tropical sides", category: "dining", slug: "dinner-casual", duration_hours: 2, max_guests: 10, budget_price: 35, mid_price: 55, luxury_price: 85, price: 55 },
+  { id: "fd-2", name: "Candlelit Overwater Dining", description: "Private dinner on the dock at sunset", category: "dining", slug: "dinner-romantic", duration_hours: 3, max_guests: 2, budget_price: 75, mid_price: 120, luxury_price: 200, price: 120 },
+  { id: "fd-3", name: "Belizean Traditional Feast", description: "Authentic Creole & Maya cuisine", category: "dining", slug: "dinner-traditional", duration_hours: 2, max_guests: 10, budget_price: 40, mid_price: 65, luxury_price: 110, price: 65 },
+];
 
 // Add-ons
 const ADDONS = [
@@ -173,82 +144,114 @@ function getPriceTier(budget?: string): "budget" | "mid" | "luxury" {
 }
 
 /**
- * Select tours based on user interests and preferences
+ * Select tours based on user interests and preferences.
+ * Loads from DB first, falls back to hardcoded data.
+ * Includes OTA price comparisons when available.
  */
-function selectTours(prefs: UserPreferences, groupSize: number): Tour[] {
+async function selectTours(prefs: UserPreferences, groupSize: number): Promise<Tour[]> {
   const priceTier = getPriceTier(prefs.budget);
   const interests = prefs.interests || ["snorkeling", "fishing"];
-  const activityLevel = prefs.activityLevel || "medium";
 
-  let selectedTours: Tour[] = [];
+  // Load tours from DB
+  let allTours = await loadToursFromDB();
+  const tourSource = allTours.length > 0 ? allTours.filter(t => t.category !== "dining") : FALLBACK_TOURS;
 
-  // Map interests to tours
-  interests.forEach((interest) => {
-    let tourKey: keyof typeof BELIZE_TOURS | null = null;
+  const selectedTours: Tour[] = [];
 
-    if (interest.toLowerCase().includes("snorkel")) tourKey = "snorkeling";
-    else if (interest.toLowerCase().includes("fish")) tourKey = "fishing";
-    else if (interest.toLowerCase().includes("mayan") || interest.toLowerCase().includes("ruin"))
-      tourKey = "mainland";
-    else if (interest.toLowerCase().includes("cenote")) tourKey = "cenote";
-    else if (interest.toLowerCase().includes("kayak")) tourKey = "kayaking";
-    else if (interest.toLowerCase().includes("dive")) tourKey = "diving";
-    else if (interest.toLowerCase().includes("island") || interest.toLowerCase().includes("beach"))
-      tourKey = "island";
+  for (const interest of interests) {
+    const lower = interest.toLowerCase();
+    // Match by slug, name substring, or category
+    const match = tourSource.find(
+      (t) =>
+        t.slug?.includes(lower) ||
+        t.name.toLowerCase().includes(lower) ||
+        t.category?.toLowerCase().includes(lower) ||
+        (lower.includes("snorkel") && t.slug === "snorkeling") ||
+        (lower.includes("fish") && t.slug === "fishing") ||
+        (lower.includes("mayan") && t.slug === "mainland") ||
+        (lower.includes("ruin") && t.slug === "mainland") ||
+        (lower.includes("cenote") && t.slug === "cenote") ||
+        (lower.includes("kayak") && t.slug === "kayaking") ||
+        (lower.includes("dive") && t.slug === "diving") ||
+        (lower.includes("island") && t.slug === "island") ||
+        (lower.includes("beach") && t.slug === "island"),
+    );
 
-    if (tourKey && BELIZE_TOURS[tourKey]) {
-      const tourData = BELIZE_TOURS[tourKey];
-      const priceKey = `${priceTier}_price` as const;
-      const price = tourData[priceKey] || tourData.mid_price;
+    if (match && !selectedTours.some(s => s.name === match.name)) {
+      const tierPrice = priceTier === "budget"
+        ? match.budget_price
+        : priceTier === "luxury"
+          ? match.luxury_price
+          : match.mid_price;
+      const price = tierPrice || match.price;
+
+      // If we have OTA prices, show the comparison
+      const otaPrices = match.tour_ota_prices || [];
+      const lowestOTA = otaPrices.length > 0
+        ? Math.min(...otaPrices.map(p => p.ota_price))
+        : null;
+      const ourBeatPrice = lowestOTA ? Math.round(lowestOTA * 0.94 * 100) / 100 : null;
+      const finalPrice = ourBeatPrice && ourBeatPrice < price ? ourBeatPrice : price;
 
       selectedTours.push({
-        name: tourData.name,
-        type: tourData.type,
-        description: tourData.description,
-        price,
-        duration: tourData.duration,
-        groupSize: tourData.groupSize,
-        affiliateUrl: `https://viator.com/experience/${tourKey.replace(/\s+/g, "-").toLowerCase()}?affiliate=linapoint`,
-        commission: 5, // 5% commission
+        name: match.name,
+        type: match.category,
+        description: match.description,
+        price: finalPrice,
+        duration: `${match.duration_hours} hours`,
+        groupSize: match.max_guests,
+        affiliateUrl: otaPrices[0]?.ota_url || `https://viator.com/experience/${match.slug}?affiliate=linapoint`,
+        commission: 5,
       });
     }
-  });
+  }
 
-  // If no matches, default to snorkeling + fishing
+  // Default to snorkeling if no matches
   if (selectedTours.length === 0) {
-    selectedTours = [
-      {
-        name: BELIZE_TOURS.snorkeling.name,
-        type: "snorkeling",
-        description: BELIZE_TOURS.snorkeling.description,
-        price: BELIZE_TOURS.snorkeling[`${priceTier}_price`] || 95,
-        duration: BELIZE_TOURS.snorkeling.duration,
-        groupSize: BELIZE_TOURS.snorkeling.groupSize,
-        affiliateUrl: `https://viator.com/experience/snorkeling?affiliate=linapoint`,
-        commission: 5,
-      },
-    ];
+    const defaultTour = tourSource[0] || FALLBACK_TOURS[0];
+    const tierPrice = priceTier === "budget" ? defaultTour.budget_price : priceTier === "luxury" ? defaultTour.luxury_price : defaultTour.mid_price;
+    selectedTours.push({
+      name: defaultTour.name,
+      type: defaultTour.category,
+      description: defaultTour.description,
+      price: tierPrice || defaultTour.price,
+      duration: `${defaultTour.duration_hours} hours`,
+      groupSize: defaultTour.max_guests,
+      affiliateUrl: `https://viator.com/experience/snorkeling?affiliate=linapoint`,
+      commission: 5,
+    });
   }
 
   return selectedTours;
 }
 
 /**
- * Select dinner based on travel type and preferences
+ * Select dinner based on travel type and preferences.
+ * Loads dinner-category tours from DB, falls back to hardcoded.
  */
-function selectDinner(prefs: UserPreferences, isRomantic: boolean = false): CuratedExperience["dinner"] {
+async function selectDinner(prefs: UserPreferences, isRomantic: boolean = false): Promise<CuratedExperience["dinner"]> {
   const priceTier = getPriceTier(prefs.budget);
 
-  let dinnerKey: keyof typeof DINNERS = isRomantic ? "romantic" : "casual";
+  // Load dinners from DB
+  let allTours = await loadToursFromDB();
+  const dinners = allTours.filter(t => t.category === "dining");
+  const dinnerSource = dinners.length > 0 ? dinners : FALLBACK_DINNERS;
 
-  const dinner = DINNERS[dinnerKey];
-  const priceKey = `price_${priceTier}` as const;
+  // Pick romantic or casual
+  const target = isRomantic ? "dinner-romantic" : "dinner-casual";
+  const dinner = dinnerSource.find(d => d.slug === target) || dinnerSource[0];
+
+  const tierPrice = priceTier === "budget"
+    ? dinner.budget_price
+    : priceTier === "luxury"
+      ? dinner.luxury_price
+      : dinner.mid_price;
 
   return {
     name: dinner.name,
-    type: dinnerKey,
-    price: dinner[priceKey] || dinner.price_mid,
-    affiliateUrl: `https://linapoint.com/dining/${dinnerKey}?referral=package`,
+    type: dinner.slug?.replace("dinner-", "") || "casual",
+    price: tierPrice || dinner.price,
+    affiliateUrl: `https://linapoint.com/dining/${dinner.slug?.replace("dinner-", "")}?referral=package`,
   };
 }
 
@@ -351,11 +354,11 @@ export async function runExperienceCurator(
   // Calculate budget per person
   const budgetPerPerson = tourBudget / groupSize;
 
-  // Select tours
-  const tours = selectTours(prefs, groupSize);
+  // Select tours (DB-backed with fallback)
+  const tours = await selectTours(prefs, groupSize);
 
-  // Select dinner
-  const dinner = selectDinner(prefs, groupSize === 2);
+  // Select dinner (DB-backed with fallback)
+  const dinner = await selectDinner(prefs, groupSize === 2);
 
   // Suggest add-ons
   const addons = suggestAddons(prefs, groupSize);

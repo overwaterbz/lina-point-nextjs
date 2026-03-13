@@ -1,8 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import toast from 'react-hot-toast';
+
+interface TourOtaPrice {
+  platform: string;
+  ota_name: string;
+  ota_price: number;
+  ota_rating: number | null;
+  our_price: number;
+  scraped_at: string;
+}
 
 interface Tour {
   id: string;
@@ -14,31 +23,33 @@ interface Tour {
   max_guests: number;
   image_url: string | null;
   active: boolean;
+  tour_ota_prices?: TourOtaPrice[];
 }
 
-const CATEGORIES = ['water', 'culture', 'nature', 'adventure', 'wellness'];
+const CATEGORIES = ['water', 'culture', 'nature', 'adventure', 'wellness', 'dining'];
 
 export default function AdminToursPage() {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Tour | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showOta, setShowOta] = useState<string | null>(null);
 
-  const fetchTours = async () => {
+  const fetchTours = useCallback(async () => {
     const supabase = createBrowserSupabaseClient();
     try {
       const { data } = await supabase
         .from('tours')
-        .select('*')
+        .select('*, tour_ota_prices(*)')
         .order('category')
         .order('name');
       setTours(data || []);
     } catch (err) { console.error(err) } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchTours(); }, []);
+  useEffect(() => { fetchTours(); }, [fetchTours]);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -147,21 +158,47 @@ export default function AdminToursPage() {
               <tr>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Tour</th>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Category</th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Price</th>
+                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Our Price</th>
+                <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">OTA Prices</th>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Duration</th>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Status</th>
                 <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {tours.map((tour) => (
-                <tr key={tour.id} className="border-t hover:bg-slate-50">
+              {tours.map((tour) => {
+                const otaPrices = tour.tour_ota_prices || [];
+                const lowestOta = otaPrices.length > 0
+                  ? Math.min(...otaPrices.map(p => p.ota_price))
+                  : null;
+                const beating = lowestOta ? tour.price < lowestOta : false;
+                return (
+                <React.Fragment key={tour.id}>
+                <tr className="border-t hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900">{tour.name}</p>
                     <p className="text-xs text-gray-500 truncate max-w-xs">{tour.description}</p>
                   </td>
                   <td className="px-4 py-3 text-gray-600 capitalize">{tour.category}</td>
                   <td className="px-4 py-3 text-gray-900 font-medium">${tour.price}</td>
+                  <td className="px-4 py-3">
+                    {otaPrices.length > 0 ? (
+                      <button
+                        onClick={() => setShowOta(showOta === tour.id ? null : tour.id)}
+                        className="flex items-center gap-1.5"
+                      >
+                        <span className={`inline-block w-2 h-2 rounded-full ${beating ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <span className="text-xs font-medium text-gray-700">
+                          {beating
+                            ? `Beating by ${Math.round(((lowestOta! - tour.price) / lowestOta!) * 100)}%`
+                            : `Above OTA`}
+                        </span>
+                        <span className="text-xs text-gray-400">{showOta === tour.id ? '▲' : '▼'}</span>
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400">No data</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-600">{tour.duration_hours}h</td>
                   <td className="px-4 py-3">
                     <button
@@ -180,7 +217,32 @@ export default function AdminToursPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                {showOta === tour.id && otaPrices.length > 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-2 bg-slate-50">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {otaPrices.map((p, i) => (
+                          <div key={i} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border text-xs">
+                            <div>
+                              <span className="font-medium text-gray-700 capitalize">{p.platform}</span>
+                              {p.ota_rating && <span className="ml-1 text-yellow-600">★ {p.ota_rating}</span>}
+                            </div>
+                            <div className="text-right">
+                              <span className="text-red-400 line-through">${p.ota_price}</span>
+                              <span className="ml-2 font-bold text-green-600">${p.our_price}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        Last scraped: {otaPrices[0]?.scraped_at ? new Date(otaPrices[0].scraped_at).toLocaleString() : 'N/A'}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

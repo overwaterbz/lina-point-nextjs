@@ -86,6 +86,12 @@ export function confirmationEmailHtml(opts: {
       <a href="https://wa.me/5016327767" style="display:inline-block;background:#25d366;color:white;padding:10px 24px;border-radius:24px;text-decoration:none;font-weight:600;font-size:14px">Chat with our AI Concierge on WhatsApp</a>
     </div>
 
+    <div style="background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);border-radius:8px;padding:20px;margin:24px 0;text-align:center;color:white">
+      <p style="font-size:18px;font-weight:bold;margin:0 0 8px">🌙 Your Stay Includes Magic Is You</p>
+      <p style="font-size:13px;margin:0 0 16px;opacity:0.9">Discover your Maya cosmic blueprint — free Dreamweaver access for the duration of your stay. Unlock AI-guided insights, dream interpretation, and your personalized soul contract.</p>
+      <a href="https://magic-is-you.vercel.app/auth/login" style="display:inline-block;background:white;color:#4f46e5;padding:10px 24px;border-radius:24px;text-decoration:none;font-weight:600;font-size:14px">Explore Your Blueprint →</a>
+    </div>
+
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
     <p style="font-size:12px;color:#9ca3af;text-align:center">
       Lina Point Resort — San Pedro, Ambergris Caye, Belize<br/>

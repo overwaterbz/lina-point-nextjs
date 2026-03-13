@@ -21,6 +21,10 @@ function getSupabaseAdmin() {
   return createClient(url, key);
 }
 
+/**
+ * POST handler — receives inbound triggers from n8n (n8n → Lina Point)
+ * Used for: self-improvement triggers, workflow orchestration
+ */
 export async function POST(request: NextRequest) {
   try {
     requireSecret(request);
@@ -36,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (body?.runSelfImprove) {
       const supabase = getSupabaseAdmin();
       await runSelfImprovementAndPersist(supabase as any, {
-        logsSummary: "Triggered via n8n stub",
+        logsSummary: "Triggered via n8n",
         bookingSummary: JSON.stringify(body?.booking || {}),
         prefsSummary: JSON.stringify(body?.prefs || {}),
         conversionSummary: JSON.stringify(body?.conversions || {}),
@@ -50,11 +54,24 @@ export async function POST(request: NextRequest) {
       workflow: "booking-curate-content-email",
       payload: body,
       steps,
-      message: "n8n workflow stub invoked",
+      message: "n8n workflow triggered",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Workflow error";
     const status = message === "Unauthorized" ? 401 : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
+}
+
+/**
+ * GET handler — health check for n8n integration
+ */
+export async function GET() {
+  const configured = !!(process.env.N8N_WEBHOOK_URL || process.env.N8N_BASE_URL);
+  return NextResponse.json({
+    ok: true,
+    n8n_configured: configured,
+    inbound: "POST /api/trigger-n8n (n8n → Lina Point)",
+    outbound: "Use triggerN8nWorkflow() from @/lib/n8nClient",
+  });
 }
