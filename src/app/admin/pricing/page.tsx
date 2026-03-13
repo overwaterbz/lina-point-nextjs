@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -19,9 +19,20 @@ interface PriceOverride {
   label: string | null;
 }
 
+interface OTARate {
+  room_type: string;
+  date: string;
+  ota_name: string;
+  ota_price: number;
+  our_rate: number | null;
+  is_live: boolean;
+  scraped_at: string;
+}
+
 const ROOM_LABELS: Record<string, string> = {
-  suite_1st_floor: '1st Floor Suite',
   suite_2nd_floor: '2nd Floor Suite',
+  suite_1st_floor: '1st Floor Suite',
+  cabana_duplex: '1 Bed Duplex Cabana',
   cabana_1br: '1BR Cabana',
   cabana_2br: '2BR Cabana',
 };
@@ -31,26 +42,29 @@ const ROOM_TYPES = Object.keys(ROOM_LABELS);
 export default function PricingPage() {
   const [rooms, setRooms] = useState<RoomPricing[]>([]);
   const [overrides, setOverrides] = useState<PriceOverride[]>([]);
+  const [otaRates, setOtaRates] = useState<OTARate[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingBase, setEditingBase] = useState<string | null>(null);
   const [newPrice, setNewPrice] = useState('');
   const [showOverrideForm, setShowOverrideForm] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     const supabase = createBrowserSupabaseClient();
     try {
-      const [roomsRes, overridesRes] = await Promise.all([
+      const [roomsRes, overridesRes, otaRes] = await Promise.all([
         supabase.from('rooms').select('id, room_type, base_price').order('room_type'),
         supabase.from('price_overrides').select('*').gte('date_end', new Date().toISOString().split('T')[0]).order('date_start'),
+        supabase.from('daily_ota_rates').select('*').gte('date', new Date().toISOString().split('T')[0]).order('date').limit(100),
       ]);
       setRooms(roomsRes.data || []);
       setOverrides(overridesRes.data || []);
+      setOtaRates(otaRes.data || []);
     } catch (err) { console.error(err) } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   // Deduplicate to one price per room type
   const basePrices = ROOM_TYPES.map((rt) => {
@@ -191,6 +205,63 @@ export default function PricingPage() {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* OTA Price Comparison */}
+          <div className="bg-white rounded-lg shadow p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-semibold text-gray-900">OTA Price Comparison</h2>
+                <p className="text-xs text-gray-500 mt-1">Auto-scraped rates — our prices beat OTAs by 6%</p>
+              </div>
+              {otaRates.length > 0 && (
+                <p className="text-xs text-gray-400">
+                  Last scraped: {new Date(otaRates[0].scraped_at).toLocaleString()}
+                </p>
+              )}
+            </div>
+
+            {otaRates.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">No OTA data yet — runs daily via cron</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Date</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Room Type</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">OTA</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-gray-500">OTA Price</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-gray-500">Our Rate</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-gray-500">Savings</th>
+                      <th className="text-center px-3 py-2 text-xs font-medium text-gray-500">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {otaRates.map((rate) => {
+                      const savings = rate.our_rate ? Math.round(((rate.ota_price - rate.our_rate) / rate.ota_price) * 100) : 0;
+                      const isBeating = savings > 0;
+                      return (
+                        <tr key={`${rate.room_type}-${rate.date}-${rate.ota_name}`} className="border-t hover:bg-slate-50">
+                          <td className="px-3 py-2 text-gray-600">{new Date(rate.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                          <td className="px-3 py-2 font-medium text-gray-900">{ROOM_LABELS[rate.room_type] || rate.room_type}</td>
+                          <td className="px-3 py-2 text-gray-600 capitalize">
+                            {rate.ota_name}
+                            {!rate.is_live && <span className="ml-1 text-xs text-amber-500">(est.)</span>}
+                          </td>
+                          <td className="px-3 py-2 text-right text-gray-500 line-through">${rate.ota_price}</td>
+                          <td className="px-3 py-2 text-right font-semibold text-green-700">{rate.our_rate ? `$${rate.our_rate}` : '—'}</td>
+                          <td className="px-3 py-2 text-right text-sm">{savings > 0 ? `${savings}%` : '—'}</td>
+                          <td className="px-3 py-2 text-center">
+                            <span className={`inline-block w-2 h-2 rounded-full ${isBeating ? 'bg-green-500' : savings === 0 ? 'bg-yellow-400' : 'bg-red-500'}`} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

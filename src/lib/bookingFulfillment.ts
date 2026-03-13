@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { findAvailableRoom, markDatesBooked, resolveRoomType, getRoomTypeInfo } from './inventory'
 import type { RoomType } from './inventory'
+import { fireN8nWorkflow } from './n8nClient'
 
 /**
  * Generate a human-friendly confirmation number: LP-XXXXXX
@@ -242,6 +243,35 @@ export async function markReservationPaid(
   } catch (invErr) {
     console.warn('[BookingFulfillment] Invoice generation failed:', invErr)
   }
+
+  // Grant free Magic Is You Dreamweaver access for the stay
+  try {
+    const { data: guest } = await supabase.auth.admin.getUserById(data.guest_id)
+    if (guest?.user?.email) {
+      const { grantMagicAccess } = await import('./magicBridge')
+      await grantMagicAccess(
+        supabase,
+        guest.user.email,
+        guest.user.user_metadata?.full_name || guest.user.email.split('@')[0],
+        bookingId,
+        data.check_in,
+        data.check_out,
+      )
+    }
+  } catch (bridgeErr) {
+    console.warn('[BookingFulfillment] Magic bridge failed (non-fatal):', bridgeErr)
+  }
+
+  // Notify n8n of new paid booking (fire-and-forget)
+  fireN8nWorkflow('new-booking', {
+    reservationId: bookingId,
+    confirmationNumber: data.confirmation_number,
+    guestId: data.guest_id,
+    roomType: data.room_type,
+    checkIn: data.check_in,
+    checkOut: data.check_out,
+    total: data.total_room_cost,
+  })
 
   return data.confirmation_number || null
 }
