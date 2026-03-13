@@ -1,34 +1,41 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
-export type RoomType = 'cabana_1br' | 'cabana_2br' | 'suite_2nd_floor' | 'suite_1st_floor'
+export type RoomType = 'suite_2nd_floor' | 'suite_1st_floor' | 'cabana_duplex' | 'cabana_1br' | 'cabana_2br'
 
 /** Maps the booking page's display names to DB enum values */
 const ROOM_TYPE_MAP: Record<string, RoomType> = {
-  'overwater cabana': 'cabana_1br',
-  'cabana 1br': 'cabana_1br',
-  'cabana_1br': 'cabana_1br',
-  'cabana 2br': 'cabana_2br',
-  'cabana_2br': 'cabana_2br',
-  'family cabana': 'cabana_2br',
   '2nd floor suite': 'suite_2nd_floor',
   'reef suite': 'suite_2nd_floor',
   'suite_2nd_floor': 'suite_2nd_floor',
   '1st floor suite': 'suite_1st_floor',
   'hotel suite': 'suite_1st_floor',
   'suite_1st_floor': 'suite_1st_floor',
+  'duplex cabana': 'cabana_duplex',
+  'cabana duplex': 'cabana_duplex',
+  'cabana_duplex': 'cabana_duplex',
+  '1 bed duplex': 'cabana_duplex',
+  'overwater cabana': 'cabana_1br',
+  'cabana 1br': 'cabana_1br',
+  'cabana_1br': 'cabana_1br',
+  '1 bedroom cabana': 'cabana_1br',
+  'cabana 2br': 'cabana_2br',
+  'cabana_2br': 'cabana_2br',
+  '2 bedroom cabana': 'cabana_2br',
+  'family cabana': 'cabana_2br',
   // Legacy aliases
-  'overwater bungalow': 'cabana_1br',
+  'overwater bungalow': 'cabana_duplex',
   'overwater suite': 'suite_1st_floor',
   'overwater_suite': 'suite_1st_floor',
   'beach villa': 'cabana_1br',
 }
 
-/** Room type display labels and total counts */
+/** Room type display labels, total counts, and base nightly rates */
 const ROOM_TYPE_INFO: Record<RoomType, { label: string; total: number; baseRate: number }> = {
-  suite_1st_floor: { label: '1st Floor Hotel Suite', total: 4, baseRate: 299 },
-  suite_2nd_floor: { label: '2nd Floor Hotel Suite', total: 4, baseRate: 249 },
-  cabana_1br: { label: '1BR Overwater Cabana', total: 7, baseRate: 199 },
-  cabana_2br: { label: '2BR Overwater Cabana', total: 1, baseRate: 349 },
+  suite_2nd_floor: { label: '2nd Floor Overwater Hotel Suite', total: 4, baseRate: 130 },
+  suite_1st_floor: { label: '1st Floor Overwater Hotel Suite', total: 4, baseRate: 150 },
+  cabana_duplex:   { label: '1 Bed Overwater Cabana (Duplex)', total: 6, baseRate: 250 },
+  cabana_1br:      { label: '1 Bedroom Overwater Cabana',      total: 1, baseRate: 300 },
+  cabana_2br:      { label: '2 Bedroom Overwater Cabana',      total: 1, baseRate: 400 },
 }
 
 export function resolveRoomType(input: string): RoomType {

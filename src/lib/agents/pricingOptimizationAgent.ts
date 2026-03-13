@@ -165,8 +165,8 @@ export async function runPricingOptimization(): Promise<PricingOptimizationResul
     })),
     propertyInfo: {
       totalRooms: 16,
-      roomTypes: ['suite_1st_floor', 'suite_2nd_floor', 'cabana_1br', 'cabana_2br'],
-      baseRates: { suite_1st_floor: 299, suite_2nd_floor: 249, cabana_1br: 199, cabana_2br: 349 },
+      roomTypes: ['suite_2nd_floor', 'suite_1st_floor', 'cabana_duplex', 'cabana_1br', 'cabana_2br'],
+      baseRates: { suite_2nd_floor: 130, suite_1st_floor: 150, cabana_duplex: 250, cabana_1br: 300, cabana_2br: 400 },
     },
   }, null, 2)
 

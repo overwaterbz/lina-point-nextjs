@@ -351,7 +351,7 @@ export default function BookingPage() {
   };
 
   const [formData, setFormData] = useState({
-    roomType: "suite_1st_floor",
+    roomType: "suite_2nd_floor",
     checkInDate: "",
     checkOutDate: "",
     location: "Belize",
@@ -525,10 +525,11 @@ export default function BookingPage() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       {(availability || [
-                        { roomType: 'suite_1st_floor', label: '1st Floor Hotel Suite', baseRate: 299, availableRooms: -1, available: true },
-                        { roomType: 'suite_2nd_floor', label: '2nd Floor Hotel Suite', baseRate: 249, availableRooms: -1, available: true },
-                        { roomType: 'cabana_1br', label: '1BR Overwater Cabana', baseRate: 199, availableRooms: -1, available: true },
-                        { roomType: 'cabana_2br', label: '2BR Overwater Cabana', baseRate: 349, availableRooms: -1, available: true },
+                        { roomType: 'suite_2nd_floor', label: '2nd Floor Overwater Hotel Suite', baseRate: 130, availableRooms: -1, available: true },
+                        { roomType: 'suite_1st_floor', label: '1st Floor Overwater Hotel Suite', baseRate: 150, availableRooms: -1, available: true },
+                        { roomType: 'cabana_duplex', label: '1 Bed Overwater Cabana (Duplex)', baseRate: 250, availableRooms: -1, available: true },
+                        { roomType: 'cabana_1br', label: '1 Bedroom Overwater Cabana', baseRate: 300, availableRooms: -1, available: true },
+                        { roomType: 'cabana_2br', label: '2 Bedroom Overwater Cabana', baseRate: 400, availableRooms: -1, available: true },
                       ]).map((r: any) => (
                         <option key={r.roomType} value={r.roomType} disabled={!r.available}>
                           {r.label} — ${r.dynamicRate ?? r.baseRate}/night

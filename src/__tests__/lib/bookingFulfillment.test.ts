@@ -18,8 +18,11 @@ jest.mock('@/lib/inventory', () => ({
   }),
   getRoomTypeInfo: jest.fn((rt: string) => {
     const info: Record<string, any> = {
-      cabana_1br: { label: '1BR Overwater Cabana', total: 7, baseRate: 199 },
-      suite_1st_floor: { label: '1st Floor Hotel Suite', total: 4, baseRate: 299 },
+      suite_2nd_floor: { label: '2nd Floor Overwater Hotel Suite', total: 4, baseRate: 130 },
+      suite_1st_floor: { label: '1st Floor Overwater Hotel Suite', total: 4, baseRate: 150 },
+      cabana_duplex: { label: '1 Bed Overwater Cabana (Duplex)', total: 6, baseRate: 250 },
+      cabana_1br: { label: '1 Bedroom Overwater Cabana', total: 1, baseRate: 300 },
+      cabana_2br: { label: '2 Bedroom Overwater Cabana', total: 1, baseRate: 400 },
     };
     return info[rt] || info['suite_1st_floor'];
   }),

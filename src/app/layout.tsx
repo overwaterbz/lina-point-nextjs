@@ -110,9 +110,11 @@ const jsonLd = {
     "@type": "OfferCatalog",
     name: "Room Types",
     itemListElement: [
-      { "@type": "Offer", name: "Overwater Cabana", price: "199", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=overwater-cabana" },
-      { "@type": "Offer", name: "2nd Floor Suite", price: "249", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=2nd-floor-suite" },
-      { "@type": "Offer", name: "1st Floor Suite", price: "299", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=1st-floor-suite" },
+      { "@type": "Offer", name: "2nd Floor Hotel Suite", price: "130", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=2nd-floor-suite" },
+      { "@type": "Offer", name: "1st Floor Hotel Suite", price: "150", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=1st-floor-suite" },
+      { "@type": "Offer", name: "1 Bed Duplex Cabana", price: "250", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=overwater-cabana-duplex" },
+      { "@type": "Offer", name: "1 Bedroom Overwater Cabana", price: "300", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=overwater-cabana" },
+      { "@type": "Offer", name: "2 Bedroom Overwater Cabana", price: "400", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=2br-overwater-cabana" },
     ],
   },
   aggregateRating: {

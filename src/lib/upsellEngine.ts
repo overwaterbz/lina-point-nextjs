@@ -24,10 +24,11 @@ export interface UpsellOffer {
 }
 
 const UPGRADE_PATH: Record<RoomType, RoomType | null> = {
-  cabana_1br: 'suite_2nd_floor',
-  cabana_2br: 'suite_2nd_floor',
   suite_2nd_floor: 'suite_1st_floor',
-  suite_1st_floor: null, // Already top tier
+  suite_1st_floor: 'cabana_duplex',
+  cabana_duplex: 'cabana_1br',
+  cabana_1br: 'cabana_2br',
+  cabana_2br: null, // Already top tier
 }
 
 /**

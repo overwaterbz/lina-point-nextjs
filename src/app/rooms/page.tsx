@@ -12,36 +12,10 @@ import TestimonialsCarousel from '@/components/TestimonialsCarousel';
 
 const ROOMS = [
   {
-    name: 'Overwater Cabana',
-    slug: 'overwater-cabana',
-    tagline: 'Our Signature Experience',
-    price: 199,
-    description:
-      'Step into paradise with glass bottom floors revealing the vibrant reef below. Your private overwater deck features direct ladder access to the Caribbean Sea, a hammock for lazy afternoons, and uninterrupted sunrise views. Seven cabanas named after Belizean fish — Conch, Dorado, Marlin, Sailfish, Wahoo, Bonito, and Mahi Mahi.',
-    features: [
-      'Glass bottom floor panels',
-      'Private overwater deck',
-      'Direct sea ladder access',
-      'King-size bed',
-      'Outdoor rain shower',
-      'Mini bar & coffee station',
-      'Smart TV & Wi-Fi',
-      'In-room safe',
-    ],
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg',
-    gallery: [
-      'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg',
-      'https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg',
-      'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg',
-    ],
-    accent: 'from-amber-500 to-amber-600',
-    badge: 'Most Popular',
-  },
-  {
-    name: '2nd Floor Suite',
+    name: '2nd Floor Hotel Suite',
     slug: '2nd-floor-suite',
     tagline: 'Premium Elevated Living',
-    price: 249,
+    price: 130,
     description:
       'Elevated luxury with expanded living space in the main building, second floor. Floor-to-ceiling windows frame the turquoise Caribbean, while your private balcony offers the perfect spot for morning coffee or evening cocktails. Four suites named Bonefish, Snook, Tarpon, and Permit.',
     features: [
@@ -64,12 +38,12 @@ const ROOMS = [
     badge: null,
   },
   {
-    name: '1st Floor Suite',
+    name: '1st Floor Hotel Suite',
     slug: '1st-floor-suite',
     tagline: 'Main Building Luxury',
-    price: 299,
+    price: 150,
     description:
-      'Spacious ground-floor suites in the main building with direct ocean views and beach access. The most premium rooms at Lina Point, featuring generous living space and top-tier amenities. Four suites named Baracuda, Snapper, Jack, and Grouper.',
+      'Spacious ground-floor suites in the main building with direct ocean views and beach access. Generous living space and top-tier amenities. Four suites named Baracuda, Snapper, Jack, and Grouper.',
     features: [
       'Direct beach access',
       'Full kitchen',
@@ -87,7 +61,85 @@ const ROOMS = [
       'https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg',
     ],
     accent: 'from-teal-500 to-teal-600',
+    badge: null,
+  },
+  {
+    name: '1 Bed Overwater Cabana (Duplex)',
+    slug: 'overwater-cabana-duplex',
+    tagline: 'Overwater Island Living',
+    price: 250,
+    description:
+      'Duplex-style overwater cabanas offering the quintessential Caribbean experience. Glass bottom floor panels reveal the reef below, with a private deck and direct sea access. Six duplex units share the iconic overwater pier.',
+    features: [
+      'Glass bottom floor panels',
+      'Private overwater deck',
+      'Direct sea ladder access',
+      'King-size bed',
+      'Outdoor rain shower',
+      'Mini bar & coffee station',
+      'Smart TV & Wi-Fi',
+      'In-room safe',
+    ],
+    image: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg',
+    gallery: [
+      'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg',
+      'https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg',
+      'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg',
+    ],
+    accent: 'from-amber-500 to-amber-600',
+    badge: 'Most Popular',
+  },
+  {
+    name: '1 Bedroom Overwater Cabana',
+    slug: 'overwater-cabana',
+    tagline: 'Our Signature Experience',
+    price: 300,
+    description:
+      'The standalone overwater cabana — the most private accommodation at Lina Point. Enjoy unobstructed 360° ocean views, a spacious private deck with hammock, and the sound of waves beneath you as you drift to sleep.',
+    features: [
+      'Standalone private cabana',
+      'Glass bottom floor panels',
+      'Extra-large overwater deck',
+      'King-size bed',
+      'Outdoor rain shower',
+      'Full mini bar & espresso',
+      'Smart TV & Wi-Fi',
+      'In-room safe',
+    ],
+    image: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg',
+    gallery: [
+      'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg',
+      'https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg',
+      'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg',
+    ],
+    accent: 'from-orange-500 to-orange-600',
     badge: 'Premium',
+  },
+  {
+    name: '2 Bedroom Overwater Cabana',
+    slug: '2br-overwater-cabana',
+    tagline: 'Family Overwater Paradise',
+    price: 400,
+    description:
+      'The ultimate family overwater experience. Two separate bedrooms, a full kitchenette, and the largest private deck at the resort. Perfect for families or groups wanting premium overwater living with extra space.',
+    features: [
+      'Two bedrooms',
+      'Glass bottom floor panels',
+      'Largest private deck',
+      'Kitchenette',
+      'Outdoor rain shower',
+      'Full mini bar & espresso',
+      'Smart TV & Wi-Fi',
+      'In-room safe',
+    ],
+    image: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg',
+    gallery: [
+      'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg',
+      'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg',
+      'https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg',
+    ],
+    accent: 'from-rose-500 to-rose-600',
+    badge: 'Family Favorite',
   },
 ];
 

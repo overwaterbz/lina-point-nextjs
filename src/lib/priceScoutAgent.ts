@@ -90,8 +90,8 @@ async function scanOTAs(state: typeof PriceScoutAnnotation.State) {
  */
 async function calculateBeatPrice(state: typeof PriceScoutAnnotation.State) {
   const rawBeat = Math.round(state.bestPrice * 0.94 * 100) / 100; // 6% discount
-  // Floor: never go below 70% of typical base rate ($139 for cheapest room)
-  const beatPrice = Math.max(rawBeat, 139);
+  // Floor: never go below 70% of typical base rate ($120 for cheapest room)
+  const beatPrice = Math.max(rawBeat, 120);
   const savings = Math.round((state.bestPrice - beatPrice) * 100) / 100;
   const savingsPercent = state.bestPrice > 0 ? Math.round((savings / state.bestPrice) * 100 * 10) / 10 : 6;
 
