@@ -111,8 +111,8 @@ async function calculateBeatPrice(state: typeof PriceScoutAnnotation.State) {
 async function refineSearch(state: typeof PriceScoutAnnotation.State) {
   state.iteration++;
 
-  if (state.iteration >= 3) {
-    debugLog(`[PriceScout] Max iterations (3) reached. Stopping refinement.`);
+  if (state.iteration >= 2) {
+    debugLog(`[PriceScout] Max iterations (2) reached. Stopping refinement.`);
     return {
       ...state,
       refinementNotes: `${state.refinementNotes} → Completed after ${state.iteration} iterations.`,
@@ -141,7 +141,7 @@ async function refineSearch(state: typeof PriceScoutAnnotation.State) {
  * Conditional: Should refine further?
  */
 function shouldRefine(state: typeof PriceScoutAnnotation.State): string {
-  return state.iteration < 3 ? "refine" : "done";
+  return state.iteration < 2 ? "refine" : "done";
 }
 
 /**

@@ -9,6 +9,8 @@ import { generateMagicContent } from "@/lib/magicContent";
 import { createReservation } from "@/lib/bookingFulfillment";
 import { confirmationEmailHtml, adminNotificationHtml } from "@/lib/emailTemplates";
 
+export const maxDuration = 60; // Vercel Hobby plan max
+
 const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
   if (!isProd) {
@@ -115,36 +117,65 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
 
     const requestId = randomUUID();
 
-    // Run PriceScout Agent
-    debugLog("[BookFlow] Running PriceScout Agent...");
-    let priceRunId: string | null = null;
+    // Run PriceScout + ExperienceCurator in parallel
+    debugLog("[BookFlow] Running agents in parallel...");
+
     const priceRunStart = Date.now();
-    let priceScoutResult: Awaited<ReturnType<typeof runPriceScout>>;
+    const curatorRunStart = Date.now();
+    let priceRunId: string | null = null;
+    let curatorRunId: string | null = null;
+
+    // Log agent runs (non-blocking)
+    try {
+      priceRunId = await createAgentRun(supabase as any, {
+        user_id: user.id,
+        agent_name: "price_scout",
+        request_id: requestId,
+        input: JSON.stringify({
+          roomType: body.roomType,
+          checkInDate: body.checkInDate,
+          checkOutDate: body.checkOutDate,
+          location: body.location,
+        }) as any,
+      });
+    } catch (logError) {
+      console.warn("[BookFlow] Failed to create PriceScout run:", logError);
+    }
 
     try {
-      try {
-        priceRunId = await createAgentRun(supabase as any, {
-          user_id: user.id,
-          agent_name: "price_scout",
-          request_id: requestId,
-          input: JSON.stringify({
-            roomType: body.roomType,
-            checkInDate: body.checkInDate,
-            checkOutDate: body.checkOutDate,
-            location: body.location,
-          }) as any,
-        });
-      } catch (logError) {
-        console.warn("[BookFlow] Failed to create PriceScout run:", logError);
-      }
+      curatorRunId = await createAgentRun(supabase as any, {
+        user_id: user.id,
+        agent_name: "experience_curator",
+        request_id: requestId,
+        input: JSON.stringify({
+          userPreferences,
+          groupSize: body.groupSize,
+          tourBudget: body.tourBudget,
+        }) as any,
+      });
+    } catch (logError) {
+      console.warn("[BookFlow] Failed to create Curator run:", logError);
+    }
 
-      priceScoutResult = await runPriceScout(
+    // Run both agents in parallel
+    const [priceScoutSettled, curatorSettled] = await Promise.allSettled([
+      runPriceScout(
         body.roomType,
         body.checkInDate,
         body.checkOutDate,
         body.location
-      );
+      ),
+      runExperienceCurator(
+        userPreferences,
+        body.groupSize,
+        body.tourBudget
+      ),
+    ]);
 
+    // Extract results (with fallbacks)
+    let priceScoutResult: Awaited<ReturnType<typeof runPriceScout>>;
+    if (priceScoutSettled.status === "fulfilled") {
+      priceScoutResult = priceScoutSettled.value;
       if (priceRunId) {
         try {
           await finishAgentRun(supabase as any, priceRunId, {
@@ -156,51 +187,35 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
           console.warn("[BookFlow] Failed to finalize PriceScout run:", logError);
         }
       }
-    } catch (agentError) {
+    } else {
+      console.error("[BookFlow] PriceScout failed:", priceScoutSettled.reason);
       if (priceRunId) {
         try {
           await finishAgentRun(supabase as any, priceRunId, {
             status: "failed",
-            error_message: agentError instanceof Error ? agentError.message : String(agentError),
+            error_message: String(priceScoutSettled.reason),
             duration_ms: Date.now() - priceRunStart,
           });
         } catch (logError) {
           console.warn("[BookFlow] Failed to finalize PriceScout run:", logError);
         }
       }
-      throw agentError;
+      // Fallback pricing
+      priceScoutResult = {
+        bestPrice: 250,
+        bestOTA: "direct",
+        beatPrice: 235,
+        savingsPercent: 6,
+        savings: 15,
+        iterations: 0,
+        priceUrl: `https://linapoint.com/book?room_type=${encodeURIComponent(body.roomType)}`,
+        allPrices: { direct: 250 },
+      };
     }
 
-    debugLog("[BookFlow] PriceScout Result:", priceScoutResult);
-
-    // Run ExperienceCurator Agent
-    debugLog("[BookFlow] Running ExperienceCurator Agent...");
-    let curatorRunId: string | null = null;
-    const curatorRunStart = Date.now();
     let curatorResult: Awaited<ReturnType<typeof runExperienceCurator>>;
-
-    try {
-      try {
-        curatorRunId = await createAgentRun(supabase as any, {
-          user_id: user.id,
-          agent_name: "experience_curator",
-          request_id: requestId,
-          input: JSON.stringify({
-            userPreferences,
-            groupSize: body.groupSize,
-            tourBudget: body.tourBudget,
-          }) as any,
-        });
-      } catch (logError) {
-        console.warn("[BookFlow] Failed to create Curator run:", logError);
-      }
-
-      curatorResult = await runExperienceCurator(
-        userPreferences,
-        body.groupSize,
-        body.tourBudget
-      );
-
+    if (curatorSettled.status === "fulfilled") {
+      curatorResult = curatorSettled.value;
       if (curatorRunId) {
         try {
           await finishAgentRun(supabase as any, curatorRunId, {
@@ -212,21 +227,31 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
           console.warn("[BookFlow] Failed to finalize Curator run:", logError);
         }
       }
-    } catch (agentError) {
+    } else {
+      console.error("[BookFlow] Curator failed:", curatorSettled.reason);
       if (curatorRunId) {
         try {
           await finishAgentRun(supabase as any, curatorRunId, {
             status: "failed",
-            error_message: agentError instanceof Error ? agentError.message : String(agentError),
+            error_message: String(curatorSettled.reason),
             duration_ms: Date.now() - curatorRunStart,
           });
         } catch (logError) {
           console.warn("[BookFlow] Failed to finalize Curator run:", logError);
         }
       }
-      throw agentError;
+      // Fallback experience
+      curatorResult = {
+        tours: [],
+        dinner: { name: "Beachfront Seafood BBQ", type: "casual", price: 55, affiliateUrl: "" },
+        addons: [],
+        totalPrice: 55,
+        recommendations: ["Explore the famous Barrier Reef at sunset."],
+        affiliateLinks: [],
+      };
     }
 
+    debugLog("[BookFlow] PriceScout Result:", priceScoutResult);
     debugLog("[BookFlow] Curator Result:", curatorResult);
 
     // Save prices to database

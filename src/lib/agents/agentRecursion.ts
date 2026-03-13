@@ -11,8 +11,8 @@ export async function runWithRecursion<T>(
   options?: { maxIterations?: number; minScore?: number }
 ): Promise<{ result: T; score: number; iterations: number; feedback: string }>
 {
-  const maxIterations = options?.maxIterations ?? 3;
-  const minScore = options?.minScore ?? 0.8;
+  const maxIterations = options?.maxIterations ?? 1;
+  const minScore = options?.minScore ?? 0.6;
 
   let iteration = 1;
   let lastResult = await generate(iteration);

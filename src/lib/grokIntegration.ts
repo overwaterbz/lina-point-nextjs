@@ -17,6 +17,7 @@ export const grokLLM = new ChatOpenAI({
   model: "grok-4",
   temperature: 0.7,
   maxTokens: 1024,
+  timeout: 10000, // 10s hard timeout per request
 }) as any;
 
 /**
