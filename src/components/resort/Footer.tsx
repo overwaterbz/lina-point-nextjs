@@ -187,6 +187,14 @@ export default function Footer() {
             >
               Point Realtor — Real Estate Brokerage
             </a>
+            <a
+              href="https://pointenterprise.com?utm_source=linapoint&utm_medium=footer&utm_campaign=ecosystem"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block hover:text-amber-400 transition"
+            >
+              Point Enterprise — The Family Behind It All
+            </a>
           </div>
         </div>
 
