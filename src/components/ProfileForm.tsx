@@ -44,8 +44,9 @@ export default function ProfileForm({ action, initial }: ProfileFormProps) {
   return (
     <form action={action} onSubmit={submitHandler} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+        <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
         <input
+          id="phone_number"
           name="phone_number"
           type="tel"
           value={phoneNumber}
@@ -57,8 +58,9 @@ export default function ProfileForm({ action, initial }: ProfileFormProps) {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Birthday</label>
+          <label htmlFor="birthday" className="block text-sm font-medium text-gray-700 mb-2">Birthday</label>
           <input
+            id="birthday"
             name="birthday"
             type="date"
             value={birthday}
@@ -67,8 +69,9 @@ export default function ProfileForm({ action, initial }: ProfileFormProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Anniversary</label>
+          <label htmlFor="anniversary" className="block text-sm font-medium text-gray-700 mb-2">Anniversary</label>
           <input
+            id="anniversary"
             name="anniversary"
             type="date"
             value={anniversary}
@@ -85,6 +88,7 @@ export default function ProfileForm({ action, initial }: ProfileFormProps) {
             <input
               type="text"
               placeholder="Name"
+              aria-label={`Event ${idx + 1} name`}
               value={ev.name}
               onChange={(e) => {
                 const copy = [...specialEvents];
@@ -95,6 +99,7 @@ export default function ProfileForm({ action, initial }: ProfileFormProps) {
             />
             <input
               type="date"
+              aria-label={`Event ${idx + 1} date`}
               value={ev.date}
               onChange={(e) => {
                 const copy = [...specialEvents];
@@ -118,8 +123,8 @@ export default function ProfileForm({ action, initial }: ProfileFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Music Style</label>
-        <select name="music_style" value={musicStyle} onChange={(e) => setMusicStyle(e.target.value)} className="w-full px-3 py-2 border rounded">
+        <label htmlFor="music_style" className="block text-sm font-medium text-gray-700 mb-2">Music Style</label>
+        <select id="music_style" name="music_style" value={musicStyle} onChange={(e) => setMusicStyle(e.target.value)} className="w-full px-3 py-2 border rounded">
           <option value="EDM">EDM</option>
           <option value="Pop">Pop</option>
           <option value="Ambient">Ambient</option>
@@ -147,8 +152,8 @@ export default function ProfileForm({ action, initial }: ProfileFormProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <input name="opt_in_magic" type="checkbox" checked={optInMagic} onChange={(e) => setOptInMagic(e.target.checked)} />
-        <label className="text-sm text-gray-700">Opt in to magic recommendations</label>
+        <input id="opt_in_magic" name="opt_in_magic" type="checkbox" checked={optInMagic} onChange={(e) => setOptInMagic(e.target.checked)} />
+        <label htmlFor="opt_in_magic" className="text-sm text-gray-700">Opt in to magic recommendations</label>
       </div>
 
       {/* Hidden JSON fields for arrays */}

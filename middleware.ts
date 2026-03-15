@@ -37,6 +37,27 @@ export async function middleware(request: NextRequest) {
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   };
 
+  // CSRF: Verify origin on mutating requests to API routes (except webhooks/cron)
+  const mutatingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  if (
+    pathname.startsWith('/api/') &&
+    mutatingMethods.includes(request.method) &&
+    !SELF_AUTH_API_ROUTES.some(route => pathname.startsWith(route))
+  ) {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin && host) {
+      try {
+        const originHost = new URL(origin).host;
+        if (originHost !== host) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+  }
+
   // Allow public routes
   if (PUBLIC_ROUTES.includes(pathname)) {
     const response = NextResponse.next();
