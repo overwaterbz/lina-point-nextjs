@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import "@/lib/validateEnv";
-import ToasterProvider from '@/components/ToasterProvider';
-import WhatsAppButton from '@/components/resort/WhatsAppButton';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/next';
-import GoogleAnalytics from '@/components/GoogleAnalytics';
+import ToasterProvider from "@/components/ToasterProvider";
+import WhatsAppButton from "@/components/resort/WhatsAppButton";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -90,12 +90,14 @@ const jsonLd = {
     latitude: "17.9214",
     longitude: "-87.9611",
   },
-  image:
-    "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
+  image: "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
   priceRange: "$$$",
   starRating: { "@type": "Rating", ratingValue: "4.5" },
   amenityFeature: [
-    { "@type": "LocationFeatureSpecification", name: "Overwater Infinity Pool" },
+    {
+      "@type": "LocationFeatureSpecification",
+      name: "Overwater Infinity Pool",
+    },
     { "@type": "LocationFeatureSpecification", name: "Rooftop Restaurant" },
     { "@type": "LocationFeatureSpecification", name: "Spa Services" },
     { "@type": "LocationFeatureSpecification", name: "Glass Bottom Floors" },
@@ -111,11 +113,41 @@ const jsonLd = {
     "@type": "OfferCatalog",
     name: "Room Types",
     itemListElement: [
-      { "@type": "Offer", name: "2nd Floor Hotel Suite", price: "130", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=2nd-floor-suite" },
-      { "@type": "Offer", name: "1st Floor Hotel Suite", price: "150", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=1st-floor-suite" },
-      { "@type": "Offer", name: "1 Bed Duplex Cabana", price: "250", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=overwater-cabana-duplex" },
-      { "@type": "Offer", name: "1 Bedroom Overwater Cabana", price: "300", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=overwater-cabana" },
-      { "@type": "Offer", name: "2 Bedroom Overwater Cabana", price: "400", priceCurrency: "USD", url: "https://lina-point.vercel.app/booking?room=2br-overwater-cabana" },
+      {
+        "@type": "Offer",
+        name: "2nd Floor Hotel Suite",
+        price: "130",
+        priceCurrency: "USD",
+        url: "https://lina-point.vercel.app/booking?room=2nd-floor-suite",
+      },
+      {
+        "@type": "Offer",
+        name: "1st Floor Hotel Suite",
+        price: "150",
+        priceCurrency: "USD",
+        url: "https://lina-point.vercel.app/booking?room=1st-floor-suite",
+      },
+      {
+        "@type": "Offer",
+        name: "1 Bed Duplex Cabana",
+        price: "250",
+        priceCurrency: "USD",
+        url: "https://lina-point.vercel.app/booking?room=overwater-cabana-duplex",
+      },
+      {
+        "@type": "Offer",
+        name: "1 Bedroom Overwater Cabana",
+        price: "300",
+        priceCurrency: "USD",
+        url: "https://lina-point.vercel.app/booking?room=overwater-cabana",
+      },
+      {
+        "@type": "Offer",
+        name: "2 Bedroom Overwater Cabana",
+        price: "400",
+        priceCurrency: "USD",
+        url: "https://lina-point.vercel.app/booking?room=2br-overwater-cabana",
+      },
     ],
   },
   aggregateRating: {
@@ -146,7 +178,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased`}
       >
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:bg-white focus:text-teal-700 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:ring-2 focus:ring-teal-500">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:bg-white focus:text-teal-700 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:ring-2 focus:ring-teal-500"
+        >
           Skip to main content
         </a>
         <main id="main-content">{children}</main>
