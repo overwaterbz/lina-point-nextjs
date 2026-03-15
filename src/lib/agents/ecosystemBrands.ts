@@ -107,17 +107,79 @@ export const BRAND_PROFILES: Record<string, BrandProfile> = {
     ],
     callToAction: "Discover your blueprint at magic.overwater.com",
   },
+
+  "kyla-point": {
+    name: "Kyla Point",
+    tagline: "Soulful Living on the Mainland",
+    url: "https://kylapoint.com",
+    themes: [
+      "soulful mainland living",
+      "mixed-use community",
+      "homes and resort amenities",
+      "Belize waterfront lifestyle",
+      "nature meets luxury",
+    ],
+    voice:
+      "Warm, grounded, aspirational. Speaks to those seeking soulful daily living — not just vacation — in a connected community. Emphasizes nature, wellness, and intentional design.",
+    keyMessages: [
+      "Soulful living brought to the mainland — homes, lots, and resort amenities in Belize",
+      "Mixed-use community with pools, marina, dining, and wellness centers",
+      "Waterfront homes and lots in a master-planned community",
+      "Sister property to Lina Point Resort — same magic, rooted on land",
+      "Point Realtor handles all sales — inquire today",
+    ],
+    hashtags: [
+      "#KylaPoint",
+      "#SoulfulLiving",
+      "#BelizeRealEstate",
+      "#MainlandMagic",
+      "#WaterfrontLiving",
+      "#BelizeCommunity",
+    ],
+    callToAction: "Explore soulful living at kylapoint.com",
+  },
+
+  "point-realtor": {
+    name: "Point Realtor",
+    tagline: "Your Gateway to Caribbean Living",
+    url: "https://pointrealtor.com",
+    themes: [
+      "licensed real estate brokerage",
+      "Belize and Florida properties",
+      "investment real estate",
+      "overwater and waterfront",
+      "trusted brokerage",
+    ],
+    voice:
+      "Professional, knowledgeable, trustworthy. Speaks with authority on Caribbean and Florida real estate. Combines expertise with the soulful brand warmth of the Overwater ecosystem.",
+    keyMessages: [
+      "Licensed real estate brokerage serving Belize and Florida",
+      "Exclusive listings at Lina Point, Kyla Point, and Overwater properties",
+      "From fractional shares to full homes — we handle every transaction",
+      "Expert guidance for international buyers investing in Caribbean real estate",
+      "AI-powered property matching to find your perfect fit",
+    ],
+    hashtags: [
+      "#PointRealtor",
+      "#BelizeRealEstate",
+      "#FloridaRealEstate",
+      "#CaribbeanInvestment",
+      "#OverwaterLiving",
+      "#RealEstateInvestor",
+    ],
+    callToAction: "Browse listings at pointrealtor.com",
+  },
 };
 
 /** Day-of-week brand rotation for autonomous daily marketing */
 export const DAILY_BRAND_ROTATION: Record<number, string> = {
-  0: "ecosystem",      // Sunday: cross-promo
-  1: "overwater",      // Monday: Overwater focus
-  2: "lina-point",     // Tuesday: Lina Point focus
-  3: "magic-is-you",   // Wednesday: Magic Is You focus
-  4: "ecosystem",      // Thursday: ecosystem cross-promo
-  5: "lina-point",     // Friday: LP weekend booking push
-  6: "overwater",      // Saturday: OW weekend inspiration
+  0: "ecosystem", // Sunday: cross-promo (all 5 brands)
+  1: "overwater", // Monday: Overwater focus
+  2: "lina-point", // Tuesday: Lina Point focus
+  3: "magic-is-you", // Wednesday: Magic Is You focus
+  4: "kyla-point", // Thursday: Kyla Point focus
+  5: "point-realtor", // Friday: Point Realtor listings push
+  6: "overwater", // Saturday: OW weekend inspiration
 };
 
 export function getTodaysBrand(): string {
@@ -126,14 +188,18 @@ export function getTodaysBrand(): string {
 
 export function getEcosystemContext(): string {
   return `ECOSYSTEM CONTEXT:
-Overwater.com, Lina Point Resort, and The Magic Is You are three interconnected brands:
+Five interconnected brands form the Overwater family of companies:
 - Overwater.com (overwater.com) — Fractional overwater cabana ownership portal. Users discover their element via the Soulful Quiz and can purchase shares.
-- Lina Point Resort (linapoint.com) — The flagship property in Belize. Full booking, tours, dining. Guests get free Magic Is You Dreamweaver access.
+- Lina Point Resort (linapoint.com) — The flagship overwater resort in San Pedro, Belize. Full booking, tours, dining. Guests get free Magic Is You Dreamweaver access.
 - The Magic Is You (magic.overwater.com) — Maya Cosmic Blueprint platform. 35+ elements reveal your soul's purpose.
+- Kyla Point (kylapoint.com) — Soulful mainland living in Belize. Mixed-use community with homes, lots, and resort amenities. Sister property to Lina Point, bringing the magic to land.
+- Point Realtor (pointrealtor.com) — Licensed real estate brokerage managing all property sales across Lina Point, Kyla Point, and Overwater. Serving Belize and Florida markets.
 
 Cross-promo themes:
-- "Take the quiz → Book the experience → Discover your cosmic identity"
-- "The magic is in the journey: from discovering your element to living it"
+- "Take the quiz → Book the experience → Discover your cosmic identity → Find your home"
+- "The magic is in the journey: from discovering your element to living it — on water or on land"
 - Overwater quiz elements (Water/Fire/Wind/Earth) connect to Maya cosmic elements
-- All three share the mantra: "The Magic is You"`;
+- All five brands share the mantra: "The Magic is You"
+- Point Realtor is the trusted gateway for purchasing property across all developments
+- Kyla Point extends the Overwater lifestyle to mainland Belize for full-time soulful living`;
 }
