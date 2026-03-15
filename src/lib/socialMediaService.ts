@@ -167,6 +167,42 @@ async function postToTikTok(
   }
 }
 
+// ── X / Twitter (v2 API) ──────────────────────────────────
+
+async function postToX(
+  text: string,
+): Promise<SocialPostResult> {
+  const bearerToken = process.env.X_BEARER_TOKEN
+
+  if (!bearerToken) {
+    return { platform: 'x', success: false, error: 'X_BEARER_TOKEN not configured' }
+  }
+
+  try {
+    const res = await fetch('https://api.x.com/2/tweets', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text: text.slice(0, 280) }),
+    })
+    const data = await res.json()
+
+    if (data.data?.id) {
+      return {
+        platform: 'x',
+        success: true,
+        postId: data.data.id,
+        postUrl: `https://x.com/i/status/${data.data.id}`,
+      }
+    }
+    return { platform: 'x', success: false, error: data.detail || data.title || 'Post failed' }
+  } catch (err) {
+    return { platform: 'x', success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}
+
 // ── Unified post function ─────────────────────────────────
 
 export async function publishToSocial(
@@ -182,6 +218,9 @@ export async function publishToSocial(
       return postToFacebook(content, link)
     case 'tiktok':
       return postToTikTok(content, mediaUrl)
+    case 'x':
+    case 'twitter':
+      return postToX(content)
     default:
       return { platform, success: false, error: `Unsupported platform: ${platform}` }
   }

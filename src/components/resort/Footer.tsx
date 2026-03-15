@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { NewsletterSignup } from '@/components/NewsletterSignup';
 
 const FOOTER_LINKS = [
   { label: 'Rooms', href: '/rooms' },
@@ -116,6 +117,22 @@ export default function Footer() {
                 ))}
               </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Newsletter + Ecosystem */}
+        <div className="border-t border-white/10 pt-8 pb-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div>
+            <h4 className="text-xs tracking-[0.25em] uppercase text-white/50 font-semibold mb-3">Island Newsletter</h4>
+            <p className="text-gray-500 text-xs mb-3">Belize tips, resort updates &amp; exclusive offers</p>
+            <div className="max-w-sm">
+              <NewsletterSignup />
+            </div>
+          </div>
+          <div className="text-sm text-gray-500 md:text-right space-y-1">
+            <p className="text-xs tracking-[0.25em] uppercase text-white/50 font-semibold mb-2">Ecosystem</p>
+            <a href="https://overwater.com?utm_source=linapoint&utm_medium=footer&utm_campaign=ecosystem" target="_blank" rel="noopener noreferrer" className="block hover:text-amber-400 transition">Overwater.com — Own the Magic</a>
+            <a href="https://magic.overwater.com?utm_source=linapoint&utm_medium=footer&utm_campaign=ecosystem" target="_blank" rel="noopener noreferrer" className="block hover:text-amber-400 transition">The Magic is You — Cosmic Blueprint</a>
           </div>
         </div>
 
