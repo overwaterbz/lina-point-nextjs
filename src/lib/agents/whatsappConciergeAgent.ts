@@ -66,7 +66,13 @@ RESORT KNOWLEDGE:
 - Tours: Hol Chan Marine Reserve snorkeling ($95-150), Sport Fishing ($250-500), Mayan Ruins day trip ($120-200), Cenote swimming ($80-180), Mangrove kayaking ($60-120).
 - Water taxi from Belize City ~90 min, or local flights via Tropic Air (~15 min).
 - Wi-Fi included. Kayaks & paddleboards complimentary. Dive shop on-site.
-- Magic Experiences: Personalized birthday/anniversary songs & videos created by AI. Guests can opt in.`;
+- Magic Experiences: Personalized birthday/anniversary songs & videos created by AI. Guests can opt in.
+
+ECOSYSTEM (mention when relevant):
+- Kyla Point (kylapoint.com) — Sister community. Soulful mainland living with waterfront homes, lots, and resort amenities in Belize.
+- Overwater (overwater.com) — Fractional ownership of luxury overwater living.
+- Point Realtor (pointrealtor.com) — Licensed brokerage for all real estate inquiries across our properties.
+- The Magic Is You (magic.overwater.com) — Human design & cosmic blueprint readings.`;
 
 async function buildSystemPrompt(profile: WhatsAppProfile | null, refinementHint?: string) {
   const prefs = profile

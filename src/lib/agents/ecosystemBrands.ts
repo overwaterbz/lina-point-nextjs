@@ -169,6 +169,36 @@ export const BRAND_PROFILES: Record<string, BrandProfile> = {
     ],
     callToAction: "Browse listings at pointrealtor.com",
   },
+
+  "point-enterprise": {
+    name: "Point Enterprise",
+    tagline: "A Family of Soulful Companies",
+    url: "https://pointenterprise.com",
+    themes: [
+      "parent company",
+      "soulful companies",
+      "Belize and beyond",
+      "overwater ecosystem",
+      "20+ years building",
+    ],
+    voice:
+      "Professional yet soulful. Speaks as the trusted parent brand behind all five companies. Conveys legacy, vision, and the connective thread between resort, ownership, cosmic discovery, community, and real estate.",
+    keyMessages: [
+      "Parent company behind Lina Point, Overwater, The Magic Is You, Kyla Point, and Point Realtor",
+      "20+ years building soulful companies in Belize and beyond",
+      "From overwater resorts to cosmic blueprints — one family, one vision",
+      "San Pedro, Ambergris Caye, Belize",
+      "Contact: rick@pointenterprise.com",
+    ],
+    hashtags: [
+      "#PointEnterprise",
+      "#SoulfulCompanies",
+      "#BelizeBusiness",
+      "#OverwaterFamily",
+      "#TheMagicIsYou",
+    ],
+    callToAction: "Learn more at pointenterprise.com",
+  },
 };
 
 /** Day-of-week brand rotation for autonomous daily marketing */
@@ -188,18 +218,19 @@ export function getTodaysBrand(): string {
 
 export function getEcosystemContext(): string {
   return `ECOSYSTEM CONTEXT:
-Five interconnected brands form the Overwater family of companies:
+Six interconnected brands form the Point Enterprise family of companies:
 - Overwater.com (overwater.com) — Fractional overwater cabana ownership portal. Users discover their element via the Soulful Quiz and can purchase shares.
 - Lina Point Resort (linapoint.com) — The flagship overwater resort in San Pedro, Belize. Full booking, tours, dining. Guests get free Magic Is You Dreamweaver access.
 - The Magic Is You (magic.overwater.com) — Maya Cosmic Blueprint platform. 35+ elements reveal your soul's purpose.
 - Kyla Point (kylapoint.com) — Soulful mainland living in Belize. Mixed-use community with homes, lots, and resort amenities. Sister property to Lina Point, bringing the magic to land.
 - Point Realtor (pointrealtor.com) — Licensed real estate brokerage managing all property sales across Lina Point, Kyla Point, and Overwater. Serving Belize and Florida markets.
+- Point Enterprise (pointenterprise.com) — The parent company behind all six brands. 20+ years building soulful companies in Belize and beyond.
 
 Cross-promo themes:
 - "Take the quiz → Book the experience → Discover your cosmic identity → Find your home"
 - "The magic is in the journey: from discovering your element to living it — on water or on land"
 - Overwater quiz elements (Water/Fire/Wind/Earth) connect to Maya cosmic elements
-- All five brands share the mantra: "The Magic is You"
+- All brands share the mantra: "The Magic is You"
 - Point Realtor is the trusted gateway for purchasing property across all developments
 - Kyla Point extends the Overwater lifestyle to mainland Belize for full-time soulful living`;
 }

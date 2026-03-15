@@ -567,7 +567,7 @@ export default function Home() {
               investment.
             </p>
           </FadeInCard>
-          <div className="grid sm:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <FadeInCard delay={0.1}>
               <a
                 href="https://overwater.com?utm_source=lina-point&utm_medium=portal&utm_campaign=ecosystem"
@@ -587,7 +587,7 @@ export default function Home() {
             </FadeInCard>
             <FadeInCard delay={0.2}>
               <a
-                href="https://magic-is-you.vercel.app?utm_source=lina-point&utm_medium=portal&utm_campaign=ecosystem"
+                href="https://magic.overwater.com?utm_source=lina-point&utm_medium=portal&utm_campaign=ecosystem"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="glass-card-light teal-accent-border p-6 block hover:scale-[1.02] transition-transform"
@@ -612,6 +612,56 @@ export default function Home() {
                   You are here — the flagship overwater experience in Belize.
                 </p>
               </div>
+            </FadeInCard>
+            <FadeInCard delay={0.4}>
+              <a
+                href="https://kylapoint.com?utm_source=lina-point&utm_medium=portal&utm_campaign=ecosystem"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="glass-card-light teal-accent-border p-6 block hover:scale-[1.02] transition-transform"
+              >
+                <span className="text-3xl block mb-3">🌿</span>
+                <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
+                  Kyla Point
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Soulful mainland living — homes, lots &amp; resort amenities in
+                  Belize.
+                </p>
+              </a>
+            </FadeInCard>
+            <FadeInCard delay={0.5}>
+              <a
+                href="https://pointrealtor.com?utm_source=lina-point&utm_medium=portal&utm_campaign=ecosystem"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="glass-card-light teal-accent-border p-6 block hover:scale-[1.02] transition-transform"
+              >
+                <span className="text-3xl block mb-3">🔑</span>
+                <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
+                  Point Realtor
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Licensed real estate brokerage — Belize &amp; Florida property
+                  sales.
+                </p>
+              </a>
+            </FadeInCard>
+            <FadeInCard delay={0.6}>
+              <a
+                href="https://pointenterprise.com?utm_source=lina-point&utm_medium=portal&utm_campaign=ecosystem"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="glass-card-light teal-accent-border p-6 block hover:scale-[1.02] transition-transform"
+              >
+                <span className="text-3xl block mb-3">🏛️</span>
+                <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
+                  Point Enterprise
+                </h3>
+                <p className="text-sm text-gray-500">
+                  The family behind the magic — 20+ years of soulful companies.
+                </p>
+              </a>
             </FadeInCard>
           </div>
         </div>
