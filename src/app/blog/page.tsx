@@ -1,8 +1,20 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/resort/Navbar';
 import Footer from '@/components/resort/Footer';
 import { createServerSupabaseClient } from '@/../lib/supabase-server';
+
+export const metadata: Metadata = {
+  title: 'Blog | Lina Point Overwater Resort',
+  description: 'Travel tips, Belize destination guides, and insider stories from the Caribbean\'s premier overwater resort.',
+  openGraph: {
+    title: 'Blog | Lina Point Overwater Resort',
+    description: 'Travel tips, Belize destination guides, and insider stories from the Caribbean\'s premier overwater resort.',
+    url: 'https://lina-point.vercel.app/blog',
+    type: 'website',
+  },
+};
 
 interface BlogPost {
   slug: string;
