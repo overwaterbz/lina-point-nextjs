@@ -1,9 +1,9 @@
 /**
- * MarketingAgentCrew: Autonomous Marketing System for Lina Point Resort
+ * MarketingAgentCrew: Autonomous Ecosystem Marketing System
  * 
  * 5 Specialized Agents with Recursion:
  * 1. ResearchAgent - Scans trends, identifies opportunities, analyzes competitors
- * 2. ContentAgent - Generates social posts, scripts, emails using "Magic is You" theme
+ * 2. ContentAgent - Generates social posts, scripts, emails for Overwater, Lina Point, or Magic Is You
  * 3. PostingAgent - Schedules & posts to Instagram, TikTok, X, Facebook
  * 4. EngagementAgent - Replies to comments, builds email list, engagement campaigns
  * 5. SelfImprovementAgent - Analytics, ML-based refinement, prompt optimization
@@ -18,6 +18,7 @@ import { getActivePrompt } from "@/lib/agents/promptManager";
 import { grokLLM } from "@/lib/grokIntegration";
 import { publishToSocial, type SocialPostResult } from "@/lib/socialMediaService";
 import { createClient } from '@supabase/supabase-js';
+import { BRAND_PROFILES, getEcosystemContext, type BrandProfile } from "@/lib/agents/ecosystemBrands";
 
 const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
@@ -37,6 +38,7 @@ export interface CampaignBrief {
   budget?: number;
   startDate: Date;
   endDate: Date;
+  brand?: string; // "overwater" | "lina-point" | "magic-is-you" | "ecosystem"
 }
 
 export interface MarketingContent {
@@ -125,13 +127,23 @@ const MarketingCrewAnnotation = Annotation.Root({
 async function researchTrendsAndOpportunities(state: typeof MarketingCrewAnnotation.State) {
   debugLog(`[ResearchAgent] Iteration ${state.iteration}: Researching trends and opportunities...`);
   
+  const brand = state.campaignBrief.brand || "lina-point";
+  const brandProfile = BRAND_PROFILES[brand];
+  const brandContext = brandProfile
+    ? `For ${brandProfile.name} (${brandProfile.tagline}). Brand themes: ${brandProfile.themes.join(", ")}.`
+    : `For the Overwater ecosystem (Overwater.com, Lina Point Resort, Magic Is You).`;
+
   const prompt = `You are a travel marketing research expert. Analyze current trends for ${state.campaignBrief.targetAudience}.
 
-For Lina Point Resort (overwater luxury), identify:
-1. Top 3 travel trends from last 30 days
+${brandContext}
+
+${brand === "ecosystem" ? getEcosystemContext() : ""}
+
+Identify:
+1. Top 3 travel/lifestyle trends from last 30 days relevant to this brand
 2. 2-3 direct competitors and their marketing angles
-3. 3-5 relevant travel influencers in the luxury/wellness space
-4. Market opportunities for direct bookings
+3. 3-5 relevant influencers in the luxury/wellness/spiritual space
+4. Market opportunities for ${state.campaignBrief.objective}
 
 Campaign objective: ${state.campaignBrief.objective}
 
@@ -180,35 +192,49 @@ Return JSON with: { trends: [], competitors: [], influencers: [], opportunities:
 async function generateMarketingContent(state: typeof MarketingCrewAnnotation.State) {
   debugLog(`[ContentAgent] Iteration ${state.iteration}: Generating marketing content with recursive refinement...`);
   
-  const contentBrief = `Create marketing content for Lina Point Resort using "The Magic is You" mantra and kundalini/mystical themes.
+  const brand = state.campaignBrief.brand || "lina-point";
+  const brandProfile = BRAND_PROFILES[brand];
+  const isEcosystem = brand === "ecosystem";
+
+  const brandVoice = brandProfile
+    ? `Brand: ${brandProfile.name} — "${brandProfile.tagline}"\nVoice: ${brandProfile.voice}\nKey Messages:\n${brandProfile.keyMessages.map(m => `- ${m}`).join("\n")}\nHashtags: ${brandProfile.hashtags.join(" ")}\nCTA: ${brandProfile.callToAction}`
+    : getEcosystemContext();
+
+  const contentBrief = `Create marketing content for ${brandProfile?.name || "the Overwater ecosystem"}.
+
+${brandVoice}
+
+${isEcosystem ? getEcosystemContext() : ""}
 
 Objective: ${state.campaignBrief.objective}
 Target: ${state.campaignBrief.targetAudience}
 Platforms: ${state.campaignBrief.platforms.join(", ")}
 Key Messages: ${state.campaignBrief.keyMessages.join(", ")}
 
-DIRECT BOOKING ADVANTAGE — weave this into every piece:
+${brand === "lina-point" ? `DIRECT BOOKING ADVANTAGE — weave this into every piece:
 - Lina Point guarantees 6% below any OTA (Expedia, Booking.com, Agoda)
 - Use promo code DIRECT10 for 10% off first direct booking
 - Loyalty program: earn points on every stay, unlock VIP perks
-- "Why pay Expedia's markup? Book direct at lina-point.com and save."
+- "Why pay Expedia's markup? Book direct at lina-point.com and save."` : ""}
 
 Research insights:
 - Trends: ${state.researchData.trends.join(", ")}
 - Opportunities: ${state.researchData.opportunities.join(", ")}
 
 Generate 3 posts:
-1. Instagram post (caption + hashtags) — emphasize price transparency
-2. TikTok script (9-15 sec, trending sounds) — "POV: you found out you've been overpaying on Expedia"
-3. Email subject line & opening — direct booking savings hook
+1. Instagram post (caption + hashtags)
+2. TikTok script (9-15 sec, trending sounds)
+3. Email subject line & opening
 
 Format as JSON array: [{ type, platform, content, hashtags, cta }]`;
 
-  const goal = `High-quality marketing content for Lina Point Resort that emphasizes direct booking advantages, weaves in "The Magic is You" theme, and includes platform-appropriate formats.`;
+  const goal = `High-quality marketing content for ${brandProfile?.name || "the ecosystem"} that matches the brand voice, weaves in the core themes, and includes platform-appropriate formats.`;
 
   try {
-    // Use recursive refinement: generate → evaluate → refine up to 3 times
-    const contentSystemPrompt = await getActivePrompt('marketing_content', 'You are a creative marketing copywriter for a luxury Belize resort. Create content emphasizing magic, mystique, and transformation. IMPORTANT: Every piece must include a direct booking advantage — Lina Point beats OTA prices by 6%, promo code DIRECT10 saves 10%, and loyalty members earn exclusive perks. Drive traffic to lina-point.com, not OTAs. Return valid JSON array.');
+    const defaultSystemPrompt = brandProfile
+      ? `You are a creative marketing copywriter for ${brandProfile.name}. Voice: ${brandProfile.voice}. Return valid JSON array.`
+      : `You are a creative marketing copywriter for a three-brand ecosystem (Overwater.com, Lina Point Resort, The Magic Is You). Create cohesive cross-brand content. Return valid JSON array.`;
+    const contentSystemPrompt = await getActivePrompt('marketing_content', defaultSystemPrompt);
     const refineSystemPrompt = await getActivePrompt('marketing_content_refine', 'You are a creative marketing copywriter. Refine the content based on feedback. Return valid JSON array.');
     const recursionResult = await runWithRecursion<string>(
       // Generate

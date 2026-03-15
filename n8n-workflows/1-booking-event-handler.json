@@ -1,0 +1,178 @@
+{
+  "name": "Lina Point — Booking Event Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "booking-flow",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1000001-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 360],
+      "webhookId": "booking-flow-webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a1000001-0001-4000-8000-000000000002",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [460, 360]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.workflow }}",
+                    "rightValue": "new-booking",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "New Booking"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.workflow }}",
+                    "rightValue": "rate-alert",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Rate Alert"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.workflow }}",
+                    "rightValue": "post-stay",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Post Stay"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.workflow }}",
+                    "rightValue": "tour-price-update",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Tour Prices"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "a1000001-0001-4000-8000-000000000003",
+      "name": "Route by Event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [700, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "// NEW BOOKING — extract key details\nconst body = $input.first().json.body || $input.first().json;\nconst data = body.data || {};\n\nreturn [{\n  json: {\n    event: 'New Booking!',\n    guest: data.guestName || data.guest || 'Unknown',\n    email: data.email || '',\n    confirmationNumber: data.confirmationNumber || data.confirmation || '',\n    roomType: data.roomType || '',\n    checkIn: data.checkIn || '',\n    checkOut: data.checkOut || '',\n    total: data.total || data.amount || '',\n    timestamp: body.timestamp || new Date().toISOString()\n  }\n}];"
+      },
+      "id": "a1000001-0001-4000-8000-000000000010",
+      "name": "Format Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "// RATE ALERT — extract pricing details\nconst body = $input.first().json.body || $input.first().json;\nconst data = body.data || {};\n\nreturn [{\n  json: {\n    event: 'Rate Alert!',\n    roomType: data.roomType || '',\n    ourRate: data.ourRate || '',\n    otaLowest: data.otaLowest || data.lowestOTA || '',\n    platform: data.platform || '',\n    action: data.status === 'beating' ? 'We are beating OTA' : 'PRICE ADJUSTMENT NEEDED',\n    timestamp: body.timestamp || new Date().toISOString()\n  }\n}];"
+      },
+      "id": "a1000001-0001-4000-8000-000000000011",
+      "name": "Format Rate Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "// POST-STAY — extract guest details\nconst body = $input.first().json.body || $input.first().json;\nconst data = body.data || {};\n\nreturn [{\n  json: {\n    event: 'Post Stay Follow-up',\n    guest: data.guestName || data.guest || 'Unknown',\n    email: data.email || '',\n    stayDates: `${data.checkIn || '?'} to ${data.checkOut || '?'}`,\n    loyaltyPoints: data.loyaltyPoints || 0,\n    timestamp: body.timestamp || new Date().toISOString()\n  }\n}];"
+      },
+      "id": "a1000001-0001-4000-8000-000000000012",
+      "name": "Format Post Stay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 540]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TOUR PRICE UPDATE — extract details\nconst body = $input.first().json.body || $input.first().json;\nconst data = body.data || {};\n\nreturn [{\n  json: {\n    event: 'Tour Prices Updated',\n    toursUpdated: data.count || data.toursUpdated || 0,\n    avgSavings: data.avgSavings || '',\n    timestamp: body.timestamp || new Date().toISOString()\n  }\n}];"
+      },
+      "id": "a1000001-0001-4000-8000-000000000013",
+      "name": "Format Tour Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 720]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CATCH-ALL for unknown events\nconst body = $input.first().json.body || $input.first().json;\n\nreturn [{\n  json: {\n    event: 'Unknown Event',\n    workflow: body.workflow || 'unknown',\n    rawData: JSON.stringify(body.data || {}).substring(0, 500),\n    timestamp: body.timestamp || new Date().toISOString()\n  }\n}];"
+      },
+      "id": "a1000001-0001-4000-8000-000000000014",
+      "name": "Format Other",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 900]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          { "node": "Respond OK", "type": "main", "index": 0 },
+          { "node": "Route by Event", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Route by Event": {
+      "main": [
+        [{ "node": "Format Booking", "type": "main", "index": 0 }],
+        [{ "node": "Format Rate Alert", "type": "main", "index": 0 }],
+        [{ "node": "Format Post Stay", "type": "main", "index": 0 }],
+        [{ "node": "Format Tour Update", "type": "main", "index": 0 }],
+        [{ "node": "Format Other", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "active": false
+}
