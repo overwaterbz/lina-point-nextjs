@@ -462,7 +462,7 @@ function buildQuizFollowupEmail(element: string, soulPath: string): string {
   <div style="background: #1a1a2e; border: 1px solid #c9a55a33; border-radius: 12px; padding: 24px; margin: 30px 0;">
     <h2 style="color: #c9a55a; font-size: 18px; margin-top: 0;">Your Next Steps</h2>
     <p style="line-height: 1.6;">
-      <strong>1.</strong> <a href="https://magic-is-you.vercel.app?utm_source=email&utm_medium=quiz_followup&utm_campaign=${element.toLowerCase()}" style="color: #c9a55a;">Discover your full Cosmic Blueprint</a> — 35+ elements mapped to your soul's purpose<br>
+      <strong>1.</strong> <a href="https://magic.overwater.com?utm_source=email&utm_medium=quiz_followup&utm_campaign=${element.toLowerCase()}" style="color: #c9a55a;">Discover your full Cosmic Blueprint</a> — 35+ elements mapped to your soul's purpose<br>
       <strong>2.</strong> <a href="https://linapoint.com?utm_source=email&utm_medium=quiz_followup&utm_campaign=${element.toLowerCase()}" style="color: #c9a55a;">Book your stay at Lina Point</a> — experience ${element} energy in person, overwater<br>
       <strong>3.</strong> <a href="https://overwater.com/own?utm_source=email&utm_medium=quiz_followup&utm_campaign=${element.toLowerCase()}" style="color: #c9a55a;">Own the magic</a> — fractional cabana ownership starting at $458/mo
     </p>

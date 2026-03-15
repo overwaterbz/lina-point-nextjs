@@ -80,7 +80,7 @@ export const BRAND_PROFILES: Record<string, BrandProfile> = {
   "magic-is-you": {
     name: "The Magic Is You",
     tagline: "Discover Your Cosmic Blueprint",
-    url: "https://magic-is-you.vercel.app",
+    url: "https://magic.overwater.com",
     themes: [
       "Maya cosmic blueprint",
       "Tzolkin calendar wisdom",
@@ -105,7 +105,7 @@ export const BRAND_PROFILES: Record<string, BrandProfile> = {
       "#IxChel",
       "#Tzolkin",
     ],
-    callToAction: "Discover your blueprint at magic-is-you.vercel.app",
+    callToAction: "Discover your blueprint at magic.overwater.com",
   },
 };
 
@@ -129,7 +129,7 @@ export function getEcosystemContext(): string {
 Overwater.com, Lina Point Resort, and The Magic Is You are three interconnected brands:
 - Overwater.com (overwater.com) — Fractional overwater cabana ownership portal. Users discover their element via the Soulful Quiz and can purchase shares.
 - Lina Point Resort (linapoint.com) — The flagship property in Belize. Full booking, tours, dining. Guests get free Magic Is You Dreamweaver access.
-- The Magic Is You (magic-is-you.vercel.app) — Maya Cosmic Blueprint platform. 35+ elements reveal your soul's purpose.
+- The Magic Is You (magic.overwater.com) — Maya Cosmic Blueprint platform. 35+ elements reveal your soul's purpose.
 
 Cross-promo themes:
 - "Take the quiz → Book the experience → Discover your cosmic identity"

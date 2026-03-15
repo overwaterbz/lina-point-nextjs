@@ -118,7 +118,7 @@ export async function grantMagicAccess(
       // Non-fatal: the user still has an account, just no free access
     }
 
-    const magicLoginUrl = 'https://magic-is-you.vercel.app/auth/login'
+    const magicLoginUrl = 'https://magic.overwater.com/auth/login'
 
     console.log(
       `[MagicBridge] ${isNewUser ? 'Created' : 'Found'} Magic Is You account for ${email} (expires ${expiresAt.toISOString().split('T')[0]})`,

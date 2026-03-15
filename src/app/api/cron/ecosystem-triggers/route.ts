@@ -103,7 +103,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "Your Element is Just the Beginning",
         "The Overwater quiz revealed your guiding element. But there are 35+ cosmic forces shaping your path — your Maya day-sign, your soul contract, your life cycles. Your full Cosmic Blueprint maps them all.",
         "Discover Your Blueprint",
-        "https://magic-is-you.vercel.app?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step1"
+        "https://magic.overwater.com?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step1"
       ),
     },
     {
@@ -114,7 +114,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "The Soul Contract You Signed Before Birth",
         "Ancient Maya wisdom teaches that we each arrive with a sacred contract — agreements made before this lifetime about what we'll learn, create, and transform. Your Cosmic Blueprint reveals yours.",
         "Read Your Soul Contract",
-        "https://magic-is-you.vercel.app/pricing?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step2"
+        "https://magic.overwater.com/pricing?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step2"
       ),
     },
     {
@@ -241,7 +241,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "The Full Journey Awaits",
         "Discover your cosmic blueprint at The Magic Is You, then experience it overwater at Lina Point. Use code DIRECT10 for 10% off your first booking — and always save 6% vs OTA prices.",
         "Start Your Journey",
-        "https://magic-is-you.vercel.app?utm_source=email&utm_medium=nurture&utm_campaign=welcome&utm_content=step3"
+        "https://magic.overwater.com?utm_source=email&utm_medium=nurture&utm_campaign=welcome&utm_content=step3"
       ),
     },
   ],
