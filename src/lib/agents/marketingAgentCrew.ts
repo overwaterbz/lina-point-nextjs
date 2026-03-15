@@ -328,13 +328,14 @@ async function scheduleAndPostContent(state: typeof MarketingCrewAnnotation.Stat
             content: content.content,
             cover_image: content.mediaUrl || null,
             author: 'Lina Point AI',
+            brand: state.campaignBrief.brand || 'lina-point',
             category: 'travel',
             tags: content.hashtags || [],
             meta_title: content.title,
             meta_description: content.content.substring(0, 160),
             published: true,
             published_at: new Date().toISOString(),
-          }, { onConflict: 'slug' });
+          }, { onConflict: 'slug,brand' });
 
           scheduleStatus.push({
             platform: 'blog',
