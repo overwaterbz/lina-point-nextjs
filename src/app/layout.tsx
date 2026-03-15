@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import "@/lib/validateEnv";
 import ToasterProvider from '@/components/ToasterProvider';
 import WhatsAppButton from '@/components/resort/WhatsAppButton';
 import { Analytics } from '@vercel/analytics/react';
@@ -145,7 +146,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased`}
       >
-        {children}
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:bg-white focus:text-teal-700 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:ring-2 focus:ring-teal-500">
+          Skip to main content
+        </a>
+        <main id="main-content">{children}</main>
         <WhatsAppButton />
         <ToasterProvider />
         <Analytics />

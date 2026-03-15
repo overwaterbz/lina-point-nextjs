@@ -7,10 +7,18 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Script from "next/script";
-import OTAPriceComparison from "@/components/OTAPriceComparison";
-import WhyBookDirect from "@/components/WhyBookDirect";
+import dynamic from "next/dynamic";
 import { trackEvent, captureUtmParams, getUtmParams } from "@/lib/analytics";
-import SocialProofCounter from "@/components/SocialProofCounter";
+
+const OTAPriceComparison = dynamic(() => import("@/components/OTAPriceComparison"), {
+  loading: () => <div className="animate-pulse h-48 bg-teal-900/20 rounded-xl" />,
+});
+const WhyBookDirect = dynamic(() => import("@/components/WhyBookDirect"), {
+  loading: () => <div className="animate-pulse h-32 bg-teal-900/20 rounded-xl" />,
+});
+const SocialProofCounter = dynamic(() => import("@/components/SocialProofCounter"), {
+  loading: () => <div className="animate-pulse h-8 bg-teal-900/20 rounded" />,
+});
 
 // ---------- helpers ----------
 async function fetchWithTimeout<T>(

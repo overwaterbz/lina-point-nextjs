@@ -60,10 +60,13 @@ export function validateEnv(): { valid: boolean; missing: string[]; warnings: st
   return { valid: missing.length === 0, missing, warnings };
 }
 
-// Auto-validate on import in production
+// Auto-validate on import in production — fail fast
 if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
   const result = validateEnv();
   if (!result.valid) {
-    console.error('[ENV] Server will not function correctly. Set missing vars in Vercel dashboard.');
+    throw new Error(
+      `[ENV] Missing required environment variables: ${result.missing.join(', ')}. ` +
+      'Set them in your Vercel dashboard before deploying.'
+    );
   }
 }

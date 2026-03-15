@@ -5,8 +5,9 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const FROM_EMAIL = process.env.MAGIC_FROM_EMAIL || "newsletter@linapoint.com";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://linapoint.com";
 
-function buildDigestHtml(posts: { title: string; excerpt: string; url: string }[]): string {
+function buildDigestHtml(posts: { title: string; excerpt: string; url: string }[], unsubUrl: string): string {
   const postRows = posts
     .map(
       (p) => `
@@ -36,7 +37,8 @@ function buildDigestHtml(posts: { title: string; excerpt: string; url: string }[
     </div>
     <p style="margin-top:32px;font-size:11px;color:#9ca3af;text-align:center">
       You&rsquo;re receiving this because you subscribed to our newsletter.<br/>
-      Lina Point Resort &middot; San Pedro, Ambergris Caye, Belize
+      Lina Point Resort &middot; San Pedro, Ambergris Caye, Belize<br/>
+      <a href="${unsubUrl}" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a>
     </p>
   </div>
 </body></html>`;
@@ -55,10 +57,10 @@ export async function GET(req: Request) {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Fetch active subscribers
+  // Fetch active subscribers with unsub tokens
   const { data: subscribers, error: subErr } = await supabase
     .from("newsletter_subscribers")
-    .select("email")
+    .select("email, unsub_token")
     .eq("status", "active");
 
   if (subErr || !subscribers?.length) {
@@ -107,13 +109,11 @@ export async function GET(req: Request) {
     }
   );
 
-  const html = buildDigestHtml(contentItems);
-  const emails = subscribers.map((s) => s.email);
-
-  // Send in batches of 50 (Resend limit)
+  // Send individually so each subscriber gets a unique unsubscribe link
   let sent = 0;
-  for (let i = 0; i < emails.length; i += 50) {
-    const batch = emails.slice(i, i + 50);
+  for (const sub of subscribers) {
+    const unsubUrl = `${SITE_URL}/api/newsletter/unsubscribe?token=${sub.unsub_token}`;
+    const html = buildDigestHtml(contentItems, unsubUrl);
     try {
       await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -123,16 +123,20 @@ export async function GET(req: Request) {
         },
         body: JSON.stringify({
           from: FROM_EMAIL,
-          to: batch,
+          to: [sub.email],
           subject: "🌴 Your Weekly Island Digest",
           html,
+          headers: {
+            "List-Unsubscribe": `<${unsubUrl}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
         }),
       });
-      sent += batch.length;
+      sent++;
     } catch (err) {
-      console.error("[NewsletterDigest] Batch send failed:", err);
+      console.error("[NewsletterDigest] Send failed for subscriber:", err);
     }
   }
 
-  return NextResponse.json({ sent, total: emails.length });
+  return NextResponse.json({ sent, total: subscribers.length });
 }

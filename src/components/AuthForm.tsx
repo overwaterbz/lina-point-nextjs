@@ -192,6 +192,7 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
                 <input
                   type="text"
                   placeholder="Name"
+                  aria-label={`Event ${idx + 1} name`}
                   value={ev.name}
                   onChange={(e) => {
                     const copy = [...specialEvents];
@@ -203,6 +204,7 @@ export function AuthForm({ mode = 'login', onSuccess }: AuthFormProps) {
                 />
                 <input
                   type="date"
+                  aria-label={`Event ${idx + 1} date`}
                   value={ev.date}
                   onChange={(e) => {
                     const copy = [...specialEvents];
