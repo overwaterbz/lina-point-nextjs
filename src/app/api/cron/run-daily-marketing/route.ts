@@ -9,6 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { runMarketingCrew } from "@/lib/agents/marketingAgentCrew";
 import { verifyCronSecret } from '@/lib/cronAuth';
+import { getTodaysBrand, BRAND_PROFILES, getEcosystemContext } from "@/lib/agents/ecosystemBrands";
 
 const debugLog = (...args: unknown[]) => {
   console.log("[Marketing Cron]", ...args);
@@ -99,6 +100,41 @@ export async function GET(request: NextRequest) {
 
     // Revalidate blog page so new posts appear immediately
     revalidatePath('/blog');
+
+    // Run autonomous ecosystem brand-rotated campaign
+    const todaysBrand = getTodaysBrand();
+    const brandProfile = BRAND_PROFILES[todaysBrand];
+    debugLog(`🎯 [Cron] Today's brand focus: ${todaysBrand}`);
+
+    try {
+      const autoCampaign = await runMarketingCrew({
+        campaignId: `auto-${todaysBrand}-${Date.now()}`,
+        objective: "brand_awareness",
+        targetAudience: brandProfile
+          ? `${brandProfile.name} target audience — travelers, wellness seekers, soul-searchers`
+          : "Ecosystem-wide audience — travelers discovering overwater living and cosmic wisdom",
+        keyMessages: brandProfile?.keyMessages || [
+          "Discover your element at Overwater.com",
+          "Book the magic at Lina Point",
+          "Reveal your cosmic blueprint at Magic Is You",
+        ],
+        platforms: ["instagram", "tiktok", "x"],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        brand: todaysBrand,
+      });
+
+      results.push({
+        campaignId: autoCampaign.campaignId,
+        status: "success",
+        brand: todaysBrand,
+        contentGenerated: autoCampaign.generatedContent.length,
+        postsScheduled: autoCampaign.scheduleStatus.length,
+      });
+      debugLog(`✅ [Cron] Auto ${todaysBrand} campaign: ${autoCampaign.generatedContent.length} posts`);
+    } catch (autoErr) {
+      debugLog(`⚠️ [Cron] Auto ${todaysBrand} campaign failed:`, autoErr);
+    }
 
     // Run autonomous improvement daily
     await runDailyAutoImprovement();

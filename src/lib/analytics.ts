@@ -1,4 +1,11 @@
-/* Lightweight analytics helper — wraps GA4 + Vercel events */
+/* Lightweight analytics helper — wraps GA4 + Vercel + Supabase events */
+
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase =
+  supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 type EventParams = Record<string, string | number | boolean>;
 
@@ -8,10 +15,32 @@ declare global {
   }
 }
 
+function getSessionId(): string {
+  if (typeof window === 'undefined') return '';
+  let sid = sessionStorage.getItem('lp_session_id');
+  if (!sid) {
+    sid = crypto.randomUUID();
+    sessionStorage.setItem('lp_session_id', sid);
+  }
+  return sid;
+}
+
 export function trackEvent(name: string, params?: EventParams) {
   // Google Analytics
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', name, params);
+  }
+
+  // Supabase ecosystem events
+  if (supabase) {
+    supabase.from('events').insert({
+      event: name,
+      properties: params ?? {},
+      source: 'lina-point',
+      session_id: getSessionId(),
+      page_url: typeof window !== 'undefined' ? window.location.pathname : null,
+      created_at: new Date().toISOString(),
+    }).then(() => {}, () => {});
   }
 }
 

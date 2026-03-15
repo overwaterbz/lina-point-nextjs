@@ -1,0 +1,119 @@
+{
+  "name": "Lina Point — Post Stay Follow-up",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-stay",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c3000001-0001-4000-8000-000000000001",
+      "name": "Post Stay Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 360],
+      "webhookId": "post-stay-webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c3000001-0001-4000-8000-000000000002",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [460, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract guest info from webhook payload\nconst body = $input.first().json.body || $input.first().json;\nconst data = body.data || {};\n\nreturn [{\n  json: {\n    guestName: data.guestName || data.guest || 'Valued Guest',\n    email: data.email || '',\n    checkOut: data.checkOut || '',\n    loyaltyPoints: data.loyaltyPoints || 0,\n    stayDuration: data.nights || 0,\n    roomType: data.roomType || '',\n    total: data.total || 0\n  }\n}];"
+      },
+      "id": "c3000001-0001-4000-8000-000000000003",
+      "name": "Extract Guest Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 560]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "hours"
+      },
+      "id": "c3000001-0001-4000-8000-000000000004",
+      "name": "Wait 2 Hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [700, 560]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the thank-you / review request message\nconst guest = $input.first().json;\n\nconst message = `Hi ${guest.guestName},\n\nThank you for staying at Lina Point! We hope you had a wonderful time.\n\nYou earned ${guest.loyaltyPoints} loyalty points during your stay.\n\nWe'd love to hear about your experience. Your feedback helps us improve and helps other travelers discover Lina Point.\n\n🌟 Leave a review: https://lina-point.vercel.app/review\n🎁 Refer a friend and earn bonus points: https://lina-point.vercel.app/referral\n\nWe look forward to welcoming you back!\n\nWarm regards,\nThe Lina Point Team`;\n\nreturn [{\n  json: {\n    to: guest.email,\n    subject: `Thank you for staying at Lina Point, ${guest.guestName}!`,\n    message: message,\n    guestName: guest.guestName\n  }\n}];"
+      },
+      "id": "c3000001-0001-4000-8000-000000000005",
+      "name": "Build Thank You Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 560]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "days"
+      },
+      "id": "c3000001-0001-4000-8000-000000000006",
+      "name": "Wait 3 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1180, 560]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build referral reminder\nconst prev = $('Extract Guest Info').first().json;\n\nconst message = `Hi ${prev.guestName},\n\nJust a friendly reminder — you have ${prev.loyaltyPoints} loyalty points waiting for you!\n\n🎁 Share your unique referral link and earn 500 bonus points for every friend who books:\nhttps://lina-point.vercel.app/referral\n\n📸 Have photos from your trip? Tag us @LinaPointBelize on Instagram!\n\nSee you next time,\nThe Lina Point Team`;\n\nreturn [{\n  json: {\n    to: prev.email,\n    subject: `${prev.guestName}, your ${prev.loyaltyPoints} points are waiting!`,\n    message: message,\n    guestName: prev.guestName\n  }\n}];"
+      },
+      "id": "c3000001-0001-4000-8000-000000000007",
+      "name": "Build Referral Reminder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1420, 560]
+    }
+  ],
+  "connections": {
+    "Post Stay Webhook": {
+      "main": [
+        [
+          { "node": "Respond OK", "type": "main", "index": 0 },
+          { "node": "Extract Guest Info", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Extract Guest Info": {
+      "main": [
+        [{ "node": "Wait 2 Hours", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait 2 Hours": {
+      "main": [
+        [{ "node": "Build Thank You Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Thank You Email": {
+      "main": [
+        [{ "node": "Wait 3 Days", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait 3 Days": {
+      "main": [
+        [{ "node": "Build Referral Reminder", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "active": false
+}
