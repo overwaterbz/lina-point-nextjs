@@ -4,34 +4,38 @@
  */
 
 const required = [
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'SUPABASE_SERVICE_ROLE_KEY',
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
 ] as const;
 
 const requiredServer = [
-  'GROK_API_KEY',
-  'RESEND_API_KEY',
-  'TAVILY_API_KEY',
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "GROK_API_KEY",
+  "RESEND_API_KEY",
+  "TAVILY_API_KEY",
 ] as const;
 
 const optional = [
-  'NEXT_PUBLIC_SQUARE_APPLICATION_ID',
-  'SQUARE_ACCESS_TOKEN',
-  'SQUARE_LOCATION_ID',
-  'STRIPE_SECRET_KEY',
-  'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
-  'STRIPE_WEBHOOK_SECRET',
-  'SQUARE_WEBHOOK_SECRET',
-  'TWILIO_ACCOUNT_SID',
-  'TWILIO_AUTH_TOKEN',
-  'TWILIO_WHATSAPP_FROM',
-  'N8N_WEBHOOK_URL',
-  'N8N_WEBHOOK_SECRET',
-  'CRON_SECRET',
+  "NEXT_PUBLIC_SQUARE_APPLICATION_ID",
+  "SQUARE_ACCESS_TOKEN",
+  "SQUARE_LOCATION_ID",
+  "STRIPE_SECRET_KEY",
+  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+  "STRIPE_WEBHOOK_SECRET",
+  "SQUARE_WEBHOOK_SECRET",
+  "TWILIO_ACCOUNT_SID",
+  "TWILIO_AUTH_TOKEN",
+  "TWILIO_WHATSAPP_FROM",
+  "N8N_WEBHOOK_URL",
+  "N8N_WEBHOOK_SECRET",
+  "CRON_SECRET",
 ] as const;
 
-export function validateEnv(): { valid: boolean; missing: string[]; warnings: string[] } {
+export function validateEnv(): {
+  valid: boolean;
+  missing: string[];
+  warnings: string[];
+} {
   const missing: string[] = [];
   const warnings: string[] = [];
 
@@ -40,7 +44,7 @@ export function validateEnv(): { valid: boolean; missing: string[]; warnings: st
   }
 
   // Server-only vars — only check on server side
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     for (const key of requiredServer) {
       if (!process.env[key]) missing.push(key);
     }
@@ -51,22 +55,36 @@ export function validateEnv(): { valid: boolean; missing: string[]; warnings: st
   }
 
   if (missing.length > 0) {
-    console.error(`[ENV] Missing required env vars: ${missing.join(', ')}`);
+    console.error(`[ENV] Missing required env vars: ${missing.join(", ")}`);
   }
   if (warnings.length > 0) {
-    console.warn(`[ENV] Optional env vars not set: ${warnings.join(', ')}`);
+    console.warn(`[ENV] Optional env vars not set: ${warnings.join(", ")}`);
   }
 
   return { valid: missing.length === 0, missing, warnings };
 }
 
-// Auto-validate on import in production — fail fast
-if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+// Auto-validate on import in production — fail fast for public vars, warn for server-only
+if (typeof window === "undefined" && process.env.NODE_ENV === "production") {
   const result = validateEnv();
-  if (!result.valid) {
+  const publicMissing = result.missing.filter(
+    (v) =>
+      ![
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "GROK_API_KEY",
+        "RESEND_API_KEY",
+        "TAVILY_API_KEY",
+      ].includes(v),
+  );
+  if (publicMissing.length > 0) {
     throw new Error(
-      `[ENV] Missing required environment variables: ${result.missing.join(', ')}. ` +
-      'Set them in your Vercel dashboard before deploying.'
+      `[ENV] Missing required environment variables: ${publicMissing.join(", ")}. ` +
+        "Set them in your Vercel dashboard before deploying.",
+    );
+  }
+  if (result.missing.length > publicMissing.length) {
+    console.warn(
+      `[ENV] Missing runtime environment variables (needed at request time): ${result.missing.filter((v) => !publicMissing.includes(v)).join(", ")}`,
     );
   }
 }

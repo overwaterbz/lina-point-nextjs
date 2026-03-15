@@ -7,7 +7,10 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://linapoint.com";
 
-function buildDigestHtml(posts: { title: string; excerpt: string; url: string }[], unsubUrl: string): string {
+function buildDigestHtml(
+  posts: { title: string; excerpt: string; url: string }[],
+  unsubUrl: string,
+): string {
   const postRows = posts
     .map(
       (p) => `
@@ -17,7 +20,7 @@ function buildDigestHtml(posts: { title: string; excerpt: string; url: string }[
           <p style="margin:0 0 8px;color:#4b5563;font-size:14px;line-height:1.5">${p.excerpt}</p>
           <a href="${p.url}" style="color:#d97706;font-weight:600;text-decoration:none;font-size:13px">Read more &rarr;</a>
         </td>
-      </tr>`
+      </tr>`,
     )
     .join("");
 
@@ -34,6 +37,8 @@ function buildDigestHtml(posts: { title: string; excerpt: string; url: string }[
     <div style="margin-top:24px;text-align:center">
       <a href="https://overwater.com?utm_source=newsletter&utm_medium=email&utm_campaign=weekly-digest" style="display:inline-block;background:#0d9488;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:4px">Explore Overwater</a>
       <a href="https://magic.overwater.com?utm_source=newsletter&utm_medium=email&utm_campaign=weekly-digest" style="display:inline-block;background:#7c3aed;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:4px">Cosmic Blueprint</a>
+      <a href="https://kylapoint.com?utm_source=newsletter&utm_medium=email&utm_campaign=weekly-digest" style="display:inline-block;background:#059669;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:4px">Kyla Point</a>
+      <a href="https://pointrealtor.com?utm_source=newsletter&utm_medium=email&utm_campaign=weekly-digest" style="display:inline-block;background:#1e40af;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:4px">Point Realtor</a>
     </div>
     <p style="margin-top:32px;font-size:11px;color:#9ca3af;text-align:center">
       You&rsquo;re receiving this because you subscribed to our newsletter.<br/>
@@ -106,7 +111,19 @@ export async function GET(req: Request) {
       excerpt:
         "Check today's Tzolk'in day sign, spirit animal, and galactic tone — free daily cosmic weather.",
       url: "https://magic.overwater.com/today?utm_source=newsletter&utm_medium=email&utm_campaign=weekly-digest",
-    }
+    },
+    {
+      title: "Kyla Point — Soulful Living on the Mainland",
+      excerpt:
+        "Homes, lots, and resort amenities in Belize's newest master-planned community.",
+      url: "https://kylapoint.com?utm_source=newsletter&utm_medium=email&utm_campaign=weekly-digest",
+    },
+    {
+      title: "Point Realtor — Browse All Listings",
+      excerpt:
+        "Licensed brokerage managing real estate across Lina Point, Kyla Point, and Overwater. Belize & Florida.",
+      url: "https://pointrealtor.com?utm_source=newsletter&utm_medium=email&utm_campaign=weekly-digest",
+    },
   );
 
   // Send individually so each subscriber gets a unique unsubscribe link
