@@ -135,7 +135,7 @@ export async function sendReferralOffer(
     `Give your friends $25 off their first Lina Point stay with your personal code:\n\n` +
     `🎟️ *${opts.referralCode}*\n\n` +
     `You'll earn *$50 credit* for every friend who books! No limit.\n\n` +
-    `Share link: https://lina-point.vercel.app/booking?ref=${encodeURIComponent(opts.referralCode)}`
+    `Share link: https://linapoint.com/booking?ref=${encodeURIComponent(opts.referralCode)}`
 
   await sendWhatsAppMessage(opts.phone, message)
 

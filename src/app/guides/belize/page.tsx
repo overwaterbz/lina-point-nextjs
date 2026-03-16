@@ -74,16 +74,16 @@ export default function BelizeGuidePage() {
       name: "Ambergris Caye, Belize",
       geo: { "@type": "GeoCoordinates", latitude: "17.9214", longitude: "-87.9611" },
     },
-    url: "https://lina-point.vercel.app/guides/belize",
+    url: "https://linapoint.com/guides/belize",
   };
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://lina-point.vercel.app" },
-      { "@type": "ListItem", position: 2, name: "Guides", item: "https://lina-point.vercel.app/guides/belize" },
-      { "@type": "ListItem", position: 3, name: "Belize", item: "https://lina-point.vercel.app/guides/belize" },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://linapoint.com" },
+      { "@type": "ListItem", position: 2, name: "Guides", item: "https://linapoint.com/guides/belize" },
+      { "@type": "ListItem", position: 3, name: "Belize", item: "https://linapoint.com/guides/belize" },
     ],
   };
 

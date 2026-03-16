@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const body = await req.text()
   const signatureHeader = req.headers.get('x-square-hmacsha256-signature') || ''
   const signatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY || ''
-  const notificationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://lina-point.vercel.app'}/api/square/webhook`
+  const notificationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://linapoint.com'}/api/square/webhook`
 
   // Verify webhook signature
   if (signatureKey) {

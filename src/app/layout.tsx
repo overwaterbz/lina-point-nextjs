@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     title: "Lina Point | Overwater Resort in San Pedro, Belize",
     description:
       "Disconnect once you step on the bridge. Reconnect with the magic within at Belize's premier overwater resort.",
-    url: "https://lina-point.vercel.app",
+    url: "https://linapoint.com",
     siteName: "Lina Point",
     images: [
       {
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
       "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
     ],
   },
-  metadataBase: new URL("https://lina-point.vercel.app"),
+  metadataBase: new URL("https://linapoint.com"),
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   icons: { icon: "/favicon.svg" },
@@ -76,7 +76,7 @@ const jsonLd = {
   name: "Lina Point Belize Overwater Resort",
   description:
     "Premier overwater resort in San Pedro, Ambergris Caye, Belize featuring glass bottom floors, infinity pool, and world-class diving.",
-  url: "https://lina-point.vercel.app",
+  url: "https://linapoint.com",
   telephone: "+501-632-7767",
   email: "reservations@linapoint.com",
   address: {
@@ -118,35 +118,35 @@ const jsonLd = {
         name: "2nd Floor Hotel Suite",
         price: "130",
         priceCurrency: "USD",
-        url: "https://lina-point.vercel.app/booking?room=2nd-floor-suite",
+        url: "https://linapoint.com/booking?room=2nd-floor-suite",
       },
       {
         "@type": "Offer",
         name: "1st Floor Hotel Suite",
         price: "150",
         priceCurrency: "USD",
-        url: "https://lina-point.vercel.app/booking?room=1st-floor-suite",
+        url: "https://linapoint.com/booking?room=1st-floor-suite",
       },
       {
         "@type": "Offer",
         name: "1 Bed Duplex Cabana",
         price: "250",
         priceCurrency: "USD",
-        url: "https://lina-point.vercel.app/booking?room=overwater-cabana-duplex",
+        url: "https://linapoint.com/booking?room=overwater-cabana-duplex",
       },
       {
         "@type": "Offer",
         name: "1 Bedroom Overwater Cabana",
         price: "300",
         priceCurrency: "USD",
-        url: "https://lina-point.vercel.app/booking?room=overwater-cabana",
+        url: "https://linapoint.com/booking?room=overwater-cabana",
       },
       {
         "@type": "Offer",
         name: "2 Bedroom Overwater Cabana",
         price: "400",
         priceCurrency: "USD",
-        url: "https://lina-point.vercel.app/booking?room=2br-overwater-cabana",
+        url: "https://linapoint.com/booking?room=2br-overwater-cabana",
       },
     ],
   },
