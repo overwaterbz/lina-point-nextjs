@@ -96,7 +96,7 @@ export function confirmationEmailHtml(opts: {
     <p style="font-size:12px;color:#9ca3af;text-align:center">
       Lina Point Resort — San Pedro, Ambergris Caye, Belize<br/>
       BZ +501.632.7767 | <a href="mailto:reservations@linapoint.com" style="color:#6b7280">reservations@linapoint.com</a><br/>
-      <a href="https://lina-point.vercel.app/booking/confirmation/${confirmation.confirmationNumber}" style="color:#0d9488">View your booking online</a>
+      <a href="https://linapoint.com/booking/confirmation/${confirmation.confirmationNumber}" style="color:#0d9488">View your booking online</a>
     </p>
   </div>
 </body>
@@ -124,7 +124,7 @@ export function adminNotificationHtml(opts: {
   <p><strong>Dates:</strong> ${opts.checkIn} → ${opts.checkOut} (${opts.nights} nights)</p>
   <p><strong>Guests:</strong> ${opts.guestsCount}</p>
   <p><strong>Total:</strong> $${opts.totalAmount.toFixed(2)}</p>
-  <p><a href="https://lina-point.vercel.app/admin/dashboard">Open Admin Dashboard</a></p>
+  <p><a href="https://linapoint.com/admin/dashboard">Open Admin Dashboard</a></p>
 </div>`
 }
 
@@ -192,7 +192,7 @@ export function postStayEmailHtml(opts: {
     <div style="background:#fef3c7;border-radius:8px;padding:16px;margin:24px 0;text-align:center">
       <p style="font-size:14px;color:#92400e;margin:0"><strong>Ready to come back?</strong></p>
       <p style="font-size:13px;color:#92400e;margin:4px 0 12px">Loyal guests enjoy exclusive rates and priority room selection.</p>
-      <a href="https://lina-point.vercel.app/booking" style="display:inline-block;background:#d97706;color:white;padding:10px 24px;border-radius:24px;text-decoration:none;font-weight:600;font-size:14px">Book Your Next Stay</a>
+      <a href="https://linapoint.com/booking" style="display:inline-block;background:#d97706;color:white;padding:10px 24px;border-radius:24px;text-decoration:none;font-weight:600;font-size:14px">Book Your Next Stay</a>
     </div>
 
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>

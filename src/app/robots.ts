@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/auth/", "/dashboard/", "/admin/"],
       },
     ],
-    sitemap: "https://lina-point.vercel.app/sitemap.xml",
+    sitemap: "https://linapoint.com/sitemap.xml",
   };
 }

@@ -222,7 +222,7 @@ const roomsJsonLd = {
   "@context": "https://schema.org",
   "@type": "LodgingBusiness",
   name: "Lina Point Belize Overwater Resort",
-  url: "https://lina-point.vercel.app/rooms",
+  url: "https://linapoint.com/rooms",
   makesOffer: ROOMS.map((room) => ({
     "@type": "Offer",
     name: room.name,
@@ -235,7 +235,7 @@ const roomsJsonLd = {
       priceCurrency: "USD",
       unitText: "night",
     },
-    url: `https://lina-point.vercel.app/booking?room=${room.slug}`,
+    url: `https://linapoint.com/booking?room=${room.slug}`,
     itemOffered: {
       "@type": "HotelRoom",
       name: room.name,
@@ -253,8 +253,8 @@ const breadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: "https://lina-point.vercel.app" },
-    { "@type": "ListItem", position: 2, name: "Rooms", item: "https://lina-point.vercel.app/rooms" },
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://linapoint.com" },
+    { "@type": "ListItem", position: 2, name: "Rooms", item: "https://linapoint.com/rooms" },
   ],
 };
 

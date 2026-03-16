@@ -78,18 +78,18 @@ export default async function BlogPostPage({
     publisher: {
       "@type": "Organization",
       name: "Lina Point Belize Overwater Resort",
-      url: "https://lina-point.vercel.app",
+      url: "https://linapoint.com",
     },
-    mainEntityOfPage: `https://lina-point.vercel.app/blog/${blogPost.slug}`,
+    mainEntityOfPage: `https://linapoint.com/blog/${blogPost.slug}`,
   };
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://lina-point.vercel.app" },
-      { "@type": "ListItem", position: 2, name: "Blog", item: "https://lina-point.vercel.app/blog" },
-      { "@type": "ListItem", position: 3, name: blogPost.title, item: `https://lina-point.vercel.app/blog/${blogPost.slug}` },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://linapoint.com" },
+      { "@type": "ListItem", position: 2, name: "Blog", item: "https://linapoint.com/blog" },
+      { "@type": "ListItem", position: 3, name: blogPost.title, item: `https://linapoint.com/blog/${blogPost.slug}` },
     ],
   };
 

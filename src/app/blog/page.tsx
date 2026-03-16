@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Blog | Lina Point Overwater Resort',
     description: 'Travel tips, Belize destination guides, and insider stories from the Caribbean\'s premier overwater resort.',
-    url: 'https://lina-point.vercel.app/blog',
+    url: 'https://linapoint.com/blog',
     type: 'website',
   },
 };
@@ -43,17 +43,17 @@ export default async function BlogPage() {
     "@context": "https://schema.org",
     "@type": "Blog",
     name: "Lina Point Resort Blog",
-    url: "https://lina-point.vercel.app/blog",
+    url: "https://linapoint.com/blog",
     description: "Travel tips, destination guides, and insider stories from Belize.",
     publisher: {
       "@type": "Organization",
       name: "Lina Point Belize Overwater Resort",
-      url: "https://lina-point.vercel.app",
+      url: "https://linapoint.com",
     },
     blogPost: blogPosts.map((p) => ({
       "@type": "BlogPosting",
       headline: p.title,
-      url: `https://lina-point.vercel.app/blog/${p.slug}`,
+      url: `https://linapoint.com/blog/${p.slug}`,
       datePublished: p.published_at,
       author: { "@type": "Person", name: p.author },
       ...(p.cover_image ? { image: p.cover_image } : {}),
@@ -64,8 +64,8 @@ export default async function BlogPage() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://lina-point.vercel.app" },
-      { "@type": "ListItem", position: 2, name: "Blog", item: "https://lina-point.vercel.app/blog" },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://linapoint.com" },
+      { "@type": "ListItem", position: 2, name: "Blog", item: "https://linapoint.com/blog" },
     ],
   };
 

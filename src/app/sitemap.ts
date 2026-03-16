@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://lina-point.vercel.app';
+  const baseUrl = 'https://linapoint.com';
 
   // Fetch published blog slugs
   let blogEntries: MetadataRoute.Sitemap = [];

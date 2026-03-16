@@ -49,7 +49,7 @@ export interface DiagnosticReport {
   nextCheckIn: string;
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lina-point.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://linapoint.com';
 
 const HEALTH_ENDPOINTS = [
   { path: '/', name: 'Homepage' },
