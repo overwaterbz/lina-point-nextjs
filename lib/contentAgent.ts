@@ -25,10 +25,12 @@ const ContentState = Annotation.Root({
 // Grok LLM for creative prompts - using fetch to call X.AI directly
 async function callGrokAPI(prompt: string): Promise<string> {
   const apiKey = process.env.GROK_API_KEY;
-  
+
   // For demo purposes, use mock if key is missing
   if (!apiKey) {
-    console.log("[ContentAgent] GROK_API_KEY not configured, using mock generator");
+    console.log(
+      "[ContentAgent] GROK_API_KEY not configured, using mock generator",
+    );
     return JSON.stringify({
       title: "Demo Song - The Magic is You",
       lyrics: `[Verse 1]
@@ -65,7 +67,9 @@ The magic inside, sets your spirit free`,
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(`Grok API error: ${errorData.error?.message || response.statusText}`);
+      throw new Error(
+        `Grok API error: ${errorData.error?.message || response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -96,9 +100,12 @@ The magic reflected in your eyes`,
 /**
  * Pixverse video generation API call
  */
-async function callPixverseAPI(videoPrompt: string, audioUrl?: string): Promise<{ url: string; id: string }> {
+async function callPixverseAPI(
+  videoPrompt: string,
+  audioUrl?: string,
+): Promise<{ url: string; id: string }> {
   const apiKey = process.env.PIXVERSE_API_KEY;
-  
+
   if (!apiKey) {
     console.log("[ContentAgent] PIXVERSE_API_KEY not configured, using mock");
     return {
@@ -126,7 +133,9 @@ async function callPixverseAPI(videoPrompt: string, audioUrl?: string): Promise<
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(`Pixverse API error: ${errorData.error?.message || response.statusText}`);
+      throw new Error(
+        `Pixverse API error: ${errorData.error?.message || response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -146,9 +155,12 @@ async function callPixverseAPI(videoPrompt: string, audioUrl?: string): Promise<
 /**
  * LTX Studio video generation API call
  */
-async function callLTXStudioAPI(videoPrompt: string, audioUrl?: string): Promise<{ url: string; id: string }> {
+async function callLTXStudioAPI(
+  videoPrompt: string,
+  audioUrl?: string,
+): Promise<{ url: string; id: string }> {
   const apiKey = process.env.LTX_STUDIO_API_KEY;
-  
+
   if (!apiKey) {
     console.log("[ContentAgent] LTX_STUDIO_API_KEY not configured, using mock");
     return {
@@ -158,23 +170,28 @@ async function callLTXStudioAPI(videoPrompt: string, audioUrl?: string): Promise
   }
 
   try {
-    const response = await fetch("https://api.ltxstudio.com/v1/videos/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const response = await fetch(
+      "https://api.ltxstudio.com/v1/videos/generate",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          prompt: videoPrompt,
+          duration: 180,
+          music_url: audioUrl,
+          resolution: "1080p",
+        }),
       },
-      body: JSON.stringify({
-        prompt: videoPrompt,
-        duration: 180,
-        music_url: audioUrl,
-        resolution: "1080p",
-      }),
-    });
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(`LTX Studio API error: ${errorData.error?.message || response.statusText}`);
+      throw new Error(
+        `LTX Studio API error: ${errorData.error?.message || response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -183,7 +200,10 @@ async function callLTXStudioAPI(videoPrompt: string, audioUrl?: string): Promise
       url: data.video_url,
     };
   } catch (error) {
-    console.warn("[ContentAgent] LTX Studio API call failed, using mock:", error);
+    console.warn(
+      "[ContentAgent] LTX Studio API call failed, using mock:",
+      error,
+    );
     return {
       id: `ltx_mock_${Date.now()}`,
       url: `https://storage.ltx.example.com/videos/mock_${Date.now()}.mp4`,
@@ -196,7 +216,9 @@ const SunoPromptSchema = z.object({
   title: z.string().describe("Song title"),
   lyrics: z.string().describe("Full song lyrics with verses, chorus, bridge"),
   style: z.string().describe("Music style/genre"),
-  mood: z.string().describe("Emotional mood (happy, romantic, energetic, etc.)"),
+  mood: z
+    .string()
+    .describe("Emotional mood (happy, romantic, energetic, etc.)"),
   tags: z.array(z.string()).describe("Music tags (indie, pop, ambient, etc.)"),
 });
 
@@ -204,7 +226,10 @@ const SunoPromptSchema = z.object({
  * Step 1: Create Grok prompt for song generation
  */
 async function createGrokPrompt(state: typeof ContentState.State) {
-  console.log("[ContentAgent] Step 1: Creating Grok prompt for", state.occasion);
+  console.log(
+    "[ContentAgent] Step 1: Creating Grok prompt for",
+    state.occasion,
+  );
 
   const userPrefsStr = JSON.stringify(state.userPrefs);
   const prompt = `
@@ -237,9 +262,9 @@ Output ONLY valid JSON with this exact structure:
 
   try {
     const response = await callGrokAPI(prompt);
-    
+
     // Parse JSON from response
-    let jsonStr = response;
+    const jsonStr = response;
     const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       // If no JSON found, create a mock response
@@ -279,9 +304,9 @@ The Magic is You, body and soul`,
         status: "processing_suno",
       };
     }
-    
+
     const songData = JSON.parse(jsonMatch[0]);
-    
+
     return {
       ...state,
       grokPrompt: JSON.stringify(songData),
@@ -308,7 +333,7 @@ async function generateSunoTrack(state: typeof ContentState.State) {
 
   try {
     const songData = JSON.parse(state.grokPrompt);
-    
+
     // Mock Suno API call (replace with real API when available)
     const sunoPayload = {
       prompt: `${songData.title}\n\n${songData.lyrics}`,
@@ -354,7 +379,9 @@ async function generateSunoTrack(state: typeof ContentState.State) {
 async function generateVideo(state: typeof ContentState.State) {
   if (state.status === "failed") return state;
 
-  console.log("[ContentAgent] Step 3: Generating video with LTX Studio & Pixverse...");
+  console.log(
+    "[ContentAgent] Step 3: Generating video with LTX Studio & Pixverse...",
+  );
 
   try {
     const videoPrompt = `
@@ -386,7 +413,9 @@ Create a 3-minute cinematic video for a ${state.occasion} celebration:
     } else if (ltxResult.status === "fulfilled" && ltxResult.value.url) {
       videoUrl = ltxResult.value.url;
       videoService = "ltx_studio";
-      console.log("[ContentAgent] Using LTX Studio video (Pixverse unavailable)");
+      console.log(
+        "[ContentAgent] Using LTX Studio video (Pixverse unavailable)",
+      );
     } else {
       // Both failed, use mock
       videoUrl = `https://storage.example.com/videos/mock_${Date.now()}.mp4`;
@@ -456,7 +485,7 @@ export async function runContentAgent(
   reservationId: string,
   userPrefs: Record<string, any>,
   occasion: string,
-  genre: string = "ambient"
+  genre: string = "ambient",
 ) {
   console.log(`[ContentAgent] Starting for reservation ${reservationId}`);
 

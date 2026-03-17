@@ -5,26 +5,41 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import Script from "next/script";
 import dynamic from "next/dynamic";
 import { trackEvent, captureUtmParams, getUtmParams } from "@/lib/analytics";
 
-const OTAPriceComparison = dynamic(() => import("@/components/OTAPriceComparison"), {
-  loading: () => <div className="animate-pulse h-48 bg-teal-900/20 rounded-xl" />,
-});
+const OTAPriceComparison = dynamic(
+  () => import("@/components/OTAPriceComparison"),
+  {
+    loading: () => (
+      <div className="animate-pulse h-48 bg-teal-900/20 rounded-xl" />
+    ),
+  },
+);
 const WhyBookDirect = dynamic(() => import("@/components/WhyBookDirect"), {
-  loading: () => <div className="animate-pulse h-32 bg-teal-900/20 rounded-xl" />,
+  loading: () => (
+    <div className="animate-pulse h-32 bg-teal-900/20 rounded-xl" />
+  ),
 });
-const SocialProofCounter = dynamic(() => import("@/components/SocialProofCounter"), {
-  loading: () => <div className="animate-pulse h-8 bg-teal-900/20 rounded" />,
-});
+const SocialProofCounter = dynamic(
+  () => import("@/components/SocialProofCounter"),
+  {
+    loading: () => <div className="animate-pulse h-8 bg-teal-900/20 rounded" />,
+  },
+);
 
 // ---------- helpers ----------
 async function fetchWithTimeout<T>(
   url: string,
   options: RequestInit = {},
-  timeoutMs: number = 30000
+  timeoutMs: number = 30000,
 ): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -72,7 +87,8 @@ function SquareCardForm({
     let cancelled = false;
     async function init() {
       const appId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID;
-      if (!appId || typeof window === "undefined" || !(window as any).Square) return;
+      if (!appId || typeof window === "undefined" || !(window as any).Square)
+        return;
 
       try {
         const payments = (window as any).Square.payments(appId);
@@ -88,7 +104,10 @@ function SquareCardForm({
     }
     // Small delay to let the Square SDK script finish loading
     const timer = setTimeout(init, 300);
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [onFallbackToStripe]);
 
   const handlePay = async (e: React.FormEvent) => {
@@ -99,7 +118,9 @@ function SquareCardForm({
     try {
       const tokenResult = await cardRef.current.tokenize();
       if (tokenResult.status !== "OK") {
-        toast.error(tokenResult.errors?.[0]?.message || "Card tokenization failed");
+        toast.error(
+          tokenResult.errors?.[0]?.message || "Card tokenization failed",
+        );
         setLoading(false);
         return;
       }
@@ -117,7 +138,7 @@ function SquareCardForm({
             sourceId: tokenResult.token,
           }),
         },
-        15000
+        15000,
       );
 
       if (data.error) throw new Error(data.error);
@@ -130,7 +151,11 @@ function SquareCardForm({
       }
     } catch (err) {
       console.error("[Square] Payment failed:", err);
-      toast.error(err instanceof Error ? err.message : "Payment failed — trying backup processor");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Payment failed — trying backup processor",
+      );
       onFallbackToStripe();
     } finally {
       setLoading(false);
@@ -139,7 +164,11 @@ function SquareCardForm({
 
   return (
     <form onSubmit={handlePay} className="space-y-4">
-      <div id="square-card-container" ref={containerRef} className="min-h-[50px] border border-gray-200 rounded-lg p-1" />
+      <div
+        id="square-card-container"
+        ref={containerRef}
+        className="min-h-[50px] border border-gray-200 rounded-lg p-1"
+      />
       <button
         type="submit"
         disabled={!ready || loading}
@@ -148,7 +177,9 @@ function SquareCardForm({
         {loading ? "Processing..." : `Pay $${amount.toFixed(2)}`}
       </button>
       {!ready && (
-        <p className="text-xs text-gray-500 text-center">Loading secure card form…</p>
+        <p className="text-xs text-gray-500 text-center">
+          Loading secure card form…
+        </p>
       )}
     </form>
   );
@@ -163,7 +194,7 @@ function CheckoutForm({ onSuccess }: { onSuccess: () => void }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) {
-      toast.error('Stripe not loaded. Please refresh the page.');
+      toast.error("Stripe not loaded. Please refresh the page.");
       return;
     }
     setLoading(true);
@@ -173,7 +204,7 @@ function CheckoutForm({ onSuccess }: { onSuccess: () => void }) {
         confirmParams: {
           return_url: window.location.href,
         },
-        redirect: 'if_required'
+        redirect: "if_required",
       } as any);
 
       if (error) {
@@ -182,13 +213,13 @@ function CheckoutForm({ onSuccess }: { onSuccess: () => void }) {
         return;
       }
 
-      if (paymentIntent && paymentIntent.status === 'succeeded') {
+      if (paymentIntent && paymentIntent.status === "succeeded") {
         onSuccess();
       } else {
-        toast.error('Payment did not complete. Please try again.');
+        toast.error("Payment did not complete. Please try again.");
       }
     } catch (err: any) {
-      toast.error(`Payment error: ${err?.message || 'Unknown error'}`);
+      toast.error(`Payment error: ${err?.message || "Unknown error"}`);
       setLoading(false);
     }
   };
@@ -196,8 +227,12 @@ function CheckoutForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <PaymentElement />
-      <button type="submit" disabled={!stripe || loading} className="w-full bg-blue-600 text-white py-2 rounded">
-        {loading ? 'Processing...' : 'Pay'}
+      <button
+        type="submit"
+        disabled={!stripe || loading}
+        className="w-full bg-blue-600 text-white py-2 rounded"
+      >
+        {loading ? "Processing..." : "Pay"}
       </button>
     </form>
   );
@@ -236,21 +271,23 @@ interface BookingResult {
   error?: string;
 }
 
-// Retry helper function  
+// Retry helper function
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxRetries = 3,
-  delay = 1000
+  delay = 1000,
 ): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
     } catch (error) {
       if (i === maxRetries - 1) throw error;
-      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+      await new Promise((resolve) =>
+        setTimeout(resolve, delay * Math.pow(2, i)),
+      );
     }
   }
-  throw new Error('Max retries exceeded');
+  throw new Error("Max retries exceeded");
 }
 
 interface AvailabilityItem {
@@ -276,7 +313,9 @@ export default function BookingPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [paymentMode, setPaymentMode] = useState<"square" | "stripe">("square");
   const [squareSdkReady, setSquareSdkReady] = useState(false);
-  const [availability, setAvailability] = useState<AvailabilityItem[] | null>(null);
+  const [availability, setAvailability] = useState<AvailabilityItem[] | null>(
+    null,
+  );
   const [availLoading, setAvailLoading] = useState(false);
 
   // Promo code state
@@ -293,57 +332,64 @@ export default function BookingPage() {
   const [showPromo, setShowPromo] = useState(false);
 
   // Memoize stripePromise to prevent reloading on every render
-  const stripePromise = useMemo(() => 
-    (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-      ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-      : null,
-    []
+  const stripePromise = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+        : null,
+    [],
   );
 
   const hasSquare = !!process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID;
 
   // Capture UTM params on mount
-  useEffect(() => { captureUtmParams(); }, []);
+  useEffect(() => {
+    captureUtmParams();
+  }, []);
 
   const fallbackToStripe = useCallback(async () => {
     if (!result) return;
     setPaymentMode("stripe");
     try {
       const data = await fetchWithTimeout<any>(
-        '/api/stripe/create-payment-intent',
+        "/api/stripe/create-payment-intent",
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             amount: result.curated_package.total,
-            currency: 'usd',
-            metadata: { booking: 'lina-point' },
+            currency: "usd",
+            metadata: { booking: "lina-point" },
             useStripe: true,
           }),
         },
-        10000
+        10000,
       );
       if (data.error) throw new Error(data.error);
       setPaymentOptions({ clientSecret: data.client_secret });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Payment setup failed');
+      toast.error(err instanceof Error ? err.message : "Payment setup failed");
       setShowPayment(false);
     }
   }, [result]);
-  
+
   // Validate promo code
   const validatePromo = async () => {
     if (!promoCode.trim()) return;
     setPromoLoading(true);
     try {
-      const selected = availability?.find(r => r.roomType === formData.roomType);
+      const selected = availability?.find(
+        (r) => r.roomType === formData.roomType,
+      );
       const res = await fetch("/api/promo/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: promoCode,
           roomType: formData.roomType,
-          bookingAmount: selected?.totalForStay || selected?.estimatedTotal || 0,
+          bookingAmount:
+            selected?.totalForStay || selected?.estimatedTotal || 0,
         }),
       });
       const data = await res.json();
@@ -383,18 +429,24 @@ export default function BookingPage() {
 
     let cancelled = false;
     setAvailLoading(true);
-    fetch(`/api/availability?checkIn=${formData.checkInDate}&checkOut=${formData.checkOutDate}`)
-      .then(r => r.json())
-      .then(data => {
+    fetch(
+      `/api/availability?checkIn=${formData.checkInDate}&checkOut=${formData.checkOutDate}`,
+    )
+      .then((r) => r.json())
+      .then((data) => {
         if (!cancelled && data.availability) setAvailability(data.availability);
       })
       .catch(() => {})
-      .finally(() => { if (!cancelled) setAvailLoading(false); });
-    return () => { cancelled = true; };
+      .finally(() => {
+        if (!cancelled) setAvailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [formData.checkInDate, formData.checkOutDate]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
 
@@ -442,7 +494,9 @@ export default function BookingPage() {
       return;
     }
 
-    const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    const nights = Math.round(
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24),
+    );
     if (nights < 2) {
       toast.error("Minimum stay is 2 nights");
       return;
@@ -454,7 +508,9 @@ export default function BookingPage() {
     }
 
     setIsLoading(true);
-    const loadingToast = toast.loading("Running agents... Price Scout & Experience Curator");
+    const loadingToast = toast.loading(
+      "Running agents... Price Scout & Experience Curator",
+    );
 
     try {
       const data: BookingResult = await fetchWithTimeout<BookingResult>(
@@ -464,7 +520,7 @@ export default function BookingPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
         },
-        45000 // Extended timeout for agent processing (45s)
+        45000, // Extended timeout for agent processing (45s)
       );
 
       if (!data.success) {
@@ -505,14 +561,15 @@ export default function BookingPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Lina Point Resort Booking
-            </h1>
-            <SocialProofCounter />
-            <p className="text-lg text-gray-600 mb-8">
-              AI-powered price comparison & experience curation — San Pedro, Belize
-            </p>
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Lina Point Resort Booking
+          </h1>
+          <SocialProofCounter />
+          <p className="text-lg text-gray-600 mb-8">
+            AI-powered price comparison & experience curation — San Pedro,
+            Belize
+          </p>
 
           {!result ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -534,41 +591,94 @@ export default function BookingPage() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      {(availability || [
-                        { roomType: 'suite_2nd_floor', label: '2nd Floor Overwater Hotel Suite', baseRate: 130, availableRooms: -1, available: true },
-                        { roomType: 'suite_1st_floor', label: '1st Floor Overwater Hotel Suite', baseRate: 150, availableRooms: -1, available: true },
-                        { roomType: 'cabana_duplex', label: '1 Bed Overwater Cabana (Duplex)', baseRate: 250, availableRooms: -1, available: true },
-                        { roomType: 'cabana_1br', label: '1 Bedroom Overwater Cabana', baseRate: 300, availableRooms: -1, available: true },
-                        { roomType: 'cabana_2br', label: '2 Bedroom Overwater Cabana', baseRate: 400, availableRooms: -1, available: true },
-                      ]).map((r: any) => (
-                        <option key={r.roomType} value={r.roomType} disabled={!r.available}>
+                      {(
+                        availability || [
+                          {
+                            roomType: "suite_2nd_floor",
+                            label: "2nd Floor Overwater Hotel Suite",
+                            baseRate: 130,
+                            availableRooms: -1,
+                            available: true,
+                          },
+                          {
+                            roomType: "suite_1st_floor",
+                            label: "1st Floor Overwater Hotel Suite",
+                            baseRate: 150,
+                            availableRooms: -1,
+                            available: true,
+                          },
+                          {
+                            roomType: "cabana_duplex",
+                            label: "1 Bed Overwater Cabana (Duplex)",
+                            baseRate: 250,
+                            availableRooms: -1,
+                            available: true,
+                          },
+                          {
+                            roomType: "cabana_1br",
+                            label: "1 Bedroom Overwater Cabana",
+                            baseRate: 300,
+                            availableRooms: -1,
+                            available: true,
+                          },
+                          {
+                            roomType: "cabana_2br",
+                            label: "2 Bedroom Overwater Cabana",
+                            baseRate: 400,
+                            availableRooms: -1,
+                            available: true,
+                          },
+                        ]
+                      ).map((r: any) => (
+                        <option
+                          key={r.roomType}
+                          value={r.roomType}
+                          disabled={!r.available}
+                        >
                           {r.label} — ${r.dynamicRate ?? r.baseRate}/night
-                          {r.savingsVsBase ? ` (save $${r.savingsVsBase})` : ''}
-                          {r.availableRooms >= 0 ? (r.available ? ` (${r.availableRooms} left)` : ' — SOLD OUT') : ''}
+                          {r.savingsVsBase ? ` (save $${r.savingsVsBase})` : ""}
+                          {r.availableRooms >= 0
+                            ? r.available
+                              ? ` (${r.availableRooms} left)`
+                              : " — SOLD OUT"
+                            : ""}
                         </option>
                       ))}
                     </select>
-                    {availLoading && <p className="text-xs text-blue-500 mt-1">Checking availability…</p>}
-                    {availability && (() => {
-                      const selected = availability.find(r => r.roomType === formData.roomType);
-                      if (!selected?.appliedRules?.length) return null;
-                      return (
-                        <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3">
-                          <p className="text-sm font-semibold text-green-800">
-                            Dynamic Rate: ${selected.dynamicRate}/night
-                            {selected.savingsVsBase ? <span className="ml-2 text-green-600">(save ${selected.savingsVsBase}/night)</span> : null}
-                          </p>
-                          <p className="text-xs text-green-700 mt-1">
-                            {selected.appliedRules.join(' · ')}
-                          </p>
-                          {selected.totalForStay && (
-                            <p className="text-sm font-bold text-green-900 mt-1">
-                              Total: ${selected.totalForStay} for {selected.nights} night{selected.nights !== 1 ? 's' : ''}
+                    {availLoading && (
+                      <p className="text-xs text-blue-500 mt-1">
+                        Checking availability…
+                      </p>
+                    )}
+                    {availability &&
+                      (() => {
+                        const selected = availability.find(
+                          (r) => r.roomType === formData.roomType,
+                        );
+                        if (!selected?.appliedRules?.length) return null;
+                        return (
+                          <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p className="text-sm font-semibold text-green-800">
+                              Dynamic Rate: ${selected.dynamicRate}/night
+                              {selected.savingsVsBase ? (
+                                <span className="ml-2 text-green-600">
+                                  (save ${selected.savingsVsBase}/night)
+                                </span>
+                              ) : null}
                             </p>
-                          )}
-                        </div>
-                      );
-                    })()}
+                            <p className="text-xs text-green-700 mt-1">
+                              {selected.appliedRules.join(" · ")}
+                            </p>
+                            {selected.totalForStay && (
+                              <p className="text-sm font-bold text-green-900 mt-1">
+                                Total: ${selected.totalForStay} for{" "}
+                                {selected.nights} night
+                                {selected.nights !== 1 ? "s" : ""}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
                   </div>
 
                   {/* Dates Row */}
@@ -583,7 +693,7 @@ export default function BookingPage() {
                         name="checkInDate"
                         value={formData.checkInDate}
                         onChange={handleInputChange}
-                        min={new Date().toISOString().split('T')[0]}
+                        min={new Date().toISOString().split("T")[0]}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       />
@@ -599,23 +709,30 @@ export default function BookingPage() {
                         name="checkOutDate"
                         value={formData.checkOutDate}
                         onChange={handleInputChange}
-                        min={formData.checkInDate || new Date().toISOString().split('T')[0]}
+                        min={
+                          formData.checkInDate ||
+                          new Date().toISOString().split("T")[0]
+                        }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       />
                     </div>
                   </div>
 
-                  {formData.checkInDate && formData.checkOutDate && (() => {
-                    const nights = Math.round(
-                      (new Date(formData.checkOutDate).getTime() - new Date(formData.checkInDate).getTime()) / (1000 * 60 * 60 * 24)
-                    );
-                    return nights > 0 ? (
-                      <p className="text-sm text-blue-600 -mt-4">
-                        {nights} night{nights !== 1 ? 's' : ''} stay
-                      </p>
-                    ) : null;
-                  })()}
+                  {formData.checkInDate &&
+                    formData.checkOutDate &&
+                    (() => {
+                      const nights = Math.round(
+                        (new Date(formData.checkOutDate).getTime() -
+                          new Date(formData.checkInDate).getTime()) /
+                          (1000 * 60 * 60 * 24),
+                      );
+                      return nights > 0 ? (
+                        <p className="text-sm text-blue-600 -mt-4">
+                          {nights} night{nights !== 1 ? "s" : ""} stay
+                        </p>
+                      ) : null;
+                    })()}
 
                   {/* Group Size */}
                   <div>
@@ -679,44 +796,48 @@ export default function BookingPage() {
                         { value: "cenote", label: "Cenote Swimming" },
                         { value: "kayaking", label: "Mangrove Kayaking" },
                         { value: "dining", label: "Culinary Dining" },
-                      ].map(
-                        (interest) => (
-                          <div key={interest.value} className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id={interest.value}
-                              name={interest.value}
-                              value={interest.value}
-                              checked={formData.interests.includes(interest.value)}
-                              onChange={handleInputChange}
-                              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                            />
-                            <label
-                              htmlFor={interest.value}
-                              className="ml-2 text-sm text-gray-700"
-                            >
-                              {interest.label}
-                            </label>
-                          </div>
-                        )
-                      )}
+                      ].map((interest) => (
+                        <div key={interest.value} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={interest.value}
+                            name={interest.value}
+                            value={interest.value}
+                            checked={formData.interests.includes(
+                              interest.value,
+                            )}
+                            onChange={handleInputChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                          />
+                          <label
+                            htmlFor={interest.value}
+                            className="ml-2 text-sm text-gray-700"
+                          >
+                            {interest.label}
+                          </label>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
                   {/* OTA Price Comparison — shows after dates selected */}
-                  {formData.checkInDate && formData.checkOutDate && (() => {
-                    const ci = new Date(formData.checkInDate);
-                    const co = new Date(formData.checkOutDate);
-                    const n = Math.round((co.getTime() - ci.getTime()) / (1000 * 60 * 60 * 24));
-                    return n >= 2 ? (
-                      <OTAPriceComparison
-                        roomType={formData.roomType}
-                        checkIn={formData.checkInDate}
-                        checkOut={formData.checkOutDate}
-                        nights={n}
-                      />
-                    ) : null;
-                  })()}
+                  {formData.checkInDate &&
+                    formData.checkOutDate &&
+                    (() => {
+                      const ci = new Date(formData.checkInDate);
+                      const co = new Date(formData.checkOutDate);
+                      const n = Math.round(
+                        (co.getTime() - ci.getTime()) / (1000 * 60 * 60 * 24),
+                      );
+                      return n >= 2 ? (
+                        <OTAPriceComparison
+                          roomType={formData.roomType}
+                          checkIn={formData.checkInDate}
+                          checkOut={formData.checkOutDate}
+                          nights={n}
+                        />
+                      ) : null;
+                    })()}
 
                   {/* Promo Code */}
                   <div>
@@ -753,14 +874,21 @@ export default function BookingPage() {
                     {promoResult?.valid && (
                       <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-semibold text-green-800">{promoResult.description}</p>
+                          <p className="text-sm font-semibold text-green-800">
+                            {promoResult.description}
+                          </p>
                           {promoResult.discount ? (
-                            <p className="text-xs text-green-600">-${promoResult.discount.toFixed(2)} discount</p>
+                            <p className="text-xs text-green-600">
+                              -${promoResult.discount.toFixed(2)} discount
+                            </p>
                           ) : null}
                         </div>
                         <button
                           type="button"
-                          onClick={() => { setPromoResult(null); setPromoCode(""); }}
+                          onClick={() => {
+                            setPromoResult(null);
+                            setPromoCode("");
+                          }}
                           className="text-xs text-gray-400 hover:text-gray-600"
                         >
                           Remove
@@ -768,7 +896,9 @@ export default function BookingPage() {
                       </div>
                     )}
                     {promoResult && !promoResult.valid && (
-                      <p className="mt-1 text-xs text-red-500">{promoResult.error}</p>
+                      <p className="mt-1 text-xs text-red-500">
+                        {promoResult.error}
+                      </p>
                     )}
                   </div>
 
@@ -781,7 +911,9 @@ export default function BookingPage() {
                     disabled={isLoading}
                     className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                   >
-                    {isLoading ? "Processing... (Running Agents)" : "Search & Curate"}
+                    {isLoading
+                      ? "Processing... (Running Agents)"
+                      : "Search & Curate"}
                   </button>
                 </form>
               </div>
@@ -798,8 +930,8 @@ export default function BookingPage() {
                       1. Price Scout Agent
                     </h3>
                     <p className="text-gray-600 text-sm mt-2">
-                      Scans Agoda, Expedia & Booking.com across up to 3 iterations to find the
-                      best deal, then beats it by 6%.
+                      Scans Agoda, Expedia & Booking.com across up to 3
+                      iterations to find the best deal, then beats it by 6%.
                     </p>
                   </div>
 
@@ -808,8 +940,8 @@ export default function BookingPage() {
                       2. Experience Curator Agent
                     </h3>
                     <p className="text-gray-600 text-sm mt-2">
-                      Customizes fishing, snorkeling & mainland tours based on your preferences
-                      and generates affiliate links.
+                      Customizes fishing, snorkeling & mainland tours based on
+                      your preferences and generates affiliate links.
                     </p>
                   </div>
 
@@ -818,15 +950,17 @@ export default function BookingPage() {
                       3. Smart Recommendations
                     </h3>
                     <p className="text-gray-600 text-sm mt-2">
-                      LangGraph orchestrates both agents, compares prices recursively, and
-                      packages everything with affiliate commissions.
+                      LangGraph orchestrates both agents, compares prices
+                      recursively, and packages everything with affiliate
+                      commissions.
                     </p>
                   </div>
 
                   <div className="bg-blue-50 rounded-lg p-4 mt-8">
                     <p className="text-sm text-gray-700">
-                      <strong>Example Query:</strong> "Find an overwater room for 2, snorkeling
-                      tour for family, with $500 tour budget"
+                      <strong>Example Query:</strong> &quot;Find an overwater
+                      room for 2, snorkeling tour for family, with $500 tour
+                      budget&quot;
                     </p>
                   </div>
                 </div>
@@ -850,15 +984,21 @@ export default function BookingPage() {
               {/* Price Comparison */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-6 border-l-4 border-red-600">
-                  <p className="text-gray-600 text-sm font-semibold">Original Price</p>
+                  <p className="text-gray-600 text-sm font-semibold">
+                    Original Price
+                  </p>
                   <p className="text-3xl font-bold text-red-600">
                     ${result.curated_package.room.price}
                   </p>
-                  <p className="text-xs text-gray-600 mt-2">{result.curated_package.room.ota}</p>
+                  <p className="text-xs text-gray-600 mt-2">
+                    {result.curated_package.room.ota}
+                  </p>
                 </div>
 
                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border-l-4 border-green-600">
-                  <p className="text-gray-600 text-sm font-semibold">Beat Price</p>
+                  <p className="text-gray-600 text-sm font-semibold">
+                    Beat Price
+                  </p>
                   <p className="text-3xl font-bold text-green-600">
                     ${result.beat_price}
                   </p>
@@ -868,7 +1008,9 @@ export default function BookingPage() {
                 </div>
 
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6 border-l-4 border-purple-600">
-                  <p className="text-gray-600 text-sm font-semibold">Total Package</p>
+                  <p className="text-gray-600 text-sm font-semibold">
+                    Total Package
+                  </p>
                   <p className="text-3xl font-bold text-purple-600">
                     ${result.curated_package.total}
                   </p>
@@ -880,7 +1022,9 @@ export default function BookingPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 {/* Room */}
                 <div className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Room Booking</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Room Booking
+                  </h3>
                   <p className="text-gray-700 mb-2">
                     <strong>Type:</strong> {formData.roomType}
                   </p>
@@ -903,30 +1047,48 @@ export default function BookingPage() {
                     disabled={isLoading || !stripePromise}
                     className="ml-4 inline-block px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
                   >
-                    {isLoading ? 'Setting up payment...' : 'Pay Securely'}
+                    {isLoading ? "Setting up payment..." : "Pay Securely"}
                   </button>
                 </div>
 
                 {/* Tours */}
                 <div className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Curated Experiences</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Curated Experiences
+                  </h3>
                   <div className="space-y-3">
                     {result.curated_package.tours.map((tour, idx) => (
                       <div key={idx} className="bg-gray-50 rounded p-3">
-                        <p className="font-semibold text-gray-900">{tour.name}</p>
+                        <p className="font-semibold text-gray-900">
+                          {tour.name}
+                        </p>
                         <div className="flex items-center gap-2 mt-1">
                           {tour.otaPrice && tour.otaPrice > tour.price ? (
                             <>
-                              <span className="text-sm text-red-400 line-through">${tour.otaPrice} OTA</span>
-                              <span className="text-sm font-bold text-green-600">${tour.price}</span>
+                              <span className="text-sm text-red-400 line-through">
+                                ${tour.otaPrice} OTA
+                              </span>
+                              <span className="text-sm font-bold text-green-600">
+                                ${tour.price}
+                              </span>
                               <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                                Save {Math.round(((tour.otaPrice - tour.price) / tour.otaPrice) * 100)}%
+                                Save{" "}
+                                {Math.round(
+                                  ((tour.otaPrice - tour.price) /
+                                    tour.otaPrice) *
+                                    100,
+                                )}
+                                %
                               </span>
                             </>
                           ) : (
-                            <span className="text-sm text-gray-600">${tour.price}</span>
+                            <span className="text-sm text-gray-600">
+                              ${tour.price}
+                            </span>
                           )}
-                          <span className="text-xs text-gray-400">• {tour.duration}</span>
+                          <span className="text-xs text-gray-400">
+                            • {tour.duration}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -945,13 +1107,22 @@ export default function BookingPage() {
               {/* Affiliate Links */}
               {result.curated_package.affiliate_links.length > 0 && (
                 <div className="border border-gray-200 rounded-lg p-6 mb-8 bg-yellow-50">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Affiliate Partnerships</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Affiliate Partnerships
+                  </h3>
                   <div className="space-y-2">
                     {result.curated_package.affiliate_links.map((link, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-white rounded">
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-3 bg-white rounded"
+                      >
                         <div>
-                          <p className="font-semibold text-gray-900">{link.provider}</p>
-                          <p className="text-xs text-gray-600">Commission: ${link.commission}</p>
+                          <p className="font-semibold text-gray-900">
+                            {link.provider}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Commission: ${link.commission}
+                          </p>
                         </div>
                         <a
                           href={link.url}
@@ -969,7 +1140,9 @@ export default function BookingPage() {
 
               {/* Recommendations */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Agent Recommendations</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  Agent Recommendations
+                </h3>
                 <ul className="space-y-2">
                   {result.recommendations.map((rec, idx) => (
                     <li key={idx} className="flex items-start">
@@ -986,7 +1159,9 @@ export default function BookingPage() {
                   <div className="bg-white rounded-lg p-6 max-w-lg w-full">
                     <h3 className="text-lg font-bold mb-2">Complete Payment</h3>
                     <p className="text-sm text-gray-500 mb-4">
-                      {paymentMode === "square" ? "Secured by Square" : "Secured by Stripe"}
+                      {paymentMode === "square"
+                        ? "Secured by Square"
+                        : "Secured by Stripe"}
                     </p>
 
                     {paymentMode === "square" && hasSquare && (
@@ -996,43 +1171,61 @@ export default function BookingPage() {
                         onSuccess={() => {
                           setShowPayment(false);
                           toast.success("Payment successful!");
-                          trackEvent('purchase', {
+                          trackEvent("purchase", {
                             value: result.curated_package.total,
-                            currency: 'USD',
-                            payment_method: 'square',
+                            currency: "USD",
+                            payment_method: "square",
                             ...getUtmParams(),
                           });
                           if ((result as any)?.confirmationNumber) {
-                            router.push(`/booking/confirmation/${(result as any).confirmationNumber}`);
+                            router.push(
+                              `/booking/confirmation/${(result as any).confirmationNumber}`,
+                            );
                           }
                         }}
                         onFallbackToStripe={() => fallbackToStripe()}
                       />
                     )}
 
-                    {paymentMode === "stripe" && paymentOptions && stripePromise && (
-                      <Elements stripe={stripePromise} options={{ clientSecret: paymentOptions.clientSecret }}>
-                        <CheckoutForm onSuccess={() => {
-                          setShowPayment(false);
-                          toast.success("Payment successful!");
-                          trackEvent('purchase', {
-                            value: result.curated_package.total,
-                            currency: 'USD',
-                            payment_method: 'stripe',
-                            ...getUtmParams(),
-                          });
-                          if ((result as any)?.confirmationNumber) {
-                            router.push(`/booking/confirmation/${(result as any).confirmationNumber}`);
-                          }
-                        }} />
-                      </Elements>
-                    )}
+                    {paymentMode === "stripe" &&
+                      paymentOptions &&
+                      stripePromise && (
+                        <Elements
+                          stripe={stripePromise}
+                          options={{
+                            clientSecret: paymentOptions.clientSecret,
+                          }}
+                        >
+                          <CheckoutForm
+                            onSuccess={() => {
+                              setShowPayment(false);
+                              toast.success("Payment successful!");
+                              trackEvent("purchase", {
+                                value: result.curated_package.total,
+                                currency: "USD",
+                                payment_method: "stripe",
+                                ...getUtmParams(),
+                              });
+                              if ((result as any)?.confirmationNumber) {
+                                router.push(
+                                  `/booking/confirmation/${(result as any).confirmationNumber}`,
+                                );
+                              }
+                            }}
+                          />
+                        </Elements>
+                      )}
 
                     {paymentMode === "stripe" && !paymentOptions && (
-                      <p className="text-sm text-gray-500 text-center py-4">Setting up Stripe…</p>
+                      <p className="text-sm text-gray-500 text-center py-4">
+                        Setting up Stripe…
+                      </p>
                     )}
 
-                    <button onClick={() => setShowPayment(false)} className="mt-4 text-sm text-gray-600 hover:underline">
+                    <button
+                      onClick={() => setShowPayment(false)}
+                      className="mt-4 text-sm text-gray-600 hover:underline"
+                    >
                       Cancel
                     </button>
                   </div>
