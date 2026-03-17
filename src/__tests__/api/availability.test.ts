@@ -48,7 +48,7 @@ describe("GET /api/availability", () => {
     const res = await GET(req);
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.availability).toBeInstanceOf(Array);
+    expect(Array.isArray(data.availability)).toBe(true);
     expect(data.availability.length).toBe(2);
   });
 
