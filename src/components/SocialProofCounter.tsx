@@ -1,21 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from "react";
 
 export default function SocialProofCounter() {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    // Deterministic "social proof" based on day-of-year for consistency
+  const [count] = useState(() => {
     const now = new Date();
     const dayOfYear = Math.floor(
-      (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000
+      (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000,
     );
     const hour = now.getHours();
-    // Generates a number between 3 and 12 that shifts with the day/hour
     const base = ((dayOfYear * 7 + hour * 3) % 10) + 3;
-    setCount(base);
-  }, []);
+    return base;
+  });
 
   if (count === 0) return null;
 

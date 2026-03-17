@@ -1,4 +1,6 @@
-'use client';
+"use client";
+
+import Link from "next/link";
 
 export default function Error({
   error,
@@ -15,7 +17,7 @@ export default function Error({
           Oops — something broke
         </h2>
         <p className="text-slate-600 mb-6">
-          {error.message || 'An unexpected error occurred. Please try again.'}
+          {error.message || "An unexpected error occurred. Please try again."}
         </p>
         <div className="flex gap-4 justify-center">
           <button
@@ -24,12 +26,12 @@ export default function Error({
           >
             Try Again
           </button>
-          <a
+          <Link
             href="/"
             className="px-5 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
           >
             Go Home
-          </a>
+          </Link>
         </div>
       </div>
     </div>
