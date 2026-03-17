@@ -20,7 +20,7 @@ const FROM_EMAIL = "Lina Point Resort <concierge@linapoint.com>";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "",
 );
 
 const log = (...args: unknown[]) => console.log("[EcosystemTriggers]", ...args);
@@ -36,12 +36,16 @@ export async function GET(request: NextRequest) {
     // 1. Update lead scores
     log("Updating lead scores...");
     const scoreResults = await updateLeadScores(supabase, since);
-    log(`Lead scores: ${scoreResults.updated} updated, ${scoreResults.newLeads} new`);
+    log(
+      `Lead scores: ${scoreResults.updated} updated, ${scoreResults.newLeads} new`,
+    );
 
     // 2. Run event-driven triggers
     log("Running marketing triggers...");
     const triggerResults = await runEcosystemTriggers(supabase, since);
-    log(`Triggers: ${triggerResults.quizFollowups.length} quiz, ${triggerResults.blueprintCTAs.length} blueprint, ${triggerResults.nurtureEnrollments.length} nurture`);
+    log(
+      `Triggers: ${triggerResults.quizFollowups.length} quiz, ${triggerResults.blueprintCTAs.length} blueprint, ${triggerResults.nurtureEnrollments.length} nurture`,
+    );
 
     // 3. Process nurture sequence steps
     log("Processing nurture sequences...");
@@ -79,7 +83,7 @@ export async function GET(request: NextRequest) {
     console.error("Ecosystem triggers cron error:", error);
     return NextResponse.json(
       { error: "Ecosystem triggers failed", details: String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -98,12 +102,13 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
     {
       sequenceName: "quiz_to_blueprint",
       step: 1,
-      subject: "Your Element Journey Continues — Unlock Your Full Cosmic Blueprint",
+      subject:
+        "Your Element Journey Continues — Unlock Your Full Cosmic Blueprint",
       html: buildNurtureEmail(
         "Your Element is Just the Beginning",
         "The Overwater quiz revealed your guiding element. But there are 35+ cosmic forces shaping your path — your Maya day-sign, your soul contract, your life cycles. Your full Cosmic Blueprint maps them all.",
         "Discover Your Blueprint",
-        "https://magic.overwater.com?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step1"
+        "https://magic.overwater.com?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step1",
       ),
     },
     {
@@ -114,7 +119,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "The Soul Contract You Signed Before Birth",
         "Ancient Maya wisdom teaches that we each arrive with a sacred contract — agreements made before this lifetime about what we'll learn, create, and transform. Your Cosmic Blueprint reveals yours.",
         "Read Your Soul Contract",
-        "https://magic.overwater.com/pricing?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step2"
+        "https://magic.overwater.com/pricing?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step2",
       ),
     },
     {
@@ -125,7 +130,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "From Digital Discovery to Embodied Magic",
         "You know your element. You've glimpsed your cosmic blueprint. Now imagine living inside that alignment — overwater, where Caribbean tides meet ancient wisdom. Lina Point was built for this moment.",
         "Book at Lina Point — Code DIRECT10",
-        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step3"
+        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=quiz_to_blueprint&utm_content=step3",
       ),
     },
   ],
@@ -138,7 +143,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "Your Blueprint, Brought to Life",
         "Every element in your Cosmic Blueprint has a corresponding experience at Lina Point Resort. Water signs? Kayak meditation at dawn. Fire signs? Sunset ceremony on the pier. Your stay is designed around your cosmic alignment.",
         "See Your Personalized Itinerary",
-        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=blueprint_to_booking&utm_content=step1"
+        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=blueprint_to_booking&utm_content=step1",
       ),
     },
     {
@@ -149,7 +154,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "More Than a Vacation",
         "Lina Point isn't just a resort — it's a transformation container. Overwater cabanas, Maya ceremonial spaces, personalized cosmic experiences. And always 6% below OTA prices when you book direct.",
         "Explore Lina Point",
-        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=blueprint_to_booking&utm_content=step2"
+        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=blueprint_to_booking&utm_content=step2",
       ),
     },
     {
@@ -160,7 +165,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "Own the Magic",
         "What if you didn't just visit — what if you owned a piece of the magic? Fractional cabana ownership at Overwater.com starts at $458/month. Your cosmic home on the water is waiting.",
         "Learn About Ownership",
-        "https://overwater.com/own?utm_source=email&utm_medium=nurture&utm_campaign=blueprint_to_booking&utm_content=step3"
+        "https://overwater.com/own?utm_source=email&utm_medium=nurture&utm_campaign=blueprint_to_booking&utm_content=step3",
       ),
     },
     {
@@ -171,7 +176,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "The Universe Doesn't Wait Forever",
         "Your cosmic window is open. Book in the next 24 hours with code DIRECT10 for 10% off your first stay — plus a complimentary Maya blessing ceremony on arrival.",
         "Book Now — DIRECT10",
-        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=blueprint_to_booking&utm_content=step4"
+        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=blueprint_to_booking&utm_content=step4",
       ),
     },
   ],
@@ -184,7 +189,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "Own the Magic — Starting at $458/mo",
         "Fractional ownership means you get a piece of overwater paradise without the full price tag. Guaranteed weeks, rental income when you're not there, and a community of like-minded seekers.",
         "See Ownership Options",
-        "https://overwater.com/own?utm_source=email&utm_medium=nurture&utm_campaign=ownership&utm_content=step1"
+        "https://overwater.com/own?utm_source=email&utm_medium=nurture&utm_campaign=ownership&utm_content=step1",
       ),
     },
     {
@@ -195,7 +200,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "They Took the Leap",
         "Sarah discovered her Water element, booked a stay, and knew she had to own a piece. Now she splits her year between Montana and her overwater cabana, hosting transformative retreats. Her story could be yours.",
         "Read Owner Stories",
-        "https://overwater.com/own?utm_source=email&utm_medium=nurture&utm_campaign=ownership&utm_content=step2"
+        "https://overwater.com/own?utm_source=email&utm_medium=nurture&utm_campaign=ownership&utm_content=step2",
       ),
     },
     {
@@ -206,7 +211,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "Let's Talk About Your Vision",
         "Whether you want a personal retreat, a rental income property, or a place to host your community — we'll map out the ownership path that aligns with your goals. Book a free 15-minute consultation.",
         "Schedule Your Call",
-        "https://overwater.com/own?utm_source=email&utm_medium=nurture&utm_campaign=ownership&utm_content=step3"
+        "https://overwater.com/own?utm_source=email&utm_medium=nurture&utm_campaign=ownership&utm_content=step3",
       ),
     },
   ],
@@ -219,7 +224,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "Three Doorways, One Destination",
         "You've discovered something special. Our ecosystem has three paths: <strong>Overwater.com</strong> for fractional ownership, <strong>Lina Point Resort</strong> for transformative stays, and <strong>The Magic Is You</strong> for cosmic self-discovery. Each leads to the same truth: the magic is you.",
         "Explore the Ecosystem",
-        "https://overwater.com?utm_source=email&utm_medium=nurture&utm_campaign=welcome&utm_content=step1"
+        "https://overwater.com?utm_source=email&utm_medium=nurture&utm_campaign=welcome&utm_content=step1",
       ),
     },
     {
@@ -230,7 +235,7 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "Discover Your Element",
         "Water, Fire, Earth, Air, or Spirit? Your guiding element shapes how you travel, create, and transform. Take the 2-minute Overwater quiz to find yours — and unlock personalized recommendations across our entire ecosystem.",
         "Take the Quiz",
-        "https://overwater.com/quiz?utm_source=email&utm_medium=nurture&utm_campaign=welcome&utm_content=step2"
+        "https://overwater.com/quiz?utm_source=email&utm_medium=nurture&utm_campaign=welcome&utm_content=step2",
       ),
     },
     {
@@ -241,13 +246,74 @@ const NURTURE_SEQUENCES: Record<string, NurtureStep[]> = {
         "The Full Journey Awaits",
         "Discover your cosmic blueprint at The Magic Is You, then experience it overwater at Lina Point. Use code DIRECT10 for 10% off your first booking — and always save 6% vs OTA prices.",
         "Start Your Journey",
-        "https://magic.overwater.com?utm_source=email&utm_medium=nurture&utm_campaign=welcome&utm_content=step3"
+        "https://magic.overwater.com?utm_source=email&utm_medium=nurture&utm_campaign=welcome&utm_content=step3",
+      ),
+    },
+  ],
+  element_journey: [
+    {
+      sequenceName: "element_journey",
+      step: 1,
+      subject: "Your Element Has Been Awakened — Here's What It Means",
+      html: buildNurtureEmail(
+        "Your Element Is Alive",
+        "You've discovered your guiding element — and that changes everything. Each element carries ancient wisdom about how you move through the world, what energizes you, and where you find peace. Over the next few days, we'll show you exactly how your element connects to the Caribbean, to cosmic self-discovery, and to a place built around you.",
+        "Revisit Your Element",
+        "https://overwater.com/quiz?utm_source=email&utm_medium=nurture&utm_campaign=element_journey&utm_content=step1",
+      ),
+    },
+    {
+      sequenceName: "element_journey",
+      step: 2,
+      subject: "Water Calls to Water — Your Element's Caribbean Home",
+      html: buildNurtureEmail(
+        "Where Your Element Lives",
+        "Every element has a place at Lina Point where it comes fully alive. <strong>Water</strong> finds stillness in overwater cabanas at dawn. <strong>Fire</strong> ignites at sunset pier ceremonies. <strong>Earth</strong> grounds in Kyla Point's lush gardens and forest walks. <strong>Wind</strong> soars through coastal adventures and open-air experiences. Your element already knows the way.",
+        "Explore Element Experiences",
+        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=element_journey&utm_content=step2",
+      ),
+    },
+    {
+      sequenceName: "element_journey",
+      step: 3,
+      subject: "The 35 Forces Behind Your Element — Your Cosmic Blueprint",
+      html: buildNurtureEmail(
+        "Go Deeper Than Your Element",
+        "Your element is the first layer. Beneath it lie 35+ cosmic forces — your Maya day-sign, your soul contract, your life cycles, your shadow gifts. The Magic Is You generates your full Cosmic Blueprint, mapping every force into an actionable life guide. It's the navigation system your element was pointing you toward.",
+        "Generate Your Blueprint",
+        "https://magic.overwater.com?utm_source=email&utm_medium=nurture&utm_campaign=element_journey&utm_content=step3",
+      ),
+    },
+    {
+      sequenceName: "element_journey",
+      step: 4,
+      subject: "What If Your Element Had a Home on the Water?",
+      html: buildNurtureEmail(
+        "Own Your Element's Sanctuary",
+        "Imagine waking up every morning aligned with your element — overwater. Fractional ownership at Overwater.com starts at $458/month and gives you guaranteed weeks in your own Caribbean sanctuary. Rental income when you're away. A community of seekers who speak your language. Your element deserves a permanent home.",
+        "Explore Ownership",
+        "https://overwater.com/own?utm_source=email&utm_medium=nurture&utm_campaign=element_journey&utm_content=step4",
+      ),
+    },
+    {
+      sequenceName: "element_journey",
+      step: 5,
+      subject:
+        "Your Element Journey Culminates — 10% Off to Experience It Live",
+      html: buildNurtureEmail(
+        "From Discovery to Embodiment",
+        "You know your element. You've seen how it maps to Caribbean experiences, cosmic blueprints, and overwater living. Now it's time to feel it. Book your stay at Lina Point with code DIRECT10 for 10% off — and arrive to a personalized itinerary designed around your exact elemental alignment. The magic is you.",
+        "Book Your Element Stay — DIRECT10",
+        "https://linapoint.com?utm_source=email&utm_medium=nurture&utm_campaign=element_journey&utm_content=step5",
       ),
     },
   ],
 };
 
-async function processNurtureSteps(): Promise<{ sent: number; completed: number }> {
+async function processNurtureSteps(): Promise<{
+  sent: number;
+  completed: number;
+}> {
   let sent = 0;
   let completed = 0;
 
@@ -356,7 +422,7 @@ function buildNurtureEmail(
   headline: string,
   body: string,
   ctaText: string,
-  ctaUrl: string
+  ctaUrl: string,
 ): string {
   return `
 <!DOCTYPE html>

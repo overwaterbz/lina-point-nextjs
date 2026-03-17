@@ -29,7 +29,7 @@ interface TriggerResult {
  */
 async function processQuizCompletions(
   supabase: SupabaseClient,
-  since: Date
+  since: Date,
 ): Promise<TriggerResult[]> {
   const results: TriggerResult[] = [];
 
@@ -137,7 +137,7 @@ async function processQuizCompletions(
  */
 async function processBlueprintGenerations(
   supabase: SupabaseClient,
-  since: Date
+  since: Date,
 ): Promise<TriggerResult[]> {
   const results: TriggerResult[] = [];
 
@@ -180,7 +180,8 @@ async function processBlueprintGenerations(
           body: JSON.stringify({
             from: FROM_EMAIL,
             to: [email],
-            subject: "Your Cosmic Blueprint is Ready — Now Experience It at Lina Point",
+            subject:
+              "Your Cosmic Blueprint is Ready — Now Experience It at Lina Point",
             html: buildBlueprintBookingEmail(),
           }),
         });
@@ -267,7 +268,11 @@ async function enrollHotLeadsInNurture(
     let sequenceName: string;
     let totalSteps: number;
 
-    if (lead.quiz_element && !lead.has_blueprint) {
+    if (lead.quiz_element && lead.sources?.length >= 2) {
+      // Element-engaged lead who has visited multiple ecosystem sites
+      sequenceName = "element_journey";
+      totalSteps = 5;
+    } else if (lead.quiz_element && !lead.has_blueprint) {
       sequenceName = "quiz_to_blueprint";
       totalSteps = 3;
     } else if (lead.has_blueprint && !lead.has_booking) {
@@ -334,7 +339,7 @@ async function enrollHotLeadsInNurture(
  */
 async function takeEcosystemSnapshot(
   supabase: SupabaseClient,
-  since: Date
+  since: Date,
 ): Promise<void> {
   const today = new Date().toISOString().split("T")[0];
 
@@ -363,7 +368,9 @@ async function takeEcosystemSnapshot(
     .select("session_id, source")
     .gte("created_at", since.toISOString());
 
-  const uniqueSessions = new Set(sessions?.map((s) => s.session_id).filter(Boolean));
+  const uniqueSessions = new Set(
+    sessions?.map((s) => s.session_id).filter(Boolean),
+  );
 
   // Cross-site sessions (session_id appears with multiple sources)
   const sessionSources = new Map<string, Set<string>>();
@@ -373,7 +380,9 @@ async function takeEcosystemSnapshot(
     set.add(s.source);
     sessionSources.set(s.session_id, set);
   }
-  const crossSite = [...sessionSources.values()].filter((s) => s.size >= 2).length;
+  const crossSite = [...sessionSources.values()].filter(
+    (s) => s.size >= 2,
+  ).length;
 
   // Lead counts
   const { count: newLeads } = await supabase
@@ -397,9 +406,8 @@ async function takeEcosystemSnapshot(
     .select("id", { count: "exact" })
     .gte("created_at", since.toISOString());
 
-  await supabase
-    .from("ecosystem_snapshots")
-    .upsert({
+  await supabase.from("ecosystem_snapshots").upsert(
+    {
       snapshot_date: today,
       overwater_events: owEvents?.length || 0,
       lina_point_events: lpEvents?.length || 0,
@@ -410,7 +418,9 @@ async function takeEcosystemSnapshot(
       hot_leads: hotLeads || 0,
       qualified_leads: qualifiedLeads || 0,
       triggers_fired: triggersFired || 0,
-    }, { onConflict: "snapshot_date" });
+    },
+    { onConflict: "snapshot_date" },
+  );
 }
 
 /**
@@ -418,7 +428,7 @@ async function takeEcosystemSnapshot(
  */
 export async function runEcosystemTriggers(
   supabase: SupabaseClient,
-  since: Date
+  since: Date,
 ): Promise<{
   quizFollowups: TriggerResult[];
   blueprintCTAs: TriggerResult[];
