@@ -1,56 +1,12 @@
 {
   "crons": [
     {
-      "path": "/api/whatsapp-proactive",
-      "schedule": "0 18 * * *"
-    },
-    {
       "path": "/api/cron/run-daily-marketing",
       "schedule": "0 10 * * *"
     },
     {
-      "path": "/api/cron/health-check",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/daily-guest-ops",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/revenue-snapshot",
-      "schedule": "55 23 * * *"
-    },
-    {
-      "path": "/api/cron/ical-sync",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/rate-parity",
-      "schedule": "0 5 * * *"
-    },
-    {
-      "path": "/api/cron/self-improvement",
-      "schedule": "0 3 * * 0"
-    },
-    {
-      "path": "/api/cron/pricing-optimization",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/tour-prices",
-      "schedule": "0 7 * * *"
-    },
-    {
       "path": "/api/cron/ecosystem-triggers",
-      "schedule": "0 */2 * * *"
-    },
-    {
-      "path": "/api/cron/newsletter-digest",
-      "schedule": "0 10 * * 0"
-    },
-    {
-      "path": "/api/cron/social-content",
-      "schedule": "0 9 * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }
