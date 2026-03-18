@@ -1,7 +1,20 @@
 "use client";
-
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+// import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+import Script from "next/script";
+import dynamic from "next/dynamic";
+import { trackEvent, captureUtmParams, getUtmParams } from "@/lib/analytics";
 import WhyBookDirect from "@/components/WhyBookDirect";
+
 // Local CheckoutForm definition (fallback if not imported)
 function CheckoutForm({ onSuccess }: { onSuccess: () => void }) {
   const stripe = useStripe();
@@ -54,19 +67,7 @@ function CheckoutForm({ onSuccess }: { onSuccess: () => void }) {
     </form>
   );
 }
-import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
-// import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { loadStripe } from "@stripe/stripe-js";
-import {
-  Elements,
-  PaymentElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
-import Script from "next/script";
-import dynamic from "next/dynamic";
-import { trackEvent, captureUtmParams, getUtmParams } from "@/lib/analytics";
+// ...existing code...
 
 const OTAPriceComparison = dynamic(
   () => import("@/components/OTAPriceComparison"),
@@ -1183,4 +1184,3 @@ export default function BookingPage() {
     </div>
   );
 }
-export default BookingPage;
