@@ -33,7 +33,7 @@ async function searchOTAPrices(
   roomType: string,
   checkInDate: string,
   checkOutDate: string,
-  location: string
+  location: string,
 ): Promise<OTAPrice[]> {
   if (!TAVILY_API_KEY) {
     debugLog("[OTA] No TAVILY_API_KEY set, using fallback prices");
@@ -54,9 +54,11 @@ async function searchOTAPrices(
   try {
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${TAVILY_API_KEY}`,
+      },
       body: JSON.stringify({
-        api_key: TAVILY_API_KEY,
         query,
         search_depth: "advanced",
         max_results: 10,
@@ -71,7 +73,8 @@ async function searchOTAPrices(
     }
 
     const data = await response.json();
-    const results: Array<{ url: string; content: string; title: string }> = data.results || [];
+    const results: Array<{ url: string; content: string; title: string }> =
+      data.results || [];
 
     for (const result of results) {
       // Extract price from result content — look for dollar amounts
@@ -79,15 +82,15 @@ async function searchOTAPrices(
       if (!priceMatches || priceMatches.length === 0) continue;
 
       // Find which OTA this result belongs to
-      const matchedOta = otas.find(ota => result.url.includes(ota.domain));
+      const matchedOta = otas.find((ota) => result.url.includes(ota.domain));
       if (!matchedOta) continue;
 
       // Already have a price for this OTA? Skip duplicates
-      if (prices.some(p => p.ota === matchedOta.name)) continue;
+      if (prices.some((p) => p.ota === matchedOta.name)) continue;
 
       // Parse the first reasonable nightly price ($50–$2000 range)
       for (const match of priceMatches) {
-        const amount = parseFloat(match.replace('$', '').replace(/\s/g, ''));
+        const amount = parseFloat(match.replace("$", "").replace(/\s/g, ""));
         if (amount >= 50 && amount <= 2000) {
           prices.push({
             ota: matchedOta.name,
@@ -112,7 +115,10 @@ async function searchOTAPrices(
 
     debugLog(`[OTA] Found ${prices.length} live OTA prices`);
   } catch (error) {
-    debugLog("[OTA] Tavily search failed:", error instanceof Error ? error.message : error);
+    debugLog(
+      "[OTA] Tavily search failed:",
+      error instanceof Error ? error.message : error,
+    );
   }
 
   return prices;
@@ -124,9 +130,30 @@ async function searchOTAPrices(
  */
 function getFallbackPrices(): OTAPrice[] {
   return [
-    { ota: "expedia", price: 450, currency: "USD", url: "https://www.expedia.com/Belize-Hotels", lastUpdated: new Date(), source: "fallback" },
-    { ota: "booking", price: 435, currency: "USD", url: "https://www.booking.com/region/bz/ambergris-caye.html", lastUpdated: new Date(), source: "fallback" },
-    { ota: "agoda", price: 455, currency: "USD", url: "https://www.agoda.com/city/san-pedro-bz.html", lastUpdated: new Date(), source: "fallback" },
+    {
+      ota: "expedia",
+      price: 450,
+      currency: "USD",
+      url: "https://www.expedia.com/Belize-Hotels",
+      lastUpdated: new Date(),
+      source: "fallback",
+    },
+    {
+      ota: "booking",
+      price: 435,
+      currency: "USD",
+      url: "https://www.booking.com/region/bz/ambergris-caye.html",
+      lastUpdated: new Date(),
+      source: "fallback",
+    },
+    {
+      ota: "agoda",
+      price: 455,
+      currency: "USD",
+      url: "https://www.agoda.com/city/san-pedro-bz.html",
+      lastUpdated: new Date(),
+      source: "fallback",
+    },
   ];
 }
 
@@ -138,7 +165,7 @@ export async function fetchCompetitivePrices(
   roomType: string,
   checkInDate: string,
   checkOutDate: string,
-  location: string
+  location: string,
 ): Promise<OTAPrice[]> {
   const cacheKey = `${roomType}|${checkInDate}|${checkOutDate}|${location}`;
   const cached = priceCache.get(cacheKey);
@@ -150,7 +177,12 @@ export async function fetchCompetitivePrices(
 
   debugLog(`[OTA] Fetching live prices for ${roomType} in ${location}...`);
 
-  const livePrices = await searchOTAPrices(roomType, checkInDate, checkOutDate, location);
+  const livePrices = await searchOTAPrices(
+    roomType,
+    checkInDate,
+    checkOutDate,
+    location,
+  );
 
   if (livePrices.length >= 2) {
     priceCache.set(cacheKey, { prices: livePrices, cachedAt: Date.now() });
@@ -161,7 +193,7 @@ export async function fetchCompetitivePrices(
   const fallback = getFallbackPrices();
   const combined = [...livePrices];
   for (const fb of fallback) {
-    if (!combined.some(p => p.ota === fb.ota)) {
+    if (!combined.some((p) => p.ota === fb.ota)) {
       combined.push(fb);
     }
   }
