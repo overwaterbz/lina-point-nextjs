@@ -13,7 +13,13 @@ const PUBLIC_ROUTES = [
   "/gallery",
   "/terms",
   "/privacy",
+  "/booking",
 ];
+
+// Allow all /booking subroutes to be public
+function isPublicRoute(pathname) {
+  return PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/booking/");
+}
 
 // SEO / static routes that should never hit auth
 const SEO_ROUTES = [
@@ -75,7 +81,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Allow public routes
-  if (PUBLIC_ROUTES.includes(pathname)) {
+  if (isPublicRoute(pathname)) {
     const response = NextResponse.next();
     Object.entries(securityHeaders).forEach(([k, v]) =>
       response.headers.set(k, v),
