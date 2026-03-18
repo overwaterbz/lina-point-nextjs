@@ -16,9 +16,17 @@ const PUBLIC_ROUTES = [
   "/booking",
 ];
 
-// Allow all /booking subroutes to be public
+// Allow all /booking subroutes and variants to be public
 function isPublicRoute(pathname) {
-  return PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/booking/");
+  // Normalize trailing slash
+  const normalized = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  return (
+    PUBLIC_ROUTES.includes(pathname) ||
+    PUBLIC_ROUTES.includes(normalized) ||
+    pathname === "/booking" ||
+    pathname === "/booking/" ||
+    pathname.startsWith("/booking/")
+  );
 }
 
 // SEO / static routes that should never hit auth
