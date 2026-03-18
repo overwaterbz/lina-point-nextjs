@@ -17,7 +17,7 @@ const PUBLIC_ROUTES = [
 ];
 
 // Allow all /booking variants (trailing slash, subroutes, query, hash) to be public
-function isPublicRoute(pathname) {
+function isPublicRoute(pathname: string) {
   // Regex: matches /booking, /booking/, /booking/anything, /booking?foo, /booking#bar
   const bookingRegex = /^\/booking(\/.*)?$/;
   return PUBLIC_ROUTES.includes(pathname) || bookingRegex.test(pathname);
