@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 // import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { loadStripe } from "@stripe/stripe-js";
@@ -246,6 +247,7 @@ interface AvailabilityItem {
 
 export default function BookingPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   // Removed ProtectedRoute wrapper to make booking page public
   const [result, setResult] = useState<BookingResult | null>(null);
@@ -413,6 +415,16 @@ export default function BookingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (authLoading) {
+      toast.error("Checking authentication, please wait...");
+      return;
+    }
+    if (!user) {
+      toast.error("Please log in to book a room.");
+      router.push("/auth/login");
+      return;
+    }
 
     if (!formData.checkInDate || !formData.checkOutDate) {
       toast.error("Please select check-in and check-out dates");
