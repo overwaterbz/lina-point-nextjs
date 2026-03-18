@@ -16,6 +16,15 @@ const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
   if (!isProd) {
     console.log(...args);
+  } else {
+    // In production, escalate to error log for critical OTA issues
+    if (
+      args.length > 0 &&
+      typeof args[0] === "string" &&
+      args[0].startsWith("[OTA]")
+    ) {
+      console.error(...args);
+    }
   }
 };
 
@@ -37,6 +46,11 @@ async function searchOTAPrices(
 ): Promise<OTAPrice[]> {
   if (!TAVILY_API_KEY) {
     debugLog("[OTA] No TAVILY_API_KEY set, using fallback prices");
+    if (isProd) {
+      console.error(
+        "[OTA] No TAVILY_API_KEY set in production environment! OTA price comparison will not work.",
+      );
+    }
     return [];
   }
 
@@ -69,6 +83,11 @@ async function searchOTAPrices(
 
     if (!response.ok) {
       debugLog(`[OTA] Tavily API returned ${response.status}`);
+      if (isProd) {
+        console.error(
+          `[OTA] Tavily API returned status ${response.status} in production.`,
+        );
+      }
       return [];
     }
 
@@ -119,6 +138,12 @@ async function searchOTAPrices(
       "[OTA] Tavily search failed:",
       error instanceof Error ? error.message : error,
     );
+    if (isProd) {
+      console.error(
+        "[OTA] Tavily search failed in production:",
+        error instanceof Error ? error.message : error,
+      );
+    }
   }
 
   return prices;
