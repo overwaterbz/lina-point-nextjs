@@ -98,6 +98,7 @@ async function searchOTAPrices(
 
     const data = (await response.json()) as {
       results?: Array<{ url: string; content: string; title: string }>;
+      answer?: string;
     };
     const results: Array<{ url: string; content: string; title: string }> =
       data.results || [];
