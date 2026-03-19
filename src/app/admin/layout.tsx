@@ -148,10 +148,11 @@ export default function AdminLayout({
                   return userRoleLevel >= minLevel;
                 })
                 .map((item) => {
+                  const safePathname = pathname ?? "";
                   const isActive =
-                    pathname === item.href ||
+                    safePathname === item.href ||
                     (item.href !== "/admin/dashboard" &&
-                      pathname.startsWith(item.href));
+                      safePathname.startsWith(item.href));
                   return (
                     <Link
                       key={item.href}
