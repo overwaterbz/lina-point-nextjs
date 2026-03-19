@@ -1,5 +1,13 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+// Debounce helper
+function useDebouncedEffect(effect: () => void, deps: any[], delay: number) {
+  useEffect(() => {
+    const handler = setTimeout(() => effect(), delay);
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps, delay]);
+}
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
@@ -14,6 +22,7 @@ import {
 import Script from "next/script";
 import dynamic from "next/dynamic";
 import { trackEvent, captureUtmParams, getUtmParams } from "@/lib/analytics";
+import { logClientError } from "@/lib/logClientError";
 import WhyBookDirect from "@/components/WhyBookDirect";
 
 // Local CheckoutForm definition (fallback if not imported)
@@ -51,6 +60,7 @@ function CheckoutForm({ onSuccess }: { onSuccess: () => void }) {
       }
     } catch (err: any) {
       toast.error(`Payment error: ${err?.message || "Unknown error"}`);
+      logClientError("stripe-payment", err);
       setLoading(false);
     }
   };
@@ -159,6 +169,7 @@ function SquareCardForm({
       }
     } catch (err: any) {
       toast.error(`Payment error: ${err?.message || "Unknown error"}`);
+      logClientError("square-payment", err);
     } finally {
       setLoading(false);
     }
@@ -360,32 +371,37 @@ export default function BookingPage() {
   });
 
   // Fetch availability when dates change
-  useEffect(() => {
-    if (!formData.checkInDate || !formData.checkOutDate) {
-      setAvailability(null);
-      return;
-    }
-    const ci = new Date(formData.checkInDate);
-    const co = new Date(formData.checkOutDate);
-    if (co <= ci) return;
+  useDebouncedEffect(
+    () => {
+      if (!formData.checkInDate || !formData.checkOutDate) {
+        setAvailability(null);
+        return;
+      }
+      const ci = new Date(formData.checkInDate);
+      const co = new Date(formData.checkOutDate);
+      if (co <= ci) return;
 
-    let cancelled = false;
-    setAvailLoading(true);
-    fetch(
-      `/api/availability?checkIn=${formData.checkInDate}&checkOut=${formData.checkOutDate}`,
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled && data.availability) setAvailability(data.availability);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setAvailLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [formData.checkInDate, formData.checkOutDate]);
+      let cancelled = false;
+      setAvailLoading(true);
+      fetch(
+        `/api/availability?checkIn=${formData.checkInDate}&checkOut=${formData.checkOutDate}`,
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          if (!cancelled && data.availability)
+            setAvailability(data.availability);
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setAvailLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    },
+    [formData.checkInDate, formData.checkOutDate],
+    400,
+  );
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -450,11 +466,7 @@ export default function BookingPage() {
     }
 
     // Only require login at reservation/checkout step
-    if (!user) {
-      toast.error("Please log in or sign up to reserve your room.");
-      router.push("/auth/login");
-      return;
-    }
+    // Do NOT require login for search/results. Only require login when user proceeds to payment/checkout.
 
     setIsLoading(true);
     const loadingToast = toast.loading(
@@ -488,6 +500,7 @@ export default function BookingPage() {
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error(error instanceof Error ? error.message : "An error occurred");
+      logClientError("booking-submit", error);
     } finally {
       setIsLoading(false);
     }
@@ -496,6 +509,12 @@ export default function BookingPage() {
   // Open payment modal — Square is default, Stripe is fallback
   const handlePay = async () => {
     if (!result) return;
+    // Require login at checkout/payment step
+    if (!user) {
+      toast.error("Please log in or sign up to reserve your room.");
+      router.push("/auth/login");
+      return;
+    }
     setPaymentMode(hasSquare ? "square" : "stripe");
     setPaymentOptions(null);
 
@@ -527,7 +546,18 @@ export default function BookingPage() {
                 Search Rooms & Tours
               </h2>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form
+                onSubmit={handleSubmit}
+                className="space-y-6"
+                aria-label="Booking form"
+              >
+                <div className="mb-2">
+                  <span className="text-xs text-gray-500" role="note">
+                    <strong>Note:</strong> You can view prices and availability
+                    as a guest. Login is only required at checkout to reserve
+                    your room.
+                  </span>
+                </div>
                 {/* Room Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -538,6 +568,7 @@ export default function BookingPage() {
                     value={formData.roomType}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    aria-label="Room Type"
                   >
                     {(
                       availability || [
@@ -644,6 +675,7 @@ export default function BookingPage() {
                       min={new Date().toISOString().split("T")[0]}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
+                      aria-label="Check-in Date"
                     />
                   </div>
 
@@ -663,6 +695,7 @@ export default function BookingPage() {
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
+                      aria-label="Check-out Date"
                     />
                   </div>
                 </div>
@@ -695,6 +728,7 @@ export default function BookingPage() {
                     min="1"
                     max="10"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    aria-label="Group Size"
                   />
                 </div>
 
@@ -711,6 +745,7 @@ export default function BookingPage() {
                     min="100"
                     step="50"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    aria-label="Tour Budget"
                   />
                 </div>
 
@@ -724,6 +759,7 @@ export default function BookingPage() {
                     value={formData.activityLevel}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    aria-label="Activity Level"
                   >
                     <option value="low">Low (Relaxation)</option>
                     <option value="medium">Medium (Balanced)</option>
@@ -754,6 +790,7 @@ export default function BookingPage() {
                           checked={formData.interests.includes(interest.value)}
                           onChange={handleInputChange}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                          aria-label={interest.label}
                         />
                         <label
                           htmlFor={interest.value}
@@ -856,6 +893,7 @@ export default function BookingPage() {
                   type="submit"
                   disabled={isLoading}
                   className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                  aria-label="Search and Curate"
                 >
                   {isLoading
                     ? "Processing... (Running Agents)"
@@ -1098,8 +1136,19 @@ export default function BookingPage() {
 
             {/* Payment Modal — Square (primary) or Stripe (fallback) */}
             {showPayment && result && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Payment Modal"
+              >
+                <div
+                  className="bg-white rounded-lg p-6 max-w-lg w-full"
+                  tabIndex={-1}
+                  ref={(el) => {
+                    if (el && showPayment) el.focus();
+                  }}
+                >
                   <h3 className="text-lg font-bold mb-2">Complete Payment</h3>
                   <p className="text-sm text-gray-500 mb-4">
                     {paymentMode === "square"
