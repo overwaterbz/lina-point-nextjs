@@ -43,6 +43,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
   }
 
+  // Check for Tavily API key (required for live OTA fetch)
+  if (!process.env.TAVILY_API_KEY) {
+    // Fallback: Always return direct booking guarantee if API key is missing
+    return NextResponse.json({
+      otaPrices: [],
+      lowestOTA: { ota: "unknown", price: 0 },
+      ourDirectPrice: 0,
+      baseRate: 0,
+      savingsAmount: 0,
+      savingsPercent: 0,
+      guaranteeBadge: true,
+      beatPercentage: BEAT_PERCENTAGE * 100,
+      error: "OTA price comparison unavailable: missing Tavily API key.",
+    });
+  }
+
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   // Get base rate for this room type
@@ -135,7 +151,18 @@ export async function GET(request: NextRequest) {
           err instanceof Error ? err.message : err,
         );
       }
-      otaPrices = [];
+      // Fallback: Always return direct booking guarantee if OTA fetch fails
+      return NextResponse.json({
+        otaPrices: [],
+        lowestOTA: { ota: "unknown", price: 0 },
+        ourDirectPrice: 0,
+        baseRate,
+        savingsAmount: 0,
+        savingsPercent: 0,
+        guaranteeBadge: true,
+        beatPercentage: BEAT_PERCENTAGE * 100,
+        error: "OTA price comparison unavailable: failed to fetch OTA prices.",
+      });
     }
   }
 

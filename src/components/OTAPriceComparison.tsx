@@ -21,12 +21,19 @@ interface OTAPriceResponse {
   beatPercentage: number;
 }
 
-const OTA_DISPLAY: Record<string, { label: string; color: string; bg: string }> = {
+const OTA_DISPLAY: Record<
+  string,
+  { label: string; color: string; bg: string }
+> = {
   expedia: { label: "Expedia", color: "text-yellow-700", bg: "bg-yellow-50" },
   booking: { label: "Booking.com", color: "text-blue-700", bg: "bg-blue-50" },
   agoda: { label: "Agoda", color: "text-red-700", bg: "bg-red-50" },
   hotels: { label: "Hotels.com", color: "text-red-800", bg: "bg-red-50" },
-  tripadvisor: { label: "TripAdvisor", color: "text-green-700", bg: "bg-green-50" },
+  tripadvisor: {
+    label: "TripAdvisor",
+    color: "text-green-700",
+    bg: "bg-green-50",
+  },
 };
 
 export default function OTAPriceComparison({
@@ -50,7 +57,9 @@ export default function OTAPriceComparison({
     setLoading(true);
     setError("");
 
-    fetch(`/api/ota-prices?roomType=${roomType}&checkIn=${checkIn}&checkOut=${checkOut}`)
+    fetch(
+      `/api/ota-prices?roomType=${roomType}&checkIn=${checkIn}&checkOut=${checkOut}`,
+    )
       .then((r) => r.json())
       .then((d) => {
         if (!cancelled) {
@@ -65,7 +74,9 @@ export default function OTAPriceComparison({
         if (!cancelled) setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [roomType, checkIn, checkOut]);
 
   if (!checkIn || !checkOut) return null;
@@ -77,7 +88,10 @@ export default function OTAPriceComparison({
         <div className="h-6 bg-gray-200 rounded w-3/4 mb-4" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+            <div
+              key={i}
+              className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+            >
               <div className="h-4 bg-gray-200 rounded w-24" />
               <div className="h-5 bg-gray-200 rounded w-20" />
             </div>
@@ -92,9 +106,37 @@ export default function OTAPriceComparison({
   }
 
   if (error) {
+    // Robust fallback: Always show direct booking guarantee and fallback price info
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
-        Price comparison temporarily unavailable. You&apos;re still guaranteed our best direct rate.
+      <div
+        className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800"
+        role="alert"
+      >
+        <strong>Price comparison temporarily unavailable.</strong>
+        <br />
+        You&apos;re still guaranteed our best direct rate.
+        <br />
+        <span className="block mt-2">
+          If you need a price match or have questions,{" "}
+          <a
+            href="mailto:info@linapoint.com"
+            className="underline text-blue-700"
+          >
+            contact support
+          </a>{" "}
+          for the best available rate.
+        </span>
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+          <span className="font-bold text-green-800 text-base">
+            Book Direct at Lina Point
+          </span>
+          <span className="ml-2 text-xs text-green-600 font-medium">
+            Best Price Guarantee
+          </span>
+          <div className="text-green-800 font-bold text-xl mt-2">
+            Contact us for your best rate!
+          </div>
+        </div>
       </div>
     );
   }
@@ -111,7 +153,8 @@ export default function OTAPriceComparison({
           Compare Prices — We Beat Every OTA
         </h3>
         <p className="text-teal-100 text-sm mt-1">
-          Transparent pricing for {nights} night{nights !== 1 ? "s" : ""} · per night rates
+          Transparent pricing for {nights} night{nights !== 1 ? "s" : ""} · per
+          night rates
         </p>
       </div>
 
@@ -189,27 +232,52 @@ export default function OTAPriceComparison({
         {/* Trust badges */}
         <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-100">
           <span className="inline-flex items-center text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full">
-            <svg className="w-3.5 h-3.5 mr-1.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            <svg
+              className="w-3.5 h-3.5 mr-1.5 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
             </svg>
             Price Match Guarantee
           </span>
           <span className="inline-flex items-center text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full">
-            <svg className="w-3.5 h-3.5 mr-1.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            <svg
+              className="w-3.5 h-3.5 mr-1.5 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
             </svg>
             No Hidden Fees
           </span>
           <span className="inline-flex items-center text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full">
-            <svg className="w-3.5 h-3.5 mr-1.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            <svg
+              className="w-3.5 h-3.5 mr-1.5 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
             </svg>
             Earn Loyalty Points
           </span>
         </div>
 
         <p className="text-[10px] text-gray-400 mt-3">
-          Prices based on publicly available rates at time of search. Excludes member-only or flash sale pricing.
+          Prices based on publicly available rates at time of search. Excludes
+          member-only or flash sale pricing.
         </p>
       </div>
     </div>

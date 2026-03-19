@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { runPriceScout } from "@/lib/priceScoutAgent";
 import { runExperienceCurator } from "@/lib/experienceCuratorAgent";
@@ -7,7 +8,10 @@ import { randomUUID } from "crypto";
 import { createAgentRun, finishAgentRun } from "@/lib/agents/agentRunLogger";
 import { generateMagicContent } from "@/lib/magicContent";
 import { createReservation } from "@/lib/bookingFulfillment";
-import { confirmationEmailHtml, adminNotificationHtml } from "@/lib/emailTemplates";
+import {
+  confirmationEmailHtml,
+  adminNotificationHtml,
+} from "@/lib/emailTemplates";
 
 export const maxDuration = 60; // Vercel Hobby plan max
 
@@ -18,17 +22,18 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
-interface BookFlowRequest {
-  roomType: string;
-  checkInDate: string;
-  checkOutDate: string;
-  location: string;
-  groupSize: number;
-  tourBudget: number;
-  interests?: string[];
-  activityLevel?: "low" | "medium" | "high";
-  addOns?: string[];
-}
+const BookFlowRequestSchema = z.object({
+  roomType: z.string().min(2).max(64),
+  checkInDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  checkOutDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  location: z.string().min(2).max(64),
+  groupSize: z.number().int().min(1).max(20),
+  tourBudget: z.number().min(0).max(10000),
+  interests: z.array(z.string()).optional(),
+  activityLevel: z.enum(["low", "medium", "high"]).optional(),
+  addOns: z.array(z.string()).optional(),
+});
+type BookFlowRequest = z.infer<typeof BookFlowRequestSchema>;
 
 interface BookFlowResponse {
   success: boolean;
@@ -63,7 +68,9 @@ interface BookFlowResponse {
   error?: string;
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse<BookFlowResponse>> {
+export async function POST(
+  request: NextRequest,
+): Promise<NextResponse<BookFlowResponse>> {
   try {
     // Get user session
     const supabase = await createServerSupabaseClient();
@@ -72,7 +79,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
       error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user) {
+    // Get and validate request body
+    let body: BookFlowRequest;
+    try {
+      const json = await request.json();
+      body = BookFlowRequestSchema.parse(json);
+    } catch (err) {
       return NextResponse.json(
         {
           success: false,
@@ -86,77 +98,89 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
             affiliate_links: [],
           },
           recommendations: [],
-          error: "Unauthorized: Please log in",
+          error:
+            "Invalid booking request: " +
+            (err instanceof z.ZodError
+              ? err.errors.map((e) => e.message).join(", ")
+              : "Malformed JSON"),
         },
-        { status: 401 }
+        { status: 400 },
       );
     }
 
-    // Get request body
-    const body: BookFlowRequest = await request.json();
+    // If user is authenticated, fetch preferences from profile; else use defaults
+    let userPreferences: UserPreferences;
+    if (user) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("interests, activity_level")
+        .eq("id", user.id)
+        .single();
+      userPreferences = {
+        interests: body.interests ||
+          profile?.interests || ["snorkeling", "dining"],
+        activityLevel:
+          body.activityLevel || profile?.activity_level || "medium",
+        budget:
+          body.tourBudget > 500
+            ? "luxury"
+            : body.tourBudget > 300
+              ? "mid"
+              : "budget",
+      };
+    } else {
+      userPreferences = {
+        interests: body.interests || ["snorkeling", "dining"],
+        activityLevel: body.activityLevel || "medium",
+        budget:
+          body.tourBudget > 500
+            ? "luxury"
+            : body.tourBudget > 300
+              ? "mid"
+              : "budget",
+      };
+    }
 
-    // Fetch user preferences from profiles
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("interests, activity_level")
-      .eq("id", user.id)
-      .single();
-
-    const userPreferences: UserPreferences = {
-      interests: body.interests || profile?.interests || ["snorkeling", "dining"],
-      activityLevel: body.activityLevel || profile?.activity_level || "medium",
-      budget:
-        body.tourBudget > 500
-          ? "luxury"
-          : body.tourBudget > 300
-            ? "mid"
-            : "budget",
-    };
-
-    debugLog("[BookFlow] Starting agents for user:", user.id);
+    debugLog("[BookFlow] Starting agents for user:", user?.id || "guest");
     debugLog("[BookFlow] Room Query:", body.roomType);
     debugLog("[BookFlow] User Preferences:", userPreferences);
 
     const requestId = randomUUID();
-
-    // Run PriceScout + ExperienceCurator in parallel
-    debugLog("[BookFlow] Running agents in parallel...");
-
-    const priceRunStart = Date.now();
-    const curatorRunStart = Date.now();
+    // Only log agent runs if user is authenticated
     let priceRunId: string | null = null;
     let curatorRunId: string | null = null;
-
-    // Log agent runs (non-blocking)
-    try {
-      priceRunId = await createAgentRun(supabase as any, {
-        user_id: user.id,
-        agent_name: "price_scout",
-        request_id: requestId,
-        input: JSON.stringify({
-          roomType: body.roomType,
-          checkInDate: body.checkInDate,
-          checkOutDate: body.checkOutDate,
-          location: body.location,
-        }) as any,
-      });
-    } catch (logError) {
-      console.warn("[BookFlow] Failed to create PriceScout run:", logError);
-    }
-
-    try {
-      curatorRunId = await createAgentRun(supabase as any, {
-        user_id: user.id,
-        agent_name: "experience_curator",
-        request_id: requestId,
-        input: JSON.stringify({
-          userPreferences,
-          groupSize: body.groupSize,
-          tourBudget: body.tourBudget,
-        }) as any,
-      });
-    } catch (logError) {
-      console.warn("[BookFlow] Failed to create Curator run:", logError);
+    const priceRunStart = Date.now();
+    const curatorRunStart = Date.now();
+    if (user) {
+      try {
+        priceRunId = await createAgentRun(supabase as any, {
+          user_id: user.id,
+          agent_name: "price_scout",
+          request_id: requestId,
+          input: JSON.stringify({
+            roomType: body.roomType,
+            checkInDate: body.checkInDate,
+            checkOutDate: body.checkOutDate,
+            location: body.location,
+          }) as any,
+        });
+      } catch (logError) {
+        console.warn("[BookFlow] Failed to create PriceScout run:", logError);
+      }
+      try {
+        curatorRunId = await createAgentRun(supabase as any, {
+          user_id: user.id,
+          agent_name: "experience_curator",
+          request_id: requestId,
+          input: JSON.stringify({
+            userPreferences,
+            groupSize: body.groupSize,
+            tourBudget: body.tourBudget,
+          }) as any,
+        });
+      } catch (logError) {
+        console.warn("[BookFlow] Failed to create Curator run:", logError);
+      }
     }
 
     // Run both agents in parallel
@@ -165,13 +189,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
         body.roomType,
         body.checkInDate,
         body.checkOutDate,
-        body.location
+        body.location,
       ),
-      runExperienceCurator(
-        userPreferences,
-        body.groupSize,
-        body.tourBudget
-      ),
+      runExperienceCurator(userPreferences, body.groupSize, body.tourBudget),
     ]);
 
     // Extract results (with fallbacks)
@@ -186,7 +206,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
             duration_ms: Date.now() - priceRunStart,
           });
         } catch (logError) {
-          console.warn("[BookFlow] Failed to finalize PriceScout run:", logError);
+          console.warn(
+            "[BookFlow] Failed to finalize PriceScout run:",
+            logError,
+          );
         }
       }
     } else {
@@ -199,7 +222,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
             duration_ms: Date.now() - priceRunStart,
           });
         } catch (logError) {
-          console.warn("[BookFlow] Failed to finalize PriceScout run:", logError);
+          console.warn(
+            "[BookFlow] Failed to finalize PriceScout run:",
+            logError,
+          );
         }
       }
       // Fallback pricing
@@ -245,7 +271,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
       // Fallback experience
       curatorResult = {
         tours: [],
-        dinner: { name: "Beachfront Seafood BBQ", type: "casual", price: 55, affiliateUrl: "" },
+        dinner: {
+          name: "Beachfront Seafood BBQ",
+          type: "casual",
+          price: 55,
+          affiliateUrl: "",
+        },
         addons: [],
         totalPrice: 55,
         recommendations: ["Explore the famous Barrier Reef at sunset."],
@@ -256,70 +287,83 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
     debugLog("[BookFlow] PriceScout Result:", priceScoutResult);
     debugLog("[BookFlow] Curator Result:", curatorResult);
 
-    // Save prices to database
-    await supabase.from("prices").insert({
-      room_type: body.roomType,
-      check_in_date: body.checkInDate,
-      check_out_date: body.checkOutDate,
-      location: body.location,
-      ota_name: priceScoutResult.bestOTA,
-      price: priceScoutResult.bestPrice,
-      beat_price: priceScoutResult.beatPrice,
-      url: priceScoutResult.priceUrl,
-      user_id: user.id,
-    });
-
-    // Create a booking session id to tie tours + payment together
-    const bookingId = randomUUID();
-
-    // Save tour bookings and attach booking id
-    const tourInserts = curatorResult.tours.map((tour: any) => ({
-      user_id: user.id,
-      booking_id: bookingId,
-      tour_name: tour.name,
-      tour_type: tour.type,
-      price: tour.price,
-      affiliate_link: tour.url,
-      commission_earned: tour.price * 0.1, // 10% commission
-      status: "pending_payment",
-    }));
-
-    const { data: tourRows, error: tourInsertError } = await supabase
-      .from("tour_bookings")
-      .insert(tourInserts)
-      .select("id");
-    if (tourInsertError) {
-      console.warn("[BookFlow] Failed to insert tour_bookings:", tourInsertError.message);
+    // Save prices to database only if user is authenticated
+    if (user) {
+      await supabase.from("prices").insert({
+        room_type: body.roomType,
+        check_in_date: body.checkInDate,
+        check_out_date: body.checkOutDate,
+        location: body.location,
+        ota_name: priceScoutResult.bestOTA,
+        price: priceScoutResult.bestPrice,
+        beat_price: priceScoutResult.beatPrice,
+        url: priceScoutResult.priceUrl,
+        user_id: user.id,
+      });
     }
 
-    const reservationId = tourRows?.[0]?.id || null;
+    // Only create bookings/reservations if user is authenticated
+    let bookingId: string | null = null;
+    let reservationId: string | null = null;
+    if (user) {
+      bookingId = randomUUID();
+      // Save tour bookings and attach booking id
+      const tourInserts = curatorResult.tours.map((tour: any) => ({
+        user_id: user.id,
+        booking_id: bookingId,
+        tour_name: tour.name,
+        tour_type: tour.type,
+        price: tour.price,
+        affiliate_link: tour.url,
+        commission_earned: tour.price * 0.1, // 10% commission
+        status: "pending_payment",
+      }));
 
-    if (body.addOns?.includes("magic") && reservationId) {
-      try {
-        const { data: magicProfile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        await generateMagicContent(
-          supabase as any,
-          {
-            userId: user.id,
-            reservationId,
-            occasion: "celebration",
-            musicStyle: magicProfile?.music_style || undefined,
-            userEmail: user.email,
-          },
-          magicProfile
+      const { data: tourRows, error: tourInsertError } = await supabase
+        .from("tour_bookings")
+        .insert(tourInserts)
+        .select("id");
+      if (tourInsertError) {
+        console.warn(
+          "[BookFlow] Failed to insert tour_bookings:",
+          tourInsertError.message,
         );
-      } catch (magicError) {
-        console.warn("[BookFlow] Magic content generation failed:", magicError);
+      }
+
+      reservationId = tourRows?.[0]?.id || null;
+
+      if (body.addOns?.includes("magic") && reservationId) {
+        try {
+          const { data: magicProfile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          await generateMagicContent(
+            supabase as any,
+            {
+              userId: user.id,
+              reservationId,
+              occasion: "celebration",
+              musicStyle: magicProfile?.music_style || undefined,
+              userEmail: user.email,
+            },
+            magicProfile,
+          );
+        } catch (magicError) {
+          console.warn(
+            "[BookFlow] Magic content generation failed:",
+            magicError,
+          );
+        }
       }
     }
 
     // Calculate dining price (assume included in package or add separately)
-    const diningTour = curatorResult.tours.find((t: any) => t.type === "dining");
+    const diningTour = curatorResult.tours.find(
+      (t: any) => t.type === "dining",
+    );
     const diningPrice = diningTour?.price || 85;
 
     const packageTotal =
@@ -327,75 +371,84 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
       curatorResult.totalPrice +
       (diningTour ? 0 : diningPrice);
 
-    // ──────── Create Reservation (Room Inventory) ────────
+    // Only create reservation and send emails if user is authenticated
     let confirmationNumber: string | null = null;
-    try {
-      const reservation = await createReservation(supabase as any, {
-        guestId: user.id,
-        roomTypeInput: body.roomType,
-        checkIn: body.checkInDate,
-        checkOut: body.checkOutDate,
-        guestsCount: body.groupSize,
-        totalAmount: packageTotal,
-        bookingId,
-        specialRequests: (body as any).specialRequests || undefined,
-      });
-      confirmationNumber = reservation.confirmationNumber;
-      debugLog(`[BookFlow] Reservation created: ${confirmationNumber}`);
-
-      // Send confirmation email
+    if (user && bookingId) {
       try {
-        const { Resend } = await import('resend');
-        const resendKey = process.env.RESEND_API_KEY;
-        if (resendKey && user.email) {
-          const resend = new Resend(resendKey);
-          const tours = curatorResult.tours
-            .filter((t: any) => t.type !== 'dining')
-            .map((t: any) => ({ name: t.name, price: t.price }));
+        const reservation = await createReservation(supabase as any, {
+          guestId: user.id,
+          roomTypeInput: body.roomType,
+          checkIn: body.checkInDate,
+          checkOut: body.checkOutDate,
+          guestsCount: body.groupSize,
+          totalAmount: packageTotal,
+          bookingId,
+          specialRequests: (body as any).specialRequests || undefined,
+        });
+        confirmationNumber = reservation.confirmationNumber;
+        debugLog(`[BookFlow] Reservation created: ${confirmationNumber}`);
 
-          await resend.emails.send({
-            from: process.env.MAGIC_FROM_EMAIL || 'reservations@linapoint.com',
-            to: user.email,
-            subject: `\u{1F334} Booking Confirmed — ${confirmationNumber}`,
-            html: confirmationEmailHtml({
-              guestName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Guest',
-              confirmation: reservation,
-              tours,
-              dinnerName: diningTour?.name || 'Sunset Beachfront Dinner',
-              dinnerPrice: diningPrice,
-              totalAmount: packageTotal,
-              checkIn: body.checkInDate,
-              checkOut: body.checkOutDate,
-            }),
-          });
-          debugLog(`[BookFlow] Confirmation email sent to ${user.email}`);
+        // Send confirmation email
+        try {
+          const { Resend } = await import("resend");
+          const resendKey = process.env.RESEND_API_KEY;
+          if (resendKey && user.email) {
+            const resend = new Resend(resendKey);
+            const tours = curatorResult.tours
+              .filter((t: any) => t.type !== "dining")
+              .map((t: any) => ({ name: t.name, price: t.price }));
 
-          // Admin notification
-          const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').filter(Boolean);
-          if (adminEmails.length > 0) {
             await resend.emails.send({
-              from: process.env.MAGIC_FROM_EMAIL || 'reservations@linapoint.com',
-              to: adminEmails,
-              subject: `New Booking: ${confirmationNumber} — ${reservation.roomName}`,
-              html: adminNotificationHtml({
-                confirmationNumber: reservation.confirmationNumber,
-                guestEmail: user.email || 'unknown',
-                roomName: reservation.roomName,
+              from:
+                process.env.MAGIC_FROM_EMAIL || "reservations@linapoint.com",
+              to: user.email,
+              subject: `\u{1F334} Booking Confirmed — ${confirmationNumber}`,
+              html: confirmationEmailHtml({
+                guestName:
+                  user.user_metadata?.full_name ||
+                  user.email?.split("@")[0] ||
+                  "Guest",
+                confirmation: reservation,
+                tours,
+                dinnerName: diningTour?.name || "Sunset Beachfront Dinner",
+                dinnerPrice: diningPrice,
+                totalAmount: packageTotal,
                 checkIn: body.checkInDate,
                 checkOut: body.checkOutDate,
-                nights: reservation.nights,
-                totalAmount: packageTotal,
-                guestsCount: body.groupSize,
               }),
             });
+            debugLog(`[BookFlow] Confirmation email sent to ${user.email}`);
+
+            // Admin notification
+            const adminEmails = (process.env.ADMIN_EMAILS || "")
+              .split(",")
+              .filter(Boolean);
+            if (adminEmails.length > 0) {
+              await resend.emails.send({
+                from:
+                  process.env.MAGIC_FROM_EMAIL || "reservations@linapoint.com",
+                to: adminEmails,
+                subject: `New Booking: ${confirmationNumber} — ${reservation.roomName}`,
+                html: adminNotificationHtml({
+                  confirmationNumber: reservation.confirmationNumber,
+                  guestEmail: user.email || "unknown",
+                  roomName: reservation.roomName,
+                  checkIn: body.checkInDate,
+                  checkOut: body.checkOutDate,
+                  nights: reservation.nights,
+                  totalAmount: packageTotal,
+                  guestsCount: body.groupSize,
+                }),
+              });
+            }
           }
+        } catch (emailErr) {
+          console.warn("[BookFlow] Email send failed:", emailErr);
         }
-      } catch (emailErr) {
-        console.warn('[BookFlow] Email send failed:', emailErr);
+      } catch (resErr) {
+        console.warn("[BookFlow] Reservation creation failed:", resErr);
+        // Don't fail the entire flow — continue with response
       }
-    } catch (resErr) {
-      console.warn('[BookFlow] Reservation creation failed:', resErr);
-      // Don't fail the entire flow — continue with response
     }
 
     // Compile response
@@ -417,7 +470,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
             price: t.price,
             duration: t.duration,
             affiliateUrl: t.affiliateUrl || null,
-            otaPrice: t.affiliateUrl ? Math.round((t.price / 0.94) * 100) / 100 : null,
+            otaPrice: t.affiliateUrl
+              ? Math.round((t.price / 0.94) * 100) / 100
+              : null,
           })),
         dinner: {
           name: diningTour?.name || "Sunset Beachfront Dinner",
@@ -432,12 +487,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
     // 📊 Track analytics for booking analysis
     const totalAffiliateCommission = curatorResult.affiliateLinks.reduce(
       (sum: number, link: any) => sum + (link.commission || 0),
-      0
+      0,
     );
 
     // A/B testing variant selection (based on user ID)
     const experimentVariants = ["control", "variant_a", "variant_b"];
-    const experimentVariant = experimentVariants[user.id.charCodeAt(0) % experimentVariants.length];
+    const experimentVariant =
+      experimentVariants[user.id.charCodeAt(0) % experimentVariants.length];
 
     try {
       const { error: analyticsError } = await supabase
@@ -460,7 +516,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
         });
 
       if (analyticsError) {
-        console.warn("[BookFlow] Analytics tracking failed:", analyticsError.message);
+        console.warn(
+          "[BookFlow] Analytics tracking failed:",
+          analyticsError.message,
+        );
       } else {
         debugLog(`[BookFlow] Analytics tracked for user ${user.id}`);
       }
@@ -469,50 +528,61 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
       // Don't fail the response if analytics fails
     }
 
-    // If Stripe is configured, verify bookings exist then create a PaymentIntent and return client_secret
+    // Only create PaymentIntent if user is authenticated and booking exists
     let clientSecret: string | null = null;
-    try {
-      const stripeSecret = process.env.STRIPE_SECRET_KEY || "";
-      if (stripeSecret) {
-        // Verify that tour_bookings were inserted and belong to this user/booking
-        const { data: existingTours, error: existingErr } = await supabase
-          .from('tour_bookings')
-          .select('id')
-          .eq('booking_id', bookingId)
-          .eq('user_id', user.id)
-          .limit(1);
+    if (user && bookingId) {
+      try {
+        const stripeSecret = process.env.STRIPE_SECRET_KEY || "";
+        if (stripeSecret) {
+          // Verify that tour_bookings were inserted and belong to this user/booking
+          const { data: existingTours, error: existingErr } = await supabase
+            .from("tour_bookings")
+            .select("id")
+            .eq("booking_id", bookingId)
+            .eq("user_id", user.id)
+            .limit(1);
 
-        if (existingErr) {
-          console.warn('[BookFlow] Error checking tour_bookings before creating PaymentIntent:', existingErr.message);
+          if (existingErr) {
+            console.warn(
+              "[BookFlow] Error checking tour_bookings before creating PaymentIntent:",
+              existingErr.message,
+            );
+          }
+
+          if (existingTours && existingTours.length > 0) {
+            const StripeLib = (await import("stripe")).default;
+            const stripe = new StripeLib(stripeSecret);
+
+            const paymentIntent = await stripe.paymentIntents.create({
+              amount: Math.round(response.curated_package.total * 100),
+              currency: "usd",
+              metadata: {
+                booking_id: bookingId,
+                user_id: user.id,
+              },
+            });
+
+            clientSecret = paymentIntent.client_secret || null;
+          } else {
+            console.warn(
+              "[BookFlow] No tour_bookings found for booking, skipping PaymentIntent creation",
+            );
+          }
         }
-
-        if (existingTours && existingTours.length > 0) {
-          const StripeLib = (await import('stripe')).default;
-          const stripe = new StripeLib(stripeSecret);
-
-          const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(response.curated_package.total * 100),
-            currency: 'usd',
-            metadata: {
-              booking_id: bookingId,
-              user_id: user.id,
-            },
-          });
-
-          clientSecret = paymentIntent.client_secret || null;
-        } else {
-          console.warn('[BookFlow] No tour_bookings found for booking, skipping PaymentIntent creation');
-        }
+      } catch (stripeErr: any) {
+        console.warn(
+          "[BookFlow] Stripe PaymentIntent creation failed:",
+          stripeErr?.message || stripeErr,
+        );
       }
-    } catch (stripeErr: any) {
-      console.warn('[BookFlow] Stripe PaymentIntent creation failed:', stripeErr?.message || stripeErr);
     }
 
-    // Include client_secret in response when available
+    // Include client_secret and bookingId in response only if user is authenticated
     const responseWithPayment = { ...response } as any;
-    if (clientSecret) responseWithPayment.client_secret = clientSecret;
-    if (confirmationNumber) responseWithPayment.confirmationNumber = confirmationNumber;
-    responseWithPayment.bookingId = bookingId;
+    if (user && clientSecret) responseWithPayment.client_secret = clientSecret;
+    if (user && confirmationNumber)
+      responseWithPayment.confirmationNumber = confirmationNumber;
+    if (user && bookingId) responseWithPayment.bookingId = bookingId;
 
     return NextResponse.json(responseWithPayment, { status: 200 });
   } catch (error) {
@@ -533,7 +603,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<BookFlowR
         recommendations: [],
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

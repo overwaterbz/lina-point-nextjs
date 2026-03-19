@@ -1,3 +1,5 @@
+import fetch, { RequestInit, Response } from "node-fetch";
+import AbortController from "abort-controller";
 /**
  * OTA Integration Module — Real price scraping via Tavily Search API
  * Falls back to cached/default prices when API is unavailable
@@ -66,6 +68,8 @@ async function searchOTAPrices(
   const query = `${roomType} hotel ${location} price per night ${checkInDate} to ${checkOutDate} site:expedia.com OR site:booking.com OR site:agoda.com`;
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: {
@@ -78,8 +82,9 @@ async function searchOTAPrices(
         max_results: 10,
         include_answer: true,
       }),
-      signal: AbortSignal.timeout(15000),
-    });
+      signal: controller.signal,
+    } as RequestInit);
+    clearTimeout(timeout);
 
     if (!response.ok) {
       debugLog(`[OTA] Tavily API returned ${response.status}`);
