@@ -524,7 +524,9 @@ export async function POST(
           analyticsError.message,
         );
       } else {
-        debugLog(`[BookFlow] Analytics tracked for user ${user.id}`);
+        debugLog(
+          `[BookFlow] Analytics tracked for user ${user?.id ?? "unknown"}`,
+        );
       }
     } catch (analyticsErr) {
       console.warn("[BookFlow] Error saving analytics:", analyticsErr);
