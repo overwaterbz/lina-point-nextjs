@@ -1,56 +1,70 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { useState, useEffect } from 'react';
-import { createBrowserSupabaseClient } from '@/lib/supabase';
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 const NAV_SECTIONS = [
   {
-    title: 'Operations',
+    title: "Operations",
     items: [
-      { href: '/admin/dashboard', label: 'Overview', icon: '📊' },
-      { href: '/admin/calendar', label: 'Calendar', icon: '🗓️' },
-      { href: '/admin/rooms', label: 'Rooms', icon: '🏨' },
-      { href: '/admin/guests', label: 'Guests', icon: '👥' },
-      { href: '/admin/tours', label: 'Tours', icon: '🌊' },
-      { href: '/admin/housekeeping', label: 'Housekeeping', icon: '🧹' },
+      { href: "/admin/dashboard", label: "Overview", icon: "📊" },
+      { href: "/admin/calendar", label: "Calendar", icon: "🗓️" },
+      { href: "/admin/rooms", label: "Rooms", icon: "🏨" },
+      { href: "/admin/guests", label: "Guests", icon: "👥" },
+      { href: "/admin/tours", label: "Tours", icon: "🌊" },
+      { href: "/admin/housekeeping", label: "Housekeeping", icon: "🧹" },
     ],
   },
   {
-    title: 'Revenue',
+    title: "Revenue",
     items: [
-      { href: '/admin/revenue', label: 'Revenue', icon: '💰' },
-      { href: '/admin/pricing', label: 'Pricing', icon: '🏷️', minRole: 'manager' as const },
+      { href: "/admin/revenue", label: "Revenue", icon: "💰" },
+      {
+        href: "/admin/pricing",
+        label: "Pricing",
+        icon: "🏷️",
+        minRole: "manager" as const,
+      },
     ],
   },
   {
-    title: 'Marketing',
+    title: "Marketing",
     items: [
-      { href: '/admin/marketing-dashboard', label: 'Campaigns', icon: '📱' },
-      { href: '/admin/whatsapp', label: 'WhatsApp', icon: '💬' },
+      { href: "/admin/marketing-dashboard", label: "Campaigns", icon: "📱" },
+      { href: "/admin/whatsapp", label: "WhatsApp", icon: "💬" },
     ],
   },
   {
-    title: 'System',
+    title: "System",
     items: [
-      { href: '/admin/ai-monitor', label: 'AI Monitor', icon: '🤖' },
-      { href: '/admin/notifications', label: 'Notifications', icon: '🔔' },
+      { href: "/admin/ai-monitor", label: "AI Monitor", icon: "🤖" },
+      { href: "/admin/notifications", label: "Notifications", icon: "🔔" },
     ],
   },
 ];
 
-const ROLE_LEVEL: Record<string, number> = { owner: 3, manager: 2, front_desk: 1, guest: 0 };
+const ROLE_LEVEL: Record<string, number> = {
+  owner: 3,
+  manager: 2,
+  front_desk: 1,
+  guest: 0,
+};
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, profile, loading, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const userRoleLevel = ROLE_LEVEL[profile?.role || 'guest'] ?? 0;
+  const userRoleLevel = ROLE_LEVEL[profile?.role || "guest"] ?? 0;
 
   // Fetch unread notification count
   useEffect(() => {
@@ -59,18 +73,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     (async () => {
       try {
         const { count } = await supabase
-          .from('notifications')
-          .select('id', { count: 'exact', head: true })
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
           .or(`user_id.eq.${user.id},user_id.is.null`)
-          .eq('read', false);
+          .eq("read", false);
         setUnreadCount(count || 0);
-      } catch (err) { console.error(err) }
+      } catch (err) {
+        console.error(err);
+      }
     })();
   }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/auth/login');
+    router.push("/auth/login");
   };
 
   if (loading) {
@@ -82,10 +98,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // Breadcrumb from pathname
-  const segments = pathname.split('/').filter(Boolean);
+  const safePathname = pathname ?? "";
+  const segments = safePathname.split("/").filter(Boolean);
   const breadcrumbs = segments.map((seg, i) => ({
-    label: seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' '),
-    href: '/' + segments.slice(0, i + 1).join('/'),
+    label: seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " "),
+    href: "/" + segments.slice(0, i + 1).join("/"),
     isLast: i === segments.length - 1,
   }));
 
@@ -93,17 +110,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-slate-50 flex">
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
       {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 flex flex-col transition-transform lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="p-5 border-b border-slate-700">
-          <Link href="/admin/dashboard" className="text-xl font-bold text-white font-[family-name:var(--font-playfair)]">
+          <Link
+            href="/admin/dashboard"
+            className="text-xl font-bold text-white font-[family-name:var(--font-playfair)]"
+          >
             Lina Point
           </Link>
           <p className="text-xs text-slate-400 mt-1">Admin Console</p>
@@ -118,11 +141,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {section.items
                 .filter((item) => {
                   if (!profile?.role) return true; // Show all while profile loads
-                  const minLevel = ROLE_LEVEL[(item as { minRole?: string }).minRole || 'front_desk'] ?? 1;
+                  const minLevel =
+                    ROLE_LEVEL[
+                      (item as { minRole?: string }).minRole || "front_desk"
+                    ] ?? 1;
                   return userRoleLevel >= minLevel;
                 })
                 .map((item) => {
-                  const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && pathname.startsWith(item.href));
+                  const isActive =
+                    pathname === item.href ||
+                    (item.href !== "/admin/dashboard" &&
+                      pathname.startsWith(item.href));
                   return (
                     <Link
                       key={item.href}
@@ -130,17 +159,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       onClick={() => setSidebarOpen(false)}
                       className={`flex items-center gap-3 mx-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         isActive
-                          ? 'bg-slate-700 text-white'
-                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                          ? "bg-slate-700 text-white"
+                          : "text-slate-300 hover:bg-slate-800 hover:text-white"
                       }`}
                     >
                       <span className="text-base">{item.icon}</span>
                       {item.label}
-                      {item.href === '/admin/notifications' && unreadCount > 0 && (
-                        <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </span>
-                      )}
+                      {item.href === "/admin/notifications" &&
+                        unreadCount > 0 && (
+                          <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                          </span>
+                        )}
                     </Link>
                   );
                 })}
@@ -174,8 +204,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-2 -ml-2 text-slate-600 hover:text-slate-900"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             </svg>
           </button>
 
@@ -187,7 +228,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <span className="text-slate-900 font-medium">{bc.label}</span>
                 ) : (
                   <>
-                    <Link href={bc.href} className="hover:text-slate-700">{bc.label}</Link>
+                    <Link href={bc.href} className="hover:text-slate-700">
+                      {bc.label}
+                    </Link>
                     <span className="text-slate-300">/</span>
                   </>
                 )}
@@ -199,18 +242,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-500 hidden sm:block capitalize">
-              {profile?.role || 'guest'}
+              {profile?.role || "guest"}
             </span>
             <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
-              {(profile?.full_name || user?.email || '?')[0].toUpperCase()}
+              {(profile?.full_name || user?.email || "?")[0].toUpperCase()}
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
     </div>
   );
