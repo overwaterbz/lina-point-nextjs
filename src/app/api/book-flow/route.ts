@@ -502,7 +502,7 @@ export async function POST(
       const { error: analyticsError } = await supabase
         .from("booking_analytics")
         .insert({
-          user_id: user.id,
+          user_id: user?.id ?? null,
           room_type: body.roomType,
           check_in_date: body.checkInDate,
           check_out_date: body.checkOutDate,
