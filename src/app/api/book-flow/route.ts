@@ -492,8 +492,11 @@ export async function POST(
 
     // A/B testing variant selection (based on user ID)
     const experimentVariants = ["control", "variant_a", "variant_b"];
-    const experimentVariant =
-      experimentVariants[user.id.charCodeAt(0) % experimentVariants.length];
+    let experimentVariant = experimentVariants[0];
+    if (user && user.id) {
+      experimentVariant =
+        experimentVariants[user.id.charCodeAt(0) % experimentVariants.length];
+    }
 
     try {
       const { error: analyticsError } = await supabase
