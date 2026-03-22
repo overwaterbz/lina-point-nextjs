@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * API Route: GET /api/cron/revenue-snapshot
  * Runs at 23:55 UTC daily via vercel.json
@@ -6,14 +8,14 @@
  * Uses UPSERT on snapshot_date (UNIQUE) so re-runs are idempotent.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { verifyCronSecret } from '@/lib/cronAuth';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { verifyCronSecret } from "@/lib/cronAuth";
 
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret
-    const denied = verifyCronSecret(request.headers.get('authorization'));
+    const denied = verifyCronSecret(request.headers.get("authorization"));
     if (denied) return denied;
 
     const supabase = createClient(
@@ -22,20 +24,20 @@ export async function GET(request: NextRequest) {
       { auth: { persistSession: false } },
     );
 
-    const today = new Date().toISOString().split('T')[0];
-    const todayStart = today + 'T00:00:00';
-    const todayEnd = today + 'T23:59:59';
+    const today = new Date().toISOString().split("T")[0];
+    const todayStart = today + "T00:00:00";
+    const todayEnd = today + "T23:59:59";
     const totalRooms = 16;
 
     // ── Reservations created today ───────────────────────
     const { data: todayRes } = await supabase
-      .from('reservations')
-      .select('id, total_amount, status')
-      .gte('created_at', todayStart)
-      .lte('created_at', todayEnd);
+      .from("reservations")
+      .select("id, total_amount, status")
+      .gte("created_at", todayStart)
+      .lte("created_at", todayEnd);
 
     const reservations = todayRes || [];
-    const activeRes = reservations.filter((r) => r.status !== 'cancelled');
+    const activeRes = reservations.filter((r) => r.status !== "cancelled");
     const totalReservations = activeRes.length;
     const totalRoomRevenue = activeRes.reduce(
       (sum, r) => sum + (Number(r.total_amount) || 0),
@@ -44,56 +46,63 @@ export async function GET(request: NextRequest) {
 
     // ── Average nightly rate from today's reservations ───
     const { data: ratesData } = await supabase
-      .from('reservations')
-      .select('base_rate')
-      .gte('created_at', todayStart)
-      .lte('created_at', todayEnd)
-      .neq('status', 'cancelled');
+      .from("reservations")
+      .select("base_rate")
+      .gte("created_at", todayStart)
+      .lte("created_at", todayEnd)
+      .neq("status", "cancelled");
 
-    const rates = (ratesData || []).map((r) => Number(r.base_rate) || 0).filter((r) => r > 0);
-    const avgNightlyRate = rates.length > 0
-      ? rates.reduce((a, b) => a + b, 0) / rates.length
-      : 0;
+    const rates = (ratesData || [])
+      .map((r) => Number(r.base_rate) || 0)
+      .filter((r) => r > 0);
+    const avgNightlyRate =
+      rates.length > 0 ? rates.reduce((a, b) => a + b, 0) / rates.length : 0;
 
     // ── Tour revenue & commission today ──────────────────
     const { data: todayTours } = await supabase
-      .from('tour_bookings')
-      .select('price, commission_earned')
-      .gte('created_at', todayStart)
-      .lte('created_at', todayEnd);
+      .from("tour_bookings")
+      .select("price, commission_earned")
+      .gte("created_at", todayStart)
+      .lte("created_at", todayEnd);
 
     const tours = todayTours || [];
-    const totalTourRevenue = tours.reduce((sum, t) => sum + (Number(t.price) || 0), 0);
-    const totalCommission = tours.reduce((sum, t) => sum + (Number(t.commission_earned) || 0), 0);
+    const totalTourRevenue = tours.reduce(
+      (sum, t) => sum + (Number(t.price) || 0),
+      0,
+    );
+    const totalCommission = tours.reduce(
+      (sum, t) => sum + (Number(t.commission_earned) || 0),
+      0,
+    );
 
     // ── Occupancy (rooms booked for today) ───────────────
     const { count: bookedToday } = await supabase
-      .from('room_inventory')
-      .select('id', { count: 'exact', head: true })
-      .eq('date', today)
-      .eq('status', 'booked');
+      .from("room_inventory")
+      .select("id", { count: "exact", head: true })
+      .eq("date", today)
+      .eq("status", "booked");
 
     const occupancyPct = Math.round(((bookedToday || 0) / totalRooms) * 100);
 
     // ── Guest counts ─────────────────────────────────────
     const { count: newGuests } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', todayStart)
-      .lte('created_at', todayEnd);
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", todayStart)
+      .lte("created_at", todayEnd);
 
     const { count: totalGuests } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true });
+      .from("profiles")
+      .select("id", { count: "exact", head: true });
 
     const returningGuests = (totalGuests || 0) - (newGuests || 0);
 
     // ── WhatsApp conversations today ─────────────────────
     const { count: waConversations } = await supabase
-      .from('whatsapp_messages')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', todayStart)
-      .lte('created_at', todayEnd);
+      .from("whatsapp_messages")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", todayStart)
+      .lte("created_at", todayEnd);
 
     // ── UPSERT snapshot (idempotent on snapshot_date) ────
     const snapshot = {
@@ -110,27 +119,32 @@ export async function GET(request: NextRequest) {
     };
 
     const { error: upsertError } = await supabase
-      .from('revenue_snapshots')
-      .upsert(snapshot, { onConflict: 'snapshot_date' });
+      .from("revenue_snapshots")
+      .upsert(snapshot, { onConflict: "snapshot_date" });
 
     if (upsertError) {
-      console.error('[RevenueSnapshot] Upsert failed:', upsertError);
+      console.error("[RevenueSnapshot] Upsert failed:", upsertError);
       return NextResponse.json(
         { success: false, error: upsertError.message },
         { status: 500 },
       );
     }
 
-    console.log(`[RevenueSnapshot] ${today}: ${totalReservations} reservations, $${totalRoomRevenue} room rev, ${occupancyPct}% occupancy`);
+    console.log(
+      `[RevenueSnapshot] ${today}: ${totalReservations} reservations, $${totalRoomRevenue} room rev, ${occupancyPct}% occupancy`,
+    );
 
     return NextResponse.json({
       success: true,
       snapshot,
     });
   } catch (error) {
-    console.error('[RevenueSnapshot Cron] Failed:', error);
+    console.error("[RevenueSnapshot Cron] Failed:", error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Snapshot failed' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Snapshot failed",
+      },
       { status: 500 },
     );
   }

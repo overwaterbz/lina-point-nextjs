@@ -1,7 +1,16 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { grokLLM } from "@/lib/grokIntegration";
-import { getTodaysBrand, BRAND_PROFILES, getEcosystemContext } from "@/lib/agents/ecosystemBrands";
-import { publishToSocial, type SocialPostResult } from "@/lib/socialMediaService";
+import {
+  getTodaysBrand,
+  BRAND_PROFILES,
+  getEcosystemContext,
+} from "@/lib/agents/ecosystemBrands";
+import {
+  publishToSocial,
+  type SocialPostResult,
+} from "@/lib/socialMediaService";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -60,10 +69,16 @@ Rules:
       { role: "user", content: userPrompt },
     ]);
 
-    const raw = typeof response.content === "string" ? response.content : String(response.content);
+    const raw =
+      typeof response.content === "string"
+        ? response.content
+        : String(response.content);
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json({ error: "Failed to parse AI response", raw }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to parse AI response", raw },
+        { status: 500 },
+      );
     }
 
     const posts = JSON.parse(jsonMatch[0]);
@@ -73,16 +88,24 @@ Rules:
     if (posts.instagram?.caption) {
       const caption = `${posts.instagram.caption}\n\n${(posts.instagram.hashtags || []).join(" ")}`;
       // Instagram requires an image — use OG image as fallback
-      const imageUrl = brand === "magic-is-you"
-        ? "https://magic.overwater.com/api/og"
-        : brand === "overwater"
-        ? "https://overwater.com/api/og"
-        : "https://linapoint.com/wp-content/uploads/2024/11/LinaPoint-55.jpg";
+      const imageUrl =
+        brand === "magic-is-you"
+          ? "https://magic.overwater.com/api/og"
+          : brand === "overwater"
+            ? "https://overwater.com/api/og"
+            : "https://linapoint.com/wp-content/uploads/2024/11/LinaPoint-55.jpg";
       results.push(await publishToSocial("instagram", caption, imageUrl));
     }
 
     if (posts.facebook?.message) {
-      results.push(await publishToSocial("facebook", posts.facebook.message, undefined, posts.facebook.link));
+      results.push(
+        await publishToSocial(
+          "facebook",
+          posts.facebook.message,
+          undefined,
+          posts.facebook.link,
+        ),
+      );
     }
 
     if (posts.x?.tweet) {
@@ -100,10 +123,16 @@ Rules:
             brand,
             contentType,
             posts,
-            results: results.map((r) => ({ platform: r.platform, success: r.success, error: r.error })),
+            results: results.map((r) => ({
+              platform: r.platform,
+              success: r.success,
+              error: r.error,
+            })),
           },
         });
-      } catch { /* ignore logging errors */ }
+      } catch {
+        /* ignore logging errors */
+      }
     }
 
     return NextResponse.json({
@@ -116,7 +145,7 @@ Rules:
     console.error("[SocialContent] Generation failed:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Generation failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

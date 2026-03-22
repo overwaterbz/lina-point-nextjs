@@ -161,7 +161,7 @@ async function searchOTAPrices(
  * Default prices used when live search is unavailable.
  * Based on typical San Pedro, Belize overwater resort rates.
  */
-function getFallbackPrices(): OTAPrice[] {
+export function getFallbackPrices(): OTAPrice[] {
   return [
     {
       ota: "expedia",

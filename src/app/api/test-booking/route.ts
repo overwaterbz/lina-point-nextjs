@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
-import { runPriceScout } from '@/lib/priceScoutAgent';
-import { runExperienceCurator } from '@/lib/experienceCuratorAgent';
+export const dynamic = "force-dynamic";
 
-const isProd = process.env.NODE_ENV === 'production';
+import { NextResponse } from "next/server";
+import { runPriceScout } from "@/lib/priceScoutAgent";
+import { runExperienceCurator } from "@/lib/experienceCuratorAgent";
+
+const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
   if (!isProd) {
     console.log(...args);
@@ -12,59 +14,59 @@ const debugLog = (...args: unknown[]) => {
 /**
  * Test endpoint for booking flow - no auth required
  * Use for quick testing of agents without signup
- * 
+ *
  * Example: GET /api/test-booking
  */
 export async function GET() {
   try {
-    debugLog('🧪 Starting test booking flow...');
+    debugLog("🧪 Starting test booking flow...");
 
     // Mock user preferences
     const userPreferences = {
-      music_style: 'EDM',
-      maya_interests: ['Ruins', 'Cuisine'],
-      birthday: '1990-05-14',
+      music_style: "EDM",
+      maya_interests: ["Ruins", "Cuisine"],
+      birthday: "1990-05-14",
       family_friendly: true,
     };
 
     // Mock booking request
     const bookingRequest = {
-      roomType: 'Overwater Room',
-      checkInDate: '2026-03-01',
-      checkOutDate: '2026-03-05',
-      location: 'Belize',
+      roomType: "Overwater Room",
+      checkInDate: "2026-03-01",
+      checkOutDate: "2026-03-05",
+      location: "Belize",
       groupSize: 2,
       tourBudget: 500,
-      interests: ['snorkeling', 'dining'],
-      activityLevel: 'medium' as const,
+      interests: ["snorkeling", "dining"],
+      activityLevel: "medium" as const,
     };
 
     const maxIterations = 3;
 
-    debugLog('📍 User Prefs:', userPreferences);
-    debugLog('📍 Booking Request:', bookingRequest);
+    debugLog("📍 User Prefs:", userPreferences);
+    debugLog("📍 Booking Request:", bookingRequest);
 
     // Run agents in parallel
-    debugLog('\n🤖 Running PriceScoutAgent...');
+    debugLog("\n🤖 Running PriceScoutAgent...");
     const priceScoutResult = await runPriceScout(
       bookingRequest.roomType,
       bookingRequest.checkInDate,
       bookingRequest.checkOutDate,
-      bookingRequest.location
+      bookingRequest.location,
     );
-    debugLog('✅ PriceScout Result:', priceScoutResult);
+    debugLog("✅ PriceScout Result:", priceScoutResult);
 
-    debugLog('\n🎯 Running ExperienceCuratorAgent...');
+    debugLog("\n🎯 Running ExperienceCuratorAgent...");
     const curatorResult = await runExperienceCurator(
       {
-        interests: ['snorkeling', 'dining'],
-        activityLevel: 'medium',
-        budget: 'mid',
+        interests: ["snorkeling", "dining"],
+        activityLevel: "medium",
+        budget: "mid",
       },
       bookingRequest.groupSize,
-      bookingRequest.tourBudget
+      bookingRequest.tourBudget,
     );
-    debugLog('✅ Curator Result:', curatorResult);
+    debugLog("✅ Curator Result:", curatorResult);
 
     // Combine results
     const response = {
@@ -91,32 +93,41 @@ export async function GET() {
         room: {
           type: bookingRequest.roomType,
           price: priceScoutResult.beatPrice,
-          ota: 'Direct Booking',
+          ota: "Direct Booking",
           savings_percent: priceScoutResult.savingsPercent,
         },
-        tours: curatorResult.tours.map((t: any) => t.name).join(' + '),
-        dinner: curatorResult.tours.find((t: any) => t.type === 'dining')?.name || 'Included',
-        addons: curatorResult.tours.filter((t: any) => t.type !== 'snorkeling').map((t: any) => t.name),
+        tours: curatorResult.tours.map((t: any) => t.name).join(" + "),
+        dinner:
+          curatorResult.tours.find((t: any) => t.type === "dining")?.name ||
+          "Included",
+        addons: curatorResult.tours
+          .filter((t: any) => t.type !== "snorkeling")
+          .map((t: any) => t.name),
         total: priceScoutResult.beatPrice + curatorResult.totalPrice,
         affiliate_links: curatorResult.affiliateLinks,
       },
       summary: {
         message: `✨ Save ${priceScoutResult.savingsPercent}% on your overwater room + ${curatorResult.tours.length} curated experiences!`,
         total_savings: priceScoutResult.savings,
-        booking_url: '/booking',
+        booking_url: "/booking",
       },
     };
 
     return NextResponse.json(response, { status: 200 });
   } catch (error) {
-    console.error('❌ Test endpoint error:', error);
+    console.error("❌ Test endpoint error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : '') : undefined,
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack:
+          process.env.NODE_ENV === "development"
+            ? error instanceof Error
+              ? error.stack
+              : ""
+            : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -128,29 +139,33 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const {
-      roomType = 'Overwater Room',
-      checkInDate = '2026-03-01',
-      checkOutDate = '2026-03-05',
-      musicStyle = 'EDM',
-      interests = ['snorkeling'],
+      roomType = "Overwater Room",
+      checkInDate = "2026-03-01",
+      checkOutDate = "2026-03-05",
+      musicStyle = "EDM",
+      interests = ["snorkeling"],
     } = body;
 
-    debugLog('🧪 Custom test booking:', { roomType, checkInDate, checkOutDate });
+    debugLog("🧪 Custom test booking:", {
+      roomType,
+      checkInDate,
+      checkOutDate,
+    });
 
     const priceScoutResult = await runPriceScout(
       roomType,
       checkInDate,
       checkOutDate,
-      'Belize'
+      "Belize",
     );
     const curatorResult = await runExperienceCurator(
       {
         interests: interests,
-        activityLevel: 'medium',
-        budget: 'mid',
+        activityLevel: "medium",
+        budget: "mid",
       },
       2,
-      500
+      500,
     );
 
     return NextResponse.json(
@@ -161,13 +176,16 @@ export async function POST(req: Request) {
         tours: curatorResult.tours.map((t: any) => t.name),
         total: priceScoutResult.beatPrice + curatorResult.totalPrice,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
-    console.error('❌ POST test error:', error);
+    console.error("❌ POST test error:", error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Error' },
-      { status: 500 }
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Error",
+      },
+      { status: 500 },
     );
   }
 }

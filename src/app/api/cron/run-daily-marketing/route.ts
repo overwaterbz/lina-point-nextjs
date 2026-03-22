@@ -4,12 +4,18 @@
  * Triggers MarketingAgentCrew for daily autonomous campaigns
  */
 
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { runMarketingCrew } from "@/lib/agents/marketingAgentCrew";
-import { verifyCronSecret } from '@/lib/cronAuth';
-import { getTodaysBrand, BRAND_PROFILES, getEcosystemContext } from "@/lib/agents/ecosystemBrands";
+import { verifyCronSecret } from "@/lib/cronAuth";
+import {
+  getTodaysBrand,
+  BRAND_PROFILES,
+  getEcosystemContext,
+} from "@/lib/agents/ecosystemBrands";
 
 const debugLog = (...args: unknown[]) => {
   console.log("[Marketing Cron]", ...args);
@@ -17,13 +23,13 @@ const debugLog = (...args: unknown[]) => {
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "",
 );
 
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret
-    const denied = verifyCronSecret(request.headers.get('authorization'));
+    const denied = verifyCronSecret(request.headers.get("authorization"));
     if (denied) return denied;
 
     debugLog("🌙 [Cron] Running daily marketing campaigns...");
@@ -33,13 +39,16 @@ export async function GET(request: NextRequest) {
       .from("marketing_campaigns")
       .select("*")
       .eq("status", "draft")
-      .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      .gte(
+        "created_at",
+        new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      );
 
     if (fetchError) {
       console.error("Error fetching scheduled campaigns:", fetchError);
       return NextResponse.json(
         { error: "Failed to fetch campaigns" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -56,7 +65,7 @@ export async function GET(request: NextRequest) {
           keyMessages: campaign.key_messages,
           platforms: campaign.platforms,
           startDate: new Date(campaign.created_at),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         });
 
         // Update campaign with results
@@ -71,19 +80,22 @@ export async function GET(request: NextRequest) {
             metrics: crewResult.currentMetrics,
             ml_insights: crewResult.mlInsights,
             prompt_updates: crewResult.promptUpdates,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq("id", campaign.id);
 
         if (updateError) {
-          console.error(`Failed to update campaign ${campaign.id}:`, updateError);
+          console.error(
+            `Failed to update campaign ${campaign.id}:`,
+            updateError,
+          );
         } else {
           processedCount++;
           results.push({
             campaignId: campaign.id,
             status: "success",
             contentGenerated: crewResult.generatedContent.length,
-            postsScheduled: crewResult.scheduleStatus.length
+            postsScheduled: crewResult.scheduleStatus.length,
           });
         }
       } catch (error) {
@@ -91,15 +103,17 @@ export async function GET(request: NextRequest) {
         results.push({
           campaignId: campaign.id,
           status: "failed",
-          error: String(error)
+          error: String(error),
         });
       }
     }
 
-    debugLog(`✅ [Cron] Daily marketing complete: ${processedCount}/${scheduledCampaigns.length} campaigns processed`);
+    debugLog(
+      `✅ [Cron] Daily marketing complete: ${processedCount}/${scheduledCampaigns.length} campaigns processed`,
+    );
 
     // Revalidate blog page so new posts appear immediately
-    revalidatePath('/blog');
+    revalidatePath("/blog");
 
     // Run autonomous ecosystem brand-rotated campaign
     const todaysBrand = getTodaysBrand();
@@ -131,7 +145,9 @@ export async function GET(request: NextRequest) {
         contentGenerated: autoCampaign.generatedContent.length,
         postsScheduled: autoCampaign.scheduleStatus.length,
       });
-      debugLog(`✅ [Cron] Auto ${todaysBrand} campaign: ${autoCampaign.generatedContent.length} posts`);
+      debugLog(
+        `✅ [Cron] Auto ${todaysBrand} campaign: ${autoCampaign.generatedContent.length} posts`,
+      );
     } catch (autoErr) {
       debugLog(`⚠️ [Cron] Auto ${todaysBrand} campaign failed:`, autoErr);
     }
@@ -145,15 +161,15 @@ export async function GET(request: NextRequest) {
         message: "Daily marketing campaigns executed",
         processed: processedCount,
         total: scheduledCampaigns.length,
-        results
+        results,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Cron error:", error);
     return NextResponse.json(
       { error: "Cron task failed", details: String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -169,7 +185,10 @@ async function runDailyAutoImprovement() {
     const { data: recentCampaigns } = await supabase
       .from("marketing_campaigns")
       .select("*")
-      .gte("updated_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      .gte(
+        "updated_at",
+        new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      );
 
     if (!recentCampaigns || recentCampaigns.length === 0) {
       debugLog("ℹ️  No campaigns to analyze");
@@ -183,18 +202,20 @@ async function runDailyAutoImprovement() {
         impressions: (acc.impressions || 0) + (metrics.impressions || 0),
         clicks: (acc.clicks || 0) + (metrics.clicks || 0),
         conversions: (acc.conversions || 0) + (metrics.conversions || 0),
-        campaignCount: (acc.campaignCount || 0) + 1
+        campaignCount: (acc.campaignCount || 0) + 1,
       };
     }, {});
 
     // Calculate performance insights
-    const ctr = totalMetrics.impressions > 0 
-      ? ((totalMetrics.clicks / totalMetrics.impressions) * 100).toFixed(2)
-      : "N/A";
-    
-    const conversionRate = totalMetrics.clicks > 0
-      ? ((totalMetrics.conversions / totalMetrics.clicks) * 100).toFixed(2)
-      : "N/A";
+    const ctr =
+      totalMetrics.impressions > 0
+        ? ((totalMetrics.clicks / totalMetrics.impressions) * 100).toFixed(2)
+        : "N/A";
+
+    const conversionRate =
+      totalMetrics.clicks > 0
+        ? ((totalMetrics.conversions / totalMetrics.clicks) * 100).toFixed(2)
+        : "N/A";
 
     debugLog(`📊 [DailyImprovement] Metrics Summary:
       - Campaigns: ${totalMetrics.campaignCount}
@@ -215,14 +236,13 @@ async function runDailyAutoImprovement() {
         output_data: {
           ...totalMetrics,
           ctr,
-          conversionRate
-        }
+          conversionRate,
+        },
       });
 
     if (summaryError) {
       console.error("Failed to log daily summary:", summaryError);
     }
-
   } catch (error) {
     console.error("Daily improvement error:", error);
   }

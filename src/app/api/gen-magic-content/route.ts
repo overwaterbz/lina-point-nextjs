@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { generateMagicContent } from "@/lib/magicContent";
@@ -13,13 +15,13 @@ const debugLog = (...args: unknown[]) => {
 // Server-only Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 /**
  * POST /api/gen-magic-content
  * Generate personalized song/video for a reservation
- * 
+ *
  * Request body:
  * {
  *   "reservationId": "uuid",
@@ -36,21 +38,18 @@ export async function POST(request: NextRequest) {
     // Get user session
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const token = authHeader.substring(7);
 
     // Verify token and get user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Invalid token" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
     const {
@@ -66,7 +65,7 @@ export async function POST(request: NextRequest) {
     if (!reservationId || !occasion) {
       return NextResponse.json(
         { error: "Missing reservationId or occasion" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -81,7 +80,7 @@ export async function POST(request: NextRequest) {
     if (bookingError || !booking) {
       return NextResponse.json(
         { error: "Reservation not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
     if (!magicIncluded) {
       return NextResponse.json(
         { error: "Magic add-on not included in reservation" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -110,7 +109,7 @@ export async function POST(request: NextRequest) {
     if (!profile?.opt_in_magic) {
       return NextResponse.json(
         { error: "Magic agent not enabled in profile" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -118,7 +117,8 @@ export async function POST(request: NextRequest) {
     debugLog(`[API] Occasion: ${occasion}`);
 
     // Run ContentAgent
-    let contentResult: Awaited<ReturnType<typeof generateMagicContent>> | null = null;
+    let contentResult: Awaited<ReturnType<typeof generateMagicContent>> | null =
+      null;
     let runId: string | null = null;
     const runStart = Date.now();
 
@@ -142,17 +142,21 @@ export async function POST(request: NextRequest) {
         console.warn("Failed to create agent run:", logError);
       }
 
-      contentResult = await generateMagicContent(supabase as any, {
-        userId: user.id,
-        reservationId,
-        occasion,
-        musicStyle,
-        mood,
-        recipientName,
-        giftYouName,
-        message,
-        userEmail: user.email,
-      }, profile);
+      contentResult = await generateMagicContent(
+        supabase as any,
+        {
+          userId: user.id,
+          reservationId,
+          occasion,
+          musicStyle,
+          mood,
+          recipientName,
+          giftYouName,
+          message,
+          userEmail: user.email,
+        },
+        profile,
+      );
 
       if (runId) {
         try {
@@ -170,7 +174,10 @@ export async function POST(request: NextRequest) {
         try {
           await finishAgentRun(supabase as any, runId, {
             status: "failed",
-            error_message: agentError instanceof Error ? agentError.message : String(agentError),
+            error_message:
+              agentError instanceof Error
+                ? agentError.message
+                : String(agentError),
             duration_ms: Date.now() - runStart,
           });
         } catch (logError) {
@@ -182,9 +189,12 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: "Content generation failed",
-          message: agentError instanceof Error ? agentError.message : String(agentError),
+          message:
+            agentError instanceof Error
+              ? agentError.message
+              : String(agentError),
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -193,12 +203,13 @@ export async function POST(request: NextRequest) {
       items: contentResult?.items || [],
       message: "Magic content generation started",
     });
-
   } catch (error) {
     console.error("[API] Error in gen-magic-content:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 },
     );
   }
 }

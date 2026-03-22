@@ -3,13 +3,18 @@
  * Triggers MarketingAgentCrew for the specified campaign brief
  */
 
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { runMarketingCrew, type CampaignBrief } from "@/lib/agents/marketingAgentCrew";
+import {
+  runMarketingCrew,
+  type CampaignBrief,
+} from "@/lib/agents/marketingAgentCrew";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "",
 );
 
 export async function POST(request: NextRequest) {
@@ -21,8 +26,11 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.slice(7);
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -35,13 +43,16 @@ export async function POST(request: NextRequest) {
       keyMessages,
       platforms,
       startDate,
-      campaignName
+      campaignName,
     } = body;
 
     if (!objective || !targetAudience || !platforms) {
       return NextResponse.json(
-        { error: "Missing required fields: objective, targetAudience, platforms" },
-        { status: 400 }
+        {
+          error:
+            "Missing required fields: objective, targetAudience, platforms",
+        },
+        { status: 400 },
       );
     }
 
@@ -56,7 +67,7 @@ export async function POST(request: NextRequest) {
         platforms,
         status: "running",
         created_by: user.id,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -65,7 +76,7 @@ export async function POST(request: NextRequest) {
       console.error("Campaign creation error:", campaignError);
       return NextResponse.json(
         { error: "Failed to create campaign record" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -76,7 +87,7 @@ export async function POST(request: NextRequest) {
       keyMessages: keyMessages || [],
       platforms: platforms as any[],
       startDate: new Date(startDate || Date.now()),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     };
 
     // Run marketing crew (non-blocking for production)
@@ -94,7 +105,7 @@ export async function POST(request: NextRequest) {
         metrics: crewResult.currentMetrics,
         ml_insights: crewResult.mlInsights,
         prompt_updates: crewResult.promptUpdates,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq("id", campaignData.id);
 
@@ -112,16 +123,16 @@ export async function POST(request: NextRequest) {
           postsScheduled: crewResult.scheduleStatus.length,
           engagementCampaigns: crewResult.engagementCampaigns.length,
           metrics: crewResult.currentMetrics,
-          insights: crewResult.mlInsights
-        }
+          insights: crewResult.mlInsights,
+        },
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Marketing crew error:", error);
     return NextResponse.json(
       { error: "Failed to run marketing campaign", details: String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

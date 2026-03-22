@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { runContentAgent } from "@/lib/contentAgent";
 import type { MagicQuestionnaire } from "@/lib/contentAgent";
@@ -72,12 +74,13 @@ export async function GET(request: NextRequest) {
         failed: 0,
       },
     });
-
   } catch (error) {
     console.error("[Test] Error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 },
     );
   }
 }
