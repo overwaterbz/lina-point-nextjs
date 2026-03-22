@@ -11,6 +11,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const ROOM_TYPE_LABELS: Record<string, string> = {
   suite_1st_floor: "1st Floor Hotel Suite",
   suite_2nd_floor: "2nd Floor Hotel Suite",
+  cabana_duplex: "1 Bed Overwater Cabana (Duplex)",
   cabana_1br: "1BR Overwater Cabana",
   cabana_2br: "2BR Overwater Cabana",
 };
