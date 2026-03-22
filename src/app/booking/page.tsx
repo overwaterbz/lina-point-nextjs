@@ -9,6 +9,7 @@ function useDebouncedEffect(effect: () => void, deps: any[], delay: number) {
   }, [...deps, delay]);
 }
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 // import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -192,10 +193,13 @@ function SquareCardForm({
 interface BookingResult {
   success: boolean;
   beat_price: number;
+  beat_price_per_night: number;
   savings_percent: number;
+  nights: number;
   curated_package: {
     room: {
-      price: number;
+      price_per_night: number;
+      room_total: number;
       ota: string;
       url: string;
     };
@@ -205,7 +209,6 @@ interface BookingResult {
       price: number;
       duration: string;
       affiliateUrl?: string | null;
-      otaPrice?: number | null;
     }>;
     dinner: {
       name: string;
@@ -256,8 +259,18 @@ interface AvailabilityItem {
   savingsVsBase?: number;
 }
 
+// Room slug → roomType canonical key
+const SLUG_TO_ROOM_TYPE: Record<string, string> = {
+  "2nd-floor-suite": "suite_2nd_floor",
+  "1st-floor-suite": "suite_1st_floor",
+  "overwater-cabana-duplex": "cabana_duplex",
+  "overwater-cabana": "cabana_1br",
+  "2br-overwater-cabana": "cabana_2br",
+};
+
 export default function BookingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   // Booking page is public: guests can see prices and availability
@@ -296,13 +309,32 @@ export default function BookingPage() {
 
   const hasSquare = !!process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID;
 
-  // Capture UTM params on mount
+  // Capture UTM params on mount + pre-fill from URL params
   useEffect(() => {
     captureUtmParams();
+    // Pre-fill form from URL search params (e.g. from rooms page links)
+    const roomSlug = searchParams.get("room");
+    const checkIn = searchParams.get("checkIn");
+    const checkOut = searchParams.get("checkOut");
+    if (roomSlug || checkIn || checkOut) {
+      setFormData((prev) => ({
+        ...prev,
+        ...(roomSlug && SLUG_TO_ROOM_TYPE[roomSlug]
+          ? { roomType: SLUG_TO_ROOM_TYPE[roomSlug] }
+          : {}),
+        ...(checkIn ? { checkInDate: checkIn } : {}),
+        ...(checkOut ? { checkOutDate: checkOut } : {}),
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fallbackToStripe = useCallback(async () => {
     if (!result) return;
+    const finalTotal =
+      promoResult?.valid && promoResult?.discount
+        ? Math.max(0, result.curated_package.total - promoResult.discount)
+        : result.curated_package.total;
     setPaymentMode("stripe");
     try {
       const data = await fetchWithTimeout<any>(
@@ -311,7 +343,7 @@ export default function BookingPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            amount: result.curated_package.total,
+            amount: finalTotal,
             currency: "usd",
             metadata: { booking: "lina-point" },
             useStripe: true,
@@ -325,7 +357,7 @@ export default function BookingPage() {
       toast.error(err instanceof Error ? err.message : "Payment setup failed");
       setShowPayment(false);
     }
-  }, [result]);
+  }, [result, promoResult]);
 
   // Validate promo code
   const validatePromo = async () => {
@@ -968,26 +1000,42 @@ export default function BookingPage() {
             {/* Price Comparison */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-6 border-l-4 border-red-600">
-                <p className="text-gray-600 text-sm font-semibold">
-                  Original Price
-                </p>
+                <p className="text-gray-600 text-sm font-semibold">OTA Price</p>
                 <p className="text-3xl font-bold text-red-600">
-                  ${result.curated_package.room.price}
+                  ${result.curated_package.room.price_per_night}
+                  <span className="text-sm font-normal text-gray-500">
+                    /night
+                  </span>
                 </p>
-                <p className="text-xs text-gray-600 mt-2">
+                <p className="text-xs text-gray-600 mt-1">
                   {result.curated_package.room.ota}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  $
+                  {(
+                    result.curated_package.room.price_per_night * result.nights
+                  ).toFixed(0)}{" "}
+                  total for {result.nights} night
+                  {result.nights !== 1 ? "s" : ""}
                 </p>
               </div>
 
               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border-l-4 border-green-600">
                 <p className="text-gray-600 text-sm font-semibold">
-                  Beat Price
+                  Our Direct Price
                 </p>
                 <p className="text-3xl font-bold text-green-600">
-                  ${result.beat_price}
+                  ${result.beat_price_per_night}
+                  <span className="text-sm font-normal text-gray-500">
+                    /night
+                  </span>
                 </p>
-                <p className="text-xs text-gray-600 mt-2">
-                  Save {result.savings_percent}%
+                <p className="text-xs text-gray-600 mt-1">
+                  Save {result.savings_percent}% vs OTA
+                </p>
+                <p className="text-sm font-bold text-green-800 mt-1">
+                  ${result.beat_price} total for {result.nights} night
+                  {result.nights !== 1 ? "s" : ""}
                 </p>
               </div>
 
@@ -996,9 +1044,22 @@ export default function BookingPage() {
                   Total Package
                 </p>
                 <p className="text-3xl font-bold text-purple-600">
-                  ${result.curated_package.total}
+                  $
+                  {promoResult?.valid && promoResult?.discount
+                    ? Math.max(
+                        0,
+                        result.curated_package.total - promoResult.discount,
+                      ).toFixed(0)
+                    : result.curated_package.total}
                 </p>
-                <p className="text-xs text-gray-600 mt-2">All-inclusive</p>
+                {promoResult?.valid && promoResult?.discount ? (
+                  <p className="text-xs text-green-600 mt-1">
+                    Promo saves ${promoResult.discount.toFixed(2)}
+                  </p>
+                ) : null}
+                <p className="text-xs text-gray-600 mt-1">
+                  Room + tours + dinner
+                </p>
               </div>
             </div>
 
@@ -1009,11 +1070,17 @@ export default function BookingPage() {
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
                   Room Booking
                 </h3>
-                <p className="text-gray-700 mb-2">
-                  <strong>Type:</strong> {formData.roomType}
+                <p className="text-gray-700 mb-1">
+                  <strong>Type:</strong> {formData.roomType.replace(/_/g, " ")}
                 </p>
-                <p className="text-gray-700 mb-2">
-                  <strong>Price:</strong> ${result.curated_package.room.price}
+                <p className="text-gray-700 mb-1">
+                  <strong>Rate:</strong> $
+                  {result.curated_package.room.price_per_night}/night ×{" "}
+                  {result.nights} night{result.nights !== 1 ? "s" : ""}
+                </p>
+                <p className="text-gray-700 mb-1">
+                  <strong>Room Total:</strong> $
+                  {result.curated_package.room.room_total}
                 </p>
                 <p className="text-gray-700 mb-4">
                   <strong>OTA:</strong> {result.curated_package.room.ota}
@@ -1045,28 +1112,9 @@ export default function BookingPage() {
                     <div key={idx} className="bg-gray-50 rounded p-3">
                       <p className="font-semibold text-gray-900">{tour.name}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        {tour.otaPrice && tour.otaPrice > tour.price ? (
-                          <>
-                            <span className="text-sm text-red-400 line-through">
-                              ${tour.otaPrice} OTA
-                            </span>
-                            <span className="text-sm font-bold text-green-600">
-                              ${tour.price}
-                            </span>
-                            <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                              Save{" "}
-                              {Math.round(
-                                ((tour.otaPrice - tour.price) / tour.otaPrice) *
-                                  100,
-                              )}
-                              %
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-sm text-gray-600">
-                            ${tour.price}
-                          </span>
-                        )}
+                        <span className="text-sm font-bold text-green-700">
+                          ${tour.price}
+                        </span>
                         <span className="text-xs text-gray-400">
                           • {tour.duration}
                         </span>
@@ -1158,7 +1206,15 @@ export default function BookingPage() {
 
                   {paymentMode === "square" && hasSquare && (
                     <SquareCardForm
-                      amount={result.curated_package.total}
+                      amount={
+                        promoResult?.valid && promoResult?.discount
+                          ? Math.max(
+                              0,
+                              result.curated_package.total -
+                                promoResult.discount,
+                            )
+                          : result.curated_package.total
+                      }
                       metadata={{ booking: "lina-point" }}
                       onSuccess={() => {
                         setShowPayment(false);

@@ -40,10 +40,13 @@ type BookFlowRequest = z.infer<typeof BookFlowRequestSchema>;
 interface BookFlowResponse {
   success: boolean;
   beat_price: number;
+  beat_price_per_night: number;
   savings_percent: number;
+  nights: number;
   curated_package: {
     room: {
-      price: number;
+      price_per_night: number;
+      room_total: number;
       ota: string;
       url: string;
     };
@@ -53,7 +56,6 @@ interface BookFlowResponse {
       price: number;
       duration: string;
       affiliateUrl?: string | null;
-      otaPrice?: number | null;
     }>;
     dinner: {
       name: string;
@@ -91,9 +93,11 @@ export async function POST(
         {
           success: false,
           beat_price: 0,
+          beat_price_per_night: 0,
           savings_percent: 0,
+          nights: 0,
           curated_package: {
-            room: { price: 0, ota: "", url: "" },
+            room: { price_per_night: 0, room_total: 0, ota: "", url: "" },
             tours: [],
             dinner: { name: "", price: 0 },
             total: 0,
@@ -362,16 +366,23 @@ export async function POST(
       }
     }
 
-    // Calculate dining price (assume included in package or add separately)
+    // Calculate nights and dining price
+    const nights = Math.max(
+      1,
+      Math.round(
+        (new Date(body.checkOutDate).getTime() -
+          new Date(body.checkInDate).getTime()) /
+          (1000 * 60 * 60 * 24),
+      ),
+    );
     const diningTour = curatorResult.tours.find(
       (t: any) => t.type === "dining",
     );
     const diningPrice = diningTour?.price || 85;
-
+    const roomTotal =
+      Math.round(priceScoutResult.bestPrice * nights * 100) / 100;
     const packageTotal =
-      priceScoutResult.bestPrice +
-      curatorResult.totalPrice +
-      (diningTour ? 0 : diningPrice);
+      roomTotal + curatorResult.totalPrice + (diningTour ? 0 : diningPrice);
 
     // Only create reservation and send emails if user is authenticated
     let confirmationNumber: string | null = null;
@@ -456,11 +467,14 @@ export async function POST(
     // Compile response
     const response: BookFlowResponse = {
       success: true,
-      beat_price: priceScoutResult.beatPrice,
+      beat_price: Math.round(priceScoutResult.beatPrice * nights * 100) / 100,
+      beat_price_per_night: priceScoutResult.beatPrice,
       savings_percent: priceScoutResult.savingsPercent,
+      nights,
       curated_package: {
         room: {
-          price: priceScoutResult.bestPrice,
+          price_per_night: priceScoutResult.bestPrice,
+          room_total: roomTotal,
           ota: priceScoutResult.bestOTA,
           url: priceScoutResult.priceUrl,
         },
@@ -472,9 +486,6 @@ export async function POST(
             price: t.price,
             duration: t.duration,
             affiliateUrl: t.affiliateUrl || null,
-            otaPrice: t.affiliateUrl
-              ? Math.round((t.price / 0.94) * 100) / 100
-              : null,
           })),
         dinner: {
           name: diningTour?.name || "Sunset Beachfront Dinner",
@@ -509,7 +520,9 @@ export async function POST(
           check_in_date: body.checkInDate,
           check_out_date: body.checkOutDate,
           original_price: priceScoutResult.bestPrice,
+          original_price_total: roomTotal,
           beat_price: priceScoutResult.beatPrice,
+          nights,
           savings_percent: priceScoutResult.savingsPercent,
           best_ota: priceScoutResult.bestOTA,
           selected_tours: curatorResult.tours.map((t: any) => t.name),
@@ -599,9 +612,11 @@ export async function POST(
       {
         success: false,
         beat_price: 0,
+        beat_price_per_night: 0,
         savings_percent: 0,
+        nights: 0,
         curated_package: {
-          room: { price: 0, ota: "", url: "" },
+          room: { price_per_night: 0, room_total: 0, ota: "", url: "" },
           tours: [],
           dinner: { name: "", price: 0 },
           total: 0,
