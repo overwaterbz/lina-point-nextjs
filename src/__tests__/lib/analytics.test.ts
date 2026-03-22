@@ -69,15 +69,17 @@ describe("analytics", () => {
   });
 
   describe("captureUtmParams", () => {
+    afterEach(() => {
+      // Reset URL back to clean state after each test
+      history.pushState(null, "", "/");
+    });
+
     it("should store UTM params from URL in sessionStorage", () => {
-      Object.defineProperty(window, "location", {
-        value: {
-          search: "?utm_source=google&utm_medium=cpc&utm_campaign=summer",
-          pathname: "/booking",
-        },
-        writable: true,
-        configurable: true,
-      });
+      history.pushState(
+        null,
+        "",
+        "?utm_source=google&utm_medium=cpc&utm_campaign=summer",
+      );
 
       captureUtmParams();
 
@@ -92,11 +94,7 @@ describe("analytics", () => {
     });
 
     it("should not store anything when no UTM params present", () => {
-      Object.defineProperty(window, "location", {
-        value: { search: "", pathname: "/booking" },
-        writable: true,
-        configurable: true,
-      });
+      history.pushState(null, "", "/booking");
 
       captureUtmParams();
 
@@ -104,15 +102,11 @@ describe("analytics", () => {
     });
 
     it("should capture all 5 UTM params when present", () => {
-      Object.defineProperty(window, "location", {
-        value: {
-          search:
-            "?utm_source=fb&utm_medium=social&utm_campaign=winter&utm_term=resort&utm_content=ad1",
-          pathname: "/",
-        },
-        writable: true,
-        configurable: true,
-      });
+      history.pushState(
+        null,
+        "",
+        "?utm_source=fb&utm_medium=social&utm_campaign=winter&utm_term=resort&utm_content=ad1",
+      );
 
       captureUtmParams();
 

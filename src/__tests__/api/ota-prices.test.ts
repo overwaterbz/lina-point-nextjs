@@ -41,8 +41,22 @@ jest.mock("@supabase/supabase-js", () => ({
                     order: () =>
                       Promise.resolve({
                         data: [
-                          { ota_name: "Booking.com", price: 250, currency: "USD", source_url: "", source: "live", fetched_at: new Date().toISOString() },
-                          { ota_name: "Expedia", price: 240, currency: "USD", source_url: "", source: "live", fetched_at: new Date().toISOString() },
+                          {
+                            ota_name: "Booking.com",
+                            price: 250,
+                            currency: "USD",
+                            source_url: "",
+                            source: "live",
+                            fetched_at: new Date().toISOString(),
+                          },
+                          {
+                            ota_name: "Expedia",
+                            price: 240,
+                            currency: "USD",
+                            source_url: "",
+                            source: "live",
+                            fetched_at: new Date().toISOString(),
+                          },
                         ],
                       }),
                   }),
@@ -61,6 +75,22 @@ jest.mock("@supabase/supabase-js", () => ({
 // Mock OTA integration
 jest.mock("@/lib/otaIntegration", () => ({
   fetchCompetitivePrices: jest.fn().mockResolvedValue([]),
+  getFallbackPrices: jest.fn().mockReturnValue([
+    {
+      ota: "Booking.com",
+      price: 249,
+      currency: "USD",
+      url: "https://www.booking.com",
+      source: "fallback",
+    },
+    {
+      ota: "Expedia",
+      price: 259,
+      currency: "USD",
+      url: "https://www.expedia.com",
+      source: "fallback",
+    },
+  ]),
 }));
 
 describe("GET /api/ota-prices", () => {
