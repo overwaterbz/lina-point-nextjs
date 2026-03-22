@@ -20,12 +20,10 @@ export async function fetchAgodaPrice(
   roomType: string,
   checkIn: string,
   checkOut: string,
-  location: string
+  location: string,
 ): Promise<OTAPriceResult | null> {
   try {
-    console.log(
-      `🔍 Fetching Agoda price for ${roomType} in ${location}...`
-    );
+    console.log(`🔍 Fetching Agoda price for ${roomType} in ${location}...`);
 
     // Simulated price lookup based on room type and dates
     const basePrice = getPriceByRoomType(roomType);
@@ -58,12 +56,10 @@ export async function fetchExpediaPrice(
   roomType: string,
   checkIn: string,
   checkOut: string,
-  location: string
+  location: string,
 ): Promise<OTAPriceResult | null> {
   try {
-    console.log(
-      `🔍 Fetching Expedia price for ${roomType} in ${location}...`
-    );
+    console.log(`🔍 Fetching Expedia price for ${roomType} in ${location}...`);
 
     const basePrice = getPriceByRoomType(roomType);
     const seasonalMultiplier = getSeasonalMultiplier(checkIn);
@@ -95,11 +91,11 @@ export async function fetchBookingPrice(
   roomType: string,
   checkIn: string,
   checkOut: string,
-  location: string
+  location: string,
 ): Promise<OTAPriceResult | null> {
   try {
     console.log(
-      `🔍 Fetching Booking.com price for ${roomType} in ${location}...`
+      `🔍 Fetching Booking.com price for ${roomType} in ${location}...`,
     );
 
     const basePrice = getPriceByRoomType(roomType);
@@ -179,11 +175,11 @@ export async function fetchHotelsComPrice(
   roomType: string,
   checkIn: string,
   checkOut: string,
-  location: string
+  location: string,
 ): Promise<OTAPriceResult | null> {
   try {
     console.log(
-      `🔍 Fetching Hotels.com price for ${roomType} in ${location}...`
+      `🔍 Fetching Hotels.com price for ${roomType} in ${location}...`,
     );
 
     const basePrice = getPriceByRoomType(roomType);
@@ -216,12 +212,10 @@ export async function fetchKayakPrice(
   roomType: string,
   checkIn: string,
   checkOut: string,
-  location: string
+  location: string,
 ): Promise<OTAPriceResult | null> {
   try {
-    console.log(
-      `🔍 Fetching Kayak price for ${roomType} in ${location}...`
-    );
+    console.log(`🔍 Fetching Kayak price for ${roomType} in ${location}...`);
 
     const basePrice = getPriceByRoomType(roomType);
     const seasonalMultiplier = getSeasonalMultiplier(checkIn);
@@ -253,7 +247,7 @@ export async function fetchCompetitivePrices(
   roomType: string,
   checkIn: string,
   checkOut: string,
-  location: string = "Belize"
+  location: string = "Belize",
 ): Promise<OTAPriceResult[]> {
   console.log("💰 Fetching competitive prices from all OTAs...");
 
@@ -280,19 +274,18 @@ export async function fetchCompetitivePrices(
  */
 export function calculateBeatPrice(
   prices: OTAPriceResult[],
-  beatPercentage: number = 3
+  beatPercentage: number = 3,
 ): { beatPrice: number; originalPrice: number; savingsPercent: number } {
   if (prices.length === 0) {
     return { beatPrice: 0, originalPrice: 0, savingsPercent: 0 };
   }
 
-  const originalPrice =
-    Math.min(...prices.map((p) => p.price)) + 50; // Assume we have some markup
+  const originalPrice = Math.min(...prices.map((p) => p.price)) + 50; // Assume we have some markup
   const roundedPrice = Math.ceil(originalPrice * 100) / 100;
 
   // Beat by specified percentage
   const beatPrice =
-    Math.round((roundedPrice * (100 - beatPercentage)) / 100 * 100) / 100;
+    Math.round(((roundedPrice * (100 - beatPercentage)) / 100) * 100) / 100;
 
   return {
     beatPrice,
@@ -318,7 +311,49 @@ export function generateBookingUrl(
   roomType: string,
   checkIn: string,
   checkOut: string,
-  location: string = "Belize"
+  location: string = "Belize",
 ): string {
   return `https://direct-booking.example.com/book?room=${encodeURIComponent(roomType)}&checkin=${checkIn}&checkout=${checkOut}&location=${encodeURIComponent(location)}`;
+}
+
+/**
+ * Return static fallback OTA prices used when Tavily API key is unavailable.
+ */
+export function getFallbackPrices(): Array<{
+  ota: string;
+  price: number;
+  currency: string;
+  url: string;
+  source: string;
+}> {
+  return [
+    {
+      ota: "Booking.com",
+      price: 249,
+      currency: "USD",
+      url: "https://www.booking.com",
+      source: "fallback",
+    },
+    {
+      ota: "Expedia",
+      price: 259,
+      currency: "USD",
+      url: "https://www.expedia.com",
+      source: "fallback",
+    },
+    {
+      ota: "Agoda",
+      price: 239,
+      currency: "USD",
+      url: "https://www.agoda.com",
+      source: "fallback",
+    },
+    {
+      ota: "Hotels.com",
+      price: 255,
+      currency: "USD",
+      url: "https://www.hotels.com",
+      source: "fallback",
+    },
+  ];
 }
