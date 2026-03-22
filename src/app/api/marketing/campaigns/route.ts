@@ -3,12 +3,14 @@
  * Fetches marketing campaign history and metrics
  */
 
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "",
 );
 
 export async function GET(request: NextRequest) {
@@ -19,8 +21,11 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.slice(7);
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -46,7 +51,7 @@ export async function GET(request: NextRequest) {
       console.error("Campaign fetch error:", error);
       return NextResponse.json(
         { error: "Failed to fetch campaigns" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -54,15 +59,15 @@ export async function GET(request: NextRequest) {
       {
         success: true,
         total: campaigns?.length || 0,
-        campaigns: campaigns || []
+        campaigns: campaigns || [],
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Marketing campaigns error:", error);
     return NextResponse.json(
       { error: "Failed to fetch campaigns", details: String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -78,8 +83,11 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.slice(7);
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -96,7 +104,7 @@ export async function POST(request: NextRequest) {
         platforms: body.platforms || [],
         status: "draft",
         created_by: user.id,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -105,22 +113,22 @@ export async function POST(request: NextRequest) {
       console.error("Campaign creation error:", error);
       return NextResponse.json(
         { error: "Failed to create campaign" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json(
       {
         success: true,
-        campaign
+        campaign,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Campaign creation error:", error);
     return NextResponse.json(
       { error: "Failed to create campaign", details: String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchCompetitivePrices } from "@/lib/otaIntegration";
@@ -45,17 +47,49 @@ export async function GET(request: NextRequest) {
 
   // Check for Tavily API key (required for live OTA fetch)
   if (!process.env.TAVILY_API_KEY) {
-    // Fallback: Always return direct booking guarantee if API key is missing
+    // Fallback: Always return fallback OTA prices if API key is missing
+    const { getFallbackPrices } = await import("@/lib/otaIntegration");
+    const fallbackPrices = getFallbackPrices();
+    const baseRate = 199; // default base rate for fallback path
+    const lowestFallback = fallbackPrices.reduce(
+      (best, p) => (p.price < best.price ? p : best),
+      {
+        ota: "unknown",
+        price: 99999,
+        currency: "USD",
+        url: "",
+        source: "fallback",
+      },
+    );
+    const floor = Math.round(baseRate * MIN_RATE_FLOOR * 100) / 100;
+    const rawBeatPrice =
+      Math.round(lowestFallback.price * (1 - BEAT_PERCENTAGE) * 100) / 100;
+    const ourDirectPrice = Math.max(rawBeatPrice, floor);
+    const savingsAmount =
+      Math.round((lowestFallback.price - ourDirectPrice) * 100) / 100;
+    const savingsPercent =
+      lowestFallback.price > 0
+        ? Math.round((savingsAmount / lowestFallback.price) * 100 * 10) / 10
+        : 0;
     return NextResponse.json({
-      otaPrices: [],
-      lowestOTA: { ota: "unknown", price: 0 },
-      ourDirectPrice: 0,
-      baseRate: 0,
-      savingsAmount: 0,
-      savingsPercent: 0,
-      guaranteeBadge: true,
+      otaPrices: fallbackPrices.map((p) => ({
+        ota: p.ota,
+        price: p.price,
+        currency: p.currency,
+        url: p.url,
+        source: p.source,
+      })),
+      lowestOTA: {
+        ota: lowestFallback.ota,
+        price: lowestFallback.price,
+      },
+      ourDirectPrice,
+      baseRate,
+      savingsAmount,
+      savingsPercent,
+      guaranteeBadge: savingsPercent > 0,
       beatPercentage: BEAT_PERCENTAGE * 100,
-      error: "OTA price comparison unavailable: missing Tavily API key.",
+      error: "OTA price comparison unavailable: using fallback prices.",
     });
   }
 
@@ -151,17 +185,48 @@ export async function GET(request: NextRequest) {
           err instanceof Error ? err.message : err,
         );
       }
-      // Fallback: Always return direct booking guarantee if OTA fetch fails
+      // Fallback: Always return fallback OTA prices if OTA fetch fails
+      const { getFallbackPrices } = await import("@/lib/otaIntegration");
+      const fallbackPrices = getFallbackPrices();
+      const lowestFallback = fallbackPrices.reduce(
+        (best, p) => (p.price < best.price ? p : best),
+        {
+          ota: "unknown",
+          price: 99999,
+          currency: "USD",
+          url: "",
+          source: "fallback",
+        },
+      );
+      const floor = Math.round(baseRate * MIN_RATE_FLOOR * 100) / 100;
+      const rawBeatPrice =
+        Math.round(lowestFallback.price * (1 - BEAT_PERCENTAGE) * 100) / 100;
+      const ourDirectPrice = Math.max(rawBeatPrice, floor);
+      const savingsAmount =
+        Math.round((lowestFallback.price - ourDirectPrice) * 100) / 100;
+      const savingsPercent =
+        lowestFallback.price > 0
+          ? Math.round((savingsAmount / lowestFallback.price) * 100 * 10) / 10
+          : 0;
       return NextResponse.json({
-        otaPrices: [],
-        lowestOTA: { ota: "unknown", price: 0 },
-        ourDirectPrice: 0,
+        otaPrices: fallbackPrices.map((p) => ({
+          ota: p.ota,
+          price: p.price,
+          currency: p.currency,
+          url: p.url,
+          source: p.source,
+        })),
+        lowestOTA: {
+          ota: lowestFallback.ota,
+          price: lowestFallback.price,
+        },
+        ourDirectPrice,
         baseRate,
-        savingsAmount: 0,
-        savingsPercent: 0,
-        guaranteeBadge: true,
+        savingsAmount,
+        savingsPercent,
+        guaranteeBadge: savingsPercent > 0,
         beatPercentage: BEAT_PERCENTAGE * 100,
-        error: "OTA price comparison unavailable: failed to fetch OTA prices.",
+        error: "OTA price comparison unavailable: using fallback prices.",
       });
     }
   }

@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import { createBrowserSupabaseClient } from '@/lib/supabase';
-import { User, Profile, AuthError } from '@/types/supabase';
+import { useCallback, useEffect, useState } from "react";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
+import type { User, AuthError } from "@supabase/supabase-js";
+import type { Profile } from "@/shared/types/supabase";
 
 const supabase = createBrowserSupabaseClient();
 
@@ -17,15 +18,15 @@ export function useAuth() {
   const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userId)
         .single();
 
       if (error) throw error;
       setProfile(data);
     } catch (err) {
-      console.error('Error fetching profile:', err);
+      console.error("Error fetching profile:", err);
       // Profile might not exist yet, which is ok
     }
   }, []);
@@ -46,12 +47,14 @@ export function useAuth() {
         if (currentUser) {
           setUser(currentUser as unknown as User);
           // Get session for access token
-          const { data: { session } } = await supabase.auth.getSession();
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
           setToken(session?.access_token || null);
           await fetchProfile(currentUser.id);
         }
       } catch (err) {
-        console.error('Auth initialization error:', err);
+        console.error("Auth initialization error:", err);
         setError(err as AuthError);
       } finally {
         setLoading(false);
@@ -61,19 +64,19 @@ export function useAuth() {
     initAuth();
 
     // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser(session.user as unknown as User);
-          setToken(session.access_token || null);
-          await fetchProfile(session.user.id);
-        } else {
-          setUser(null);
-          setProfile(null);
-          setToken(null);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setUser(session.user as unknown as User);
+        setToken(session.access_token || null);
+        await fetchProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+        setToken(null);
       }
-    );
+    });
 
     return () => subscription?.unsubscribe();
   }, [fetchProfile]);
@@ -94,8 +97,11 @@ export function useAuth() {
           // If prefs provided on login, update profile
           if (prefs) {
             await supabase
-              .from('profiles')
-              .upsert({ user_id: data.user.id, ...prefs }, { onConflict: 'user_id' });
+              .from("profiles")
+              .upsert(
+                { user_id: data.user.id, ...prefs },
+                { onConflict: "user_id" },
+              );
           }
           await fetchProfile(data.user.id);
         }
@@ -107,11 +113,16 @@ export function useAuth() {
         return { user: null, error: authError };
       }
     },
-    [fetchProfile]
+    [fetchProfile],
   );
 
   const signUp = useCallback(
-    async (email: string, password: string, fullName?: string, prefs?: Partial<Profile>) => {
+    async (
+      email: string,
+      password: string,
+      fullName?: string,
+      prefs?: Partial<Profile>,
+    ) => {
       setError(null);
       try {
         const { data, error } = await supabase.auth.signUp({
@@ -134,7 +145,7 @@ export function useAuth() {
             ...(prefs || {}),
           };
 
-          await supabase.from('profiles').insert(profileRow);
+          await supabase.from("profiles").insert(profileRow);
 
           setUser(data.user as unknown as User);
           await fetchProfile(data.user.id);
@@ -147,7 +158,7 @@ export function useAuth() {
         return { user: null, error: authError };
       }
     },
-    [fetchProfile]
+    [fetchProfile],
   );
 
   const signOut = useCallback(async () => {
@@ -166,28 +177,31 @@ export function useAuth() {
     }
   }, []);
 
-  const updateProfile = useCallback(async (prefs: Partial<Profile>) => {
-    setError(null);
-    try {
-      if (!user) {
-        throw new Error('Not authenticated');
+  const updateProfile = useCallback(
+    async (prefs: Partial<Profile>) => {
+      setError(null);
+      try {
+        if (!user) {
+          throw new Error("Not authenticated");
+        }
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .upsert({ user_id: user.id, ...prefs }, { onConflict: "user_id" })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setProfile(data as Profile);
+        return { profile: data as Profile, error: null };
+      } catch (err) {
+        const authError = err as AuthError;
+        setError(authError);
+        return { profile: null, error: authError };
       }
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert({ user_id: user.id, ...prefs }, { onConflict: 'user_id' })
-        .select()
-        .single();
-
-      if (error) throw error;
-      setProfile(data as Profile);
-      return { profile: data as Profile, error: null };
-    } catch (err) {
-      const authError = err as AuthError;
-      setError(authError);
-      return { profile: null, error: authError };
-    }
-  }, [user]);
+    },
+    [user],
+  );
 
   return {
     user,

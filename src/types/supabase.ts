@@ -1,79 +1,26 @@
-// Auth types
-export interface UserMetadata {
-  email?: string;
-  full_name?: string;
-}
+import type { Database } from "./supabase-db";
 
-export interface User {
-  id: string;
-  email?: string;
-  user_metadata?: UserMetadata;
-  app_metadata?: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
+// Helper to derive typed row from any Database table
+export type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
 
-// Profile type
-export interface Profile {
-  id: string;
-  user_id: string;
-  full_name?: string;
-  avatar_url?: string;
-  bio?: string;
-  phone_number?: string | null;
-  role?: 'owner' | 'manager' | 'front_desk' | 'guest';
-  // Preferences
-  birthday?: string | null; // ISO date string e.g. 1990-05-14
-  anniversary?: string | null; // ISO date string
-  special_events?: Array<{ name: string; date: string }>; // custom events
-  music_style?: 'EDM' | 'Pop' | 'Ambient' | 'Maya Fusion' | string;
-  maya_interests?: string[]; // e.g. ['Ruins','Cuisine']
-  opt_in_magic?: boolean;
-  magic_profile?: string | null;
-  updated_at: string;
-  created_at: string;
-}
+// Profile — derived from the 'profiles' table definition in supabase-db
+// Extended with role for RBAC (role may exist in DB but not in generated types)
+export type Profile = Tables<"profiles"> & {
+  role?: string | null;
+};
 
-// Reservation type
+// Reservation — booking record (reservations table not yet in generated DB types)
 export interface Reservation {
   id: string;
   user_id: string;
-  title: string;
-  description?: string;
+  room_type: string;
   start_date: string;
   end_date: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  created_at: string;
-  updated_at: string;
-}
-
-// Auth context type
-export interface AuthContextType {
-  user: User | null;
-  profile: Profile | null;
-  loading: boolean;
-  signIn: (
-    email: string,
-    password: string,
-    prefs?: Partial<Profile>
-  ) => Promise<{ user: User | null; error: Error | null }>;
-  signUp: (
-    email: string,
-    password: string,
-    fullName?: string,
-    prefs?: Partial<Profile>
-  ) => Promise<{ user: User | null; error: Error | null }>;
-  updateProfile: (prefs: Partial<Profile>) => Promise<{ profile: Profile | null; error: Error | null }>;
-  signOut: () => Promise<{ error: Error | null }>;
-}
-
-// Response types for auth operations
-export interface AuthResponse {
-  user: User | null;
-  error: Error | null;
-}
-
-export interface AuthError extends Error {
-  status?: number;
-  code?: string;
+  guests?: number | null;
+  total_price?: number | null;
+  status?: string | null;
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }

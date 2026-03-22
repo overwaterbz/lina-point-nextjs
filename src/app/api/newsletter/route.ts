@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -22,27 +24,33 @@ function isRateLimited(ip: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown";
     if (isRateLimited(ip)) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     const body = await request.json();
-    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const source = typeof body.source === "string" ? body.source.slice(0, 100) : "unknown";
+    const email =
+      typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const source =
+      typeof body.source === "string" ? body.source.slice(0, 100) : "unknown";
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
-    const { error } = await supabase.from("newsletter_subscribers").upsert(
-      { email, source, status: "active" },
-      { onConflict: "email" },
-    );
+    const { error } = await supabase
+      .from("newsletter_subscribers")
+      .upsert({ email, source, status: "active" }, { onConflict: "email" });
 
     if (error) {
       console.error("Newsletter subscribe error:", error);
-      return NextResponse.json({ error: "Failed to subscribe" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to subscribe" },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({ ok: true });

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -15,7 +17,10 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase
     .from("newsletter_subscribers")
-    .update({ status: "unsubscribed", unsubscribed_at: new Date().toISOString() })
+    .update({
+      status: "unsubscribed",
+      unsubscribed_at: new Date().toISOString(),
+    })
     .eq("unsub_token", token)
     .eq("status", "active")
     .select("email")

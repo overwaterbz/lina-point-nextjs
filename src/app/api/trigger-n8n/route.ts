@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { runSelfImprovementAndPersist } from "@/lib/agents/selfImprovementAgent";
@@ -67,7 +69,9 @@ export async function POST(request: NextRequest) {
  * GET handler — health check for n8n integration
  */
 export async function GET() {
-  const configured = !!(process.env.N8N_WEBHOOK_URL || process.env.N8N_BASE_URL);
+  const configured = !!(
+    process.env.N8N_WEBHOOK_URL || process.env.N8N_BASE_URL
+  );
   return NextResponse.json({
     ok: true,
     n8n_configured: configured,

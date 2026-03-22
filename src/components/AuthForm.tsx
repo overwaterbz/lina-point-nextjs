@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { AuthError } from "@/types/supabase";
+import type { AuthError } from "@supabase/supabase-js";
 
 interface AuthFormProps {
   mode?: "login" | "signup";
