@@ -161,7 +161,7 @@ export default function StepDates({
         {[
           { icon: "🏆", text: "Best Price Guaranteed" },
           { icon: "🚫", text: "No OTA Fees" },
-          { icon: "🤖", text: "AI Curated Experiences" },
+          { icon: "🏅", text: "Loyalty Program" },
           { icon: "💬", text: "Direct Concierge" },
         ].map((b) => (
           <div
