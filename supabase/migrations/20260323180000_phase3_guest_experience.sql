@@ -91,9 +91,9 @@ ALTER TABLE reservations
   ADD COLUMN IF NOT EXISTS post_stay_memory_sent  BOOLEAN DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_reservations_welcome_prepared
-  ON reservations (welcome_prepared, check_in_date)
+  ON reservations (welcome_prepared, check_in)
   WHERE welcome_prepared = FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_reservations_post_stay_memory
-  ON reservations (post_stay_memory_sent, check_out_date)
+  ON reservations (post_stay_memory_sent, check_out)
   WHERE post_stay_memory_sent = FALSE;
