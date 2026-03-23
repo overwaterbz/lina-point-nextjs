@@ -13,6 +13,10 @@ const requiredServer = [
   "GROK_API_KEY",
   "RESEND_API_KEY",
   "TAVILY_API_KEY",
+  "CRON_SECRET",
+  "TWILIO_ACCOUNT_SID",
+  "TWILIO_AUTH_TOKEN",
+  "TWILIO_WHATSAPP_FROM",
 ] as const;
 
 const optional = [
@@ -23,12 +27,8 @@ const optional = [
   "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
   "STRIPE_WEBHOOK_SECRET",
   "SQUARE_WEBHOOK_SECRET",
-  "TWILIO_ACCOUNT_SID",
-  "TWILIO_AUTH_TOKEN",
-  "TWILIO_WHATSAPP_FROM",
   "N8N_WEBHOOK_URL",
   "N8N_WEBHOOK_SECRET",
-  "CRON_SECRET",
 ] as const;
 
 export function validateEnv(): {

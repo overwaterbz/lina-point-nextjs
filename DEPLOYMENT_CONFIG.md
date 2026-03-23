@@ -1,10 +1,12 @@
 # Deployment Configuration Guide
+
 **Date:** February 17, 2026  
 **Status:** ✅ App Live on Vercel → Environment Variables & Webhooks Setup
 
 ---
 
 ## 🚀 Current Status
+
 - **Live URL:** https://lina-point-ai-ecosystem.vercel.app
 - **Build:** ✅ Successful (33.8s)
 - **Env File:** ✅ `.env.production` configured
@@ -17,6 +19,7 @@
 **Dashboard:** https://vercel.com/rick-jennings-projects/lina-point-ai-ecosystem/settings/environment-variables
 
 ### Instructions:
+
 1. Click "Add New" for each variable
 2. Set to apply to: **Production**, **Preview**, **Development**
 3. After adding all variables, click "Deploy" to redeploy
@@ -24,6 +27,7 @@
 ### Environment Variables to Add:
 
 **PUBLIC VARIABLES** (Visible in browser):
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://seonmgpsyyzbpcsrzjxi.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlb25tZ3BzeXl6YnBjc3J6anxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE4Njk4OTgsImV4cCI6MjAzNzQ0NTg5OH0.1xHz3h9bHPHLIyR2pYPUmN-D7MZ7Z1h8C3VcL5Z5Xfc
@@ -31,6 +35,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51QXYVZKVxZL8jN0YXsP0vQ1rS2tU3vW4xY5z
 ```
 
 **SECRET VARIABLES** (Server-only):
+
 ```
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlb25tZ3BzeXl6YnBjc3J6anh1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyMTg2OTg5OCwiZXhwIjoyMDM3NDQ1ODk4fQ.q_L3W0Yr_DTzf5L8vRw-H8J-RG1YhN2H7f0VT8L7x9Y
 TWILIO_ACCOUNT_SID=AC96cc3a8fb6e67d2a9c7f9e3e8e4e3e3
@@ -42,7 +47,7 @@ STRIPE_SECRET_KEY=sk_test_51QXYVZKVxZL8jN0YXsP0vQ1rS2tU3vW4xY5zA6bB7cC8dD9eE0fF1
 STRIPE_WEBHOOK_SECRET=whsec_test_xxx
 GROK_API_KEY=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
 ADMIN_EMAILS=rick@pointenterprise.com,rick@linapoint.com
-CRON_SECRET=AwXtklQ7GqAInNxd3E1CSF4e8rBmOiuj
+CRON_SECRET=<rotate-in-vercel — generate with: openssl rand -hex 32>
 N8N_WEBHOOK_SECRET=awXtklQ7GqAInNxd3E1CSF4e8rBmOiuj
 N8N_WEBHOOK_URL=https://overwater.app.n8n.cloud/webhook/lina-magic-trigger
 ```
@@ -52,16 +57,18 @@ N8N_WEBHOOK_URL=https://overwater.app.n8n.cloud/webhook/lina-magic-trigger
 ## 🔗 STEP 2: Configure Webhooks
 
 ### A. Stripe Webhook
+
 **Location:** https://dashboard.stripe.com → Webhooks → Add endpoint
 
 - **Endpoint URL:** `https://lina-point-ai-ecosystem.vercel.app/api/stripe/webhook`
-- **Events:** 
+- **Events:**
   - `payment_intent.succeeded`
   - `payment_intent.payment_failed`
   - `charge.refunded`
 - **Save:** Copy the webhook signing secret and add to Vercel as `STRIPE_WEBHOOK_SECRET`
 
 ### B. Twilio WhatsApp Webhook
+
 **Location:** https://console.twilio.com → WhatsApp → Sandbox/Production → Settings
 
 - **Message Webhook URL:** `https://lina-point-ai-ecosystem.vercel.app/api/whatsapp-webhook`
@@ -69,7 +76,9 @@ N8N_WEBHOOK_URL=https://overwater.app.n8n.cloud/webhook/lina-magic-trigger
 - **Save**
 
 ### C. Vercel Cron (Auto-configured)
+
 ✅ Already set in `vercel.json`:
+
 - **Time:** Daily at 6:00 PM UTC
 - **Endpoint:** `https://lina-point-ai-ecosystem.vercel.app/api/cron/send-proactive-messages`
 - **Secret:** Uses `CRON_SECRET` for validation
@@ -99,6 +108,7 @@ N8N_WEBHOOK_URL=https://overwater.app.n8n.cloud/webhook/lina-magic-trigger
 ## ✅ STEP 4: Test Endpoints
 
 ### Health Check
+
 ```bash
 curl https://lina-point-ai-ecosystem.vercel.app/
 # Should return HTML with "Lina Point"
@@ -107,12 +117,14 @@ curl https://lina-point-ai-ecosystem.vercel.app/
 ### API Endpoints
 
 **Test Magic Content:**
+
 ```bash
 curl https://lina-point-ai-ecosystem.vercel.app/api/test-magic
 # Returns: { success: true, tests: [...], summary: {...} }
 ```
 
 **Test Webhook Trigger:**
+
 ```bash
 curl -X POST https://lina-point-ai-ecosystem.vercel.app/api/trigger-n8n \
   -H "x-n8n-secret: AwXtklQ7GqAInNxd3E1CSF4e8rBmOiuj" \
@@ -121,6 +133,7 @@ curl -X POST https://lina-point-ai-ecosystem.vercel.app/api/trigger-n8n \
 ```
 
 **Check Agent Runs:**
+
 ```bash
 curl https://lina-point-ai-ecosystem.vercel.app/api/check-events
 ```
@@ -128,16 +141,19 @@ curl https://lina-point-ai-ecosystem.vercel.app/api/check-events
 ### Payment Processing Test
 
 #### Square Payment Flow:
+
 1. Go to https://lina-point-ai-ecosystem.vercel.app/booking
 2. Enter test amount (e.g., $10)
 3. Use Square test card: **4111 1111 1111 1111** (exp: 12/25)
 4. Should succeed and create payment_intent
 
 #### Stripe Fallback:
+
 1. If Square fails, automatically falls back to Stripe
 2. Test card: **4242 4242 4242 4242** (exp: 12/25)
 
 ### WhatsApp Webhook Test:
+
 1. Send message to Twilio sandbox number
 2. Check Supabase `whatsapp_messages` table for received message
 3. Verify bot response is sent
@@ -147,17 +163,20 @@ curl https://lina-point-ai-ecosystem.vercel.app/api/check-events
 ## 🚨 Troubleshooting
 
 ### Build Failing
+
 - Check `.env.production` is committed (but not in git, only on Vercel)
 - Verify all required env vars are set
 - Redeploy from Vercel dashboard
 
 ### Webhooks Not Firing
+
 1. Check webhook URL is accessible: `curl https://lina-point-ai-ecosystem.vercel.app/api/[webhook-path]`
 2. Verify webhook signing secrets match
 3. Check Supabase logs for webhook processing errors
 4. Enable debug logging in `.env.production`: `DEBUG=*`
 
 ### Payment Processing Issues
+
 - Square: Check `payment_processor` field in booking_analytics table
 - Stripe: Check webhook logs in Stripe dashboard
 - Both: Check response_metadata for error details
@@ -167,15 +186,19 @@ curl https://lina-point-ai-ecosystem.vercel.app/api/check-events
 ## 📊 Monitoring
 
 ### Vercel Logs
+
 https://vercel.com/rick-jennings-projects/lina-point-ai-ecosystem/logs
 
 ### Supabase Logs
+
 https://app.supabase.com/project/seonmgpsyyzbpcsrzjxi/logs
 
 ### Stripe Logs
+
 https://dashboard.stripe.com/logs
 
 ### Twilio Logs
+
 https://console.twilio.com/develop/sms/logs
 
 ---
@@ -200,6 +223,7 @@ https://console.twilio.com/develop/sms/logs
 ## 🔄 Deployment Info
 
 **Last Deployment:**
+
 ```
 Build Time: 33.8s
 Deployment URL: https://lina-point-ai-ecosystem-47r81simr-rick-jennings-projects.vercel.app
@@ -209,4 +233,3 @@ Region: Washington, D.C. (iad1)
 ```
 
 **Commit:** `10be0b8` - Fix all TypeScript compilation errors blocking build
-

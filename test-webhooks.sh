@@ -4,7 +4,7 @@
 # Use these curl commands to test your webhooks locally before deploying
 
 API_URL="https://lina-point-ai-ecosystem.vercel.app"
-CRON_SECRET="AwXtklQ7GqAInNxd3E1CSF4e8rBmOiuj"
+CRON_SECRET="${CRON_SECRET:?Error: CRON_SECRET env var not set. Generate one with: openssl rand -hex 32}"
 N8N_SECRET="awXtklQ7GqAInNxd3E1CSF4e8rBmOiuj"
 
 echo "==================================================================="

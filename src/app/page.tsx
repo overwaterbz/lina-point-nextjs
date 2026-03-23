@@ -11,6 +11,7 @@ import RoomCarousel from "@/components/resort/RoomCarousel";
 import WhyBookDirect from "@/components/WhyBookDirect";
 import TestimonialsCarousel from "@/components/TestimonialsCarousel";
 import TrustBadges from "@/components/TrustBadges";
+import DirectBookingBanner from "@/components/DirectBookingBanner";
 
 /* ── Curated images from linapoint.com (owned content) ── */
 const IMG = {
@@ -155,6 +156,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white overflow-x-hidden">
       <Navbar />
+      <DirectBookingBanner />
 
       {/* ═══════════ HERO ═══════════ */}
       <section ref={heroRef} className="relative h-screen overflow-hidden">
@@ -625,8 +627,8 @@ export default function Home() {
                   Kyla Point
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Soulful mainland living — homes, lots &amp; resort amenities in
-                  Belize.
+                  Soulful mainland living — homes, lots &amp; resort amenities
+                  in Belize.
                 </p>
               </a>
             </FadeInCard>
