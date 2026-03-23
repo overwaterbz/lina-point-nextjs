@@ -48,9 +48,9 @@ export async function GET(request: NextRequest) {
 
   // Check for Tavily API key (required for live OTA fetch)
   if (!process.env.TAVILY_API_KEY) {
-    // Fallback: Always return fallback OTA prices if API key is missing
+    // Fallback: return room-specific fallback OTA prices when API key is missing
     const { getFallbackPrices } = await import("@/lib/otaIntegration");
-    const fallbackPrices = getFallbackPrices();
+    const fallbackPrices = getFallbackPrices(roomType);
     const baseRate = 199; // default base rate for fallback path
     const lowestFallback = fallbackPrices.reduce(
       (best, p) => (p.price < best.price ? p : best),
@@ -185,9 +185,9 @@ export async function GET(request: NextRequest) {
           err instanceof Error ? err.message : err,
         );
       }
-      // Fallback: Always return fallback OTA prices if OTA fetch fails
+      // Fallback: return room-specific fallback OTA prices if OTA fetch fails
       const { getFallbackPrices } = await import("@/lib/otaIntegration");
-      const fallbackPrices = getFallbackPrices();
+      const fallbackPrices = getFallbackPrices(roomType);
       const lowestFallback = fallbackPrices.reduce(
         (best, p) => (p.price < best.price ? p : best),
         {

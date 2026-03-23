@@ -1,0 +1,288 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import {
+  BookingResult,
+  PromoResult,
+  AvailabilityItem,
+  RoomType,
+} from "@/hooks/useBookingWizard";
+
+const OTAPriceComparison = dynamic(
+  () => import("@/components/OTAPriceComparison"),
+  {
+    loading: () => <div className="animate-pulse h-48 bg-teal-50 rounded-xl" />,
+  },
+);
+
+interface StepReviewProps {
+  packageResult: BookingResult;
+  roomType: RoomType;
+  checkInDate: string;
+  checkOutDate: string;
+  nights: number;
+  selectedRoom: AvailabilityItem | null;
+  promoCode: string;
+  promoResult: PromoResult | null;
+  promoLoading: boolean;
+  showPromo: boolean;
+  onSetPromoCode: (code: string) => void;
+  onValidatePromo: () => Promise<void>;
+  onClearPromo: () => void;
+  onSetShowPromo: (show: boolean) => void;
+  onNext: () => void;
+  onBack: () => void;
+}
+
+export default function StepReview({
+  packageResult,
+  roomType,
+  checkInDate,
+  checkOutDate,
+  nights,
+  selectedRoom,
+  promoCode,
+  promoResult,
+  promoLoading,
+  showPromo,
+  onSetPromoCode,
+  onValidatePromo,
+  onClearPromo,
+  onSetShowPromo,
+  onNext,
+  onBack,
+}: StepReviewProps) {
+  const finalTotal =
+    promoResult?.valid && promoResult?.discount
+      ? Math.max(0, packageResult.curated_package.total - promoResult.discount)
+      : packageResult.curated_package.total;
+
+  const remaining = selectedRoom?.availableRooms ?? null;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">
+            Review Your Package
+          </h2>
+          <p className="text-gray-500 text-sm">
+            Confirm your perfect Belize getaway before checkout.
+          </p>
+        </div>
+        <button
+          onClick={onBack}
+          className="shrink-0 text-sm text-teal-600 hover:text-teal-800 font-semibold mt-1"
+        >
+          ← Back
+        </button>
+      </div>
+
+      {/* Urgency signal */}
+      {remaining !== null && remaining <= 3 && remaining > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-amber-800 font-medium">
+          ⚠️ Only {remaining} room{remaining !== 1 ? "s" : ""} left at this
+          price — secure yours now
+        </div>
+      )}
+
+      {/* Price summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-red-50 border-l-4 border-red-500 rounded-xl p-4">
+          <p className="text-xs font-semibold text-gray-500 mb-1">OTA Price</p>
+          <p className="text-2xl font-bold text-red-600">
+            ${packageResult.curated_package.room.price_per_night}{" "}
+            <span className="text-sm font-normal text-gray-400">USD/night</span>
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {packageResult.curated_package.room.ota}
+          </p>
+        </div>
+        <div className="bg-green-50 border-l-4 border-green-500 rounded-xl p-4">
+          <p className="text-xs font-semibold text-gray-500 mb-1">
+            Your Direct Price
+          </p>
+          <p className="text-2xl font-bold text-green-600">
+            ${packageResult.beat_price_per_night}{" "}
+            <span className="text-sm font-normal text-gray-400">USD/night</span>
+          </p>
+          <p className="text-xs text-green-700 font-medium mt-1">
+            Save {packageResult.savings_percent}% vs OTA
+          </p>
+        </div>
+        <div className="bg-purple-50 border-l-4 border-purple-500 rounded-xl p-4">
+          <p className="text-xs font-semibold text-gray-500 mb-1">
+            Total Package
+          </p>
+          <p className="text-2xl font-bold text-purple-600">
+            ${finalTotal}{" "}
+            <span className="text-sm font-normal text-gray-400">USD</span>
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Room + tours + dinner</p>
+        </div>
+      </div>
+
+      {/* OTA price comparison widget */}
+      <OTAPriceComparison
+        roomType={roomType}
+        checkIn={checkInDate}
+        checkOut={checkOutDate}
+        nights={nights}
+      />
+
+      {/* Package breakdown */}
+      <div className="border border-gray-200 rounded-xl overflow-hidden">
+        <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
+          <h3 className="font-bold text-gray-900 text-sm">Package Breakdown</h3>
+        </div>
+        <div className="divide-y divide-gray-100">
+          <div className="flex items-center justify-between px-5 py-3">
+            <div>
+              <p className="font-medium text-gray-900 text-sm">
+                {roomType.replace(/_/g, " ")} × {nights} night
+                {nights !== 1 ? "s" : ""}
+              </p>
+              <p className="text-xs text-gray-400">
+                {packageResult.curated_package.room.ota}
+              </p>
+            </div>
+            <span className="font-semibold text-gray-900 text-sm">
+              ${packageResult.curated_package.room.room_total}
+            </span>
+          </div>
+          {packageResult.curated_package.tours.map((tour, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between px-5 py-3"
+            >
+              <div>
+                <p className="font-medium text-gray-900 text-sm">{tour.name}</p>
+                <p className="text-xs text-gray-400">{tour.duration}</p>
+              </div>
+              <span className="font-semibold text-gray-900 text-sm">
+                ${tour.price}
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between px-5 py-3">
+            <p className="font-medium text-gray-900 text-sm">
+              {packageResult.curated_package.dinner.name}
+            </p>
+            <span className="font-semibold text-gray-900 text-sm">
+              ${packageResult.curated_package.dinner.price}
+            </span>
+          </div>
+          {promoResult?.valid && promoResult?.discount && (
+            <div className="flex items-center justify-between px-5 py-3 bg-green-50">
+              <p className="font-medium text-green-700 text-sm">
+                Promo: {promoResult.description}
+              </p>
+              <span className="font-semibold text-green-700 text-sm">
+                −${promoResult.discount.toFixed(2)}
+              </span>
+            </div>
+          )}
+          <div className="flex items-center justify-between px-5 py-4 bg-gray-50 font-bold">
+            <p className="text-gray-900">Total</p>
+            <span className="text-gray-900 text-lg">
+              ${finalTotal}{" "}
+              <span className="text-sm font-normal text-gray-400">USD</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* AI recommendations */}
+      {packageResult.recommendations.length > 0 && (
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+          <h3 className="font-bold text-gray-900 text-sm mb-3">
+            🤖 AI Recommendations
+          </h3>
+          <ul className="space-y-1.5">
+            {packageResult.recommendations.map((rec, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm text-gray-700"
+              >
+                <span className="text-blue-500 font-bold mt-0.5">✓</span>
+                {rec}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Promo code */}
+      <div>
+        {!showPromo ? (
+          <button
+            type="button"
+            onClick={() => onSetShowPromo(true)}
+            className="text-sm text-teal-600 hover:text-teal-800 font-medium"
+          >
+            Have a promo code? →
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => onSetPromoCode(e.target.value.toUpperCase())}
+              placeholder="Enter promo code"
+              className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
+            <button
+              type="button"
+              onClick={onValidatePromo}
+              disabled={promoLoading || !promoCode.trim()}
+              className="px-5 py-2.5 bg-teal-600 text-white text-sm rounded-xl font-medium hover:bg-teal-700 disabled:bg-gray-300 transition-colors"
+            >
+              {promoLoading ? "…" : "Apply"}
+            </button>
+          </div>
+        )}
+        {promoResult?.valid && (
+          <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-green-800">
+              {promoResult.description} (−${promoResult.discount?.toFixed(2)})
+            </p>
+            <button
+              type="button"
+              onClick={onClearPromo}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              Remove
+            </button>
+          </div>
+        )}
+        {promoResult && !promoResult.valid && (
+          <p className="mt-1 text-xs text-red-500">{promoResult.error}</p>
+        )}
+      </div>
+
+      {/* Trust badges */}
+      <div className="grid grid-cols-3 gap-3 text-center">
+        {[
+          { icon: "🔒", text: "Secure Payment" },
+          { icon: "💰", text: "Price Match Guarantee" },
+          { icon: "✅", text: "Instant Confirmation" },
+        ].map((badge) => (
+          <div key={badge.text} className="bg-gray-50 rounded-xl py-3 px-2">
+            <div className="text-2xl mb-1">{badge.icon}</div>
+            <p className="text-xs font-medium text-gray-600">{badge.text}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* CTA */}
+      <button
+        type="button"
+        onClick={onNext}
+        className="w-full py-4 bg-teal-600 text-white text-lg font-bold rounded-xl hover:bg-teal-700 transition-all shadow-lg"
+      >
+        Continue to Checkout →
+      </button>
+    </div>
+  );
+}

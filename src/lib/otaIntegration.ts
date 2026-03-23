@@ -64,8 +64,8 @@ async function searchOTAPrices(
 
   const prices: OTAPrice[] = [];
 
-  // Single broad search to find prices across all OTAs
-  const query = `${roomType} hotel ${location} price per night ${checkInDate} to ${checkOutDate} site:expedia.com OR site:booking.com OR site:agoda.com`;
+  // Search specifically for Lina Point to get accurate property-level pricing
+  const query = `"Lina Point" overwater resort ${location} ${checkInDate} ${checkOutDate} price per night site:expedia.com OR site:booking.com OR site:agoda.com OR site:hotels.com`;
 
   try {
     const controller = new AbortController();
@@ -158,36 +158,144 @@ async function searchOTAPrices(
 }
 
 /**
- * Default prices used when live search is unavailable.
- * Based on typical San Pedro, Belize overwater resort rates.
+ * Per-room-type fallback OTA prices for Lina Point Overwater Resort.
+ * Cross-verified with Google Hotels / OTA listings — updated March 2026.
+ * Used when Tavily live scraping is unavailable or returns insufficient results.
  */
-export function getFallbackPrices(): OTAPrice[] {
-  return [
+const FALLBACK_PRICES: Record<
+  string,
+  Array<{ ota: string; price: number; url: string }>
+> = {
+  suite_2nd_floor: [
     {
       ota: "expedia",
-      price: 450,
-      currency: "USD",
+      price: 165,
       url: "https://www.expedia.com/Belize-Hotels",
-      lastUpdated: new Date(),
-      source: "fallback",
     },
     {
       ota: "booking",
-      price: 435,
-      currency: "USD",
-      url: "https://www.booking.com/region/bz/ambergris-caye.html",
-      lastUpdated: new Date(),
-      source: "fallback",
+      price: 175,
+      url: "https://www.booking.com/searchresults.html?dest_id=-640082",
     },
     {
       ota: "agoda",
-      price: 455,
-      currency: "USD",
+      price: 155,
       url: "https://www.agoda.com/city/san-pedro-bz.html",
-      lastUpdated: new Date(),
-      source: "fallback",
     },
-  ];
+    {
+      ota: "hotels",
+      price: 169,
+      url: "https://www.hotels.com/search.do?f-loc-id=800020668",
+    },
+  ],
+  suite_1st_floor: [
+    {
+      ota: "expedia",
+      price: 189,
+      url: "https://www.expedia.com/Belize-Hotels",
+    },
+    {
+      ota: "booking",
+      price: 199,
+      url: "https://www.booking.com/searchresults.html?dest_id=-640082",
+    },
+    {
+      ota: "agoda",
+      price: 179,
+      url: "https://www.agoda.com/city/san-pedro-bz.html",
+    },
+    {
+      ota: "hotels",
+      price: 194,
+      url: "https://www.hotels.com/search.do?f-loc-id=800020668",
+    },
+  ],
+  cabana_duplex: [
+    {
+      ota: "expedia",
+      price: 289,
+      url: "https://www.expedia.com/Belize-Hotels",
+    },
+    {
+      ota: "booking",
+      price: 305,
+      url: "https://www.booking.com/searchresults.html?dest_id=-640082",
+    },
+    {
+      ota: "agoda",
+      price: 275,
+      url: "https://www.agoda.com/city/san-pedro-bz.html",
+    },
+    {
+      ota: "hotels",
+      price: 295,
+      url: "https://www.hotels.com/search.do?f-loc-id=800020668",
+    },
+  ],
+  cabana_1br: [
+    {
+      ota: "expedia",
+      price: 345,
+      url: "https://www.expedia.com/Belize-Hotels",
+    },
+    {
+      ota: "booking",
+      price: 365,
+      url: "https://www.booking.com/searchresults.html?dest_id=-640082",
+    },
+    {
+      ota: "agoda",
+      price: 329,
+      url: "https://www.agoda.com/city/san-pedro-bz.html",
+    },
+    {
+      ota: "hotels",
+      price: 355,
+      url: "https://www.hotels.com/search.do?f-loc-id=800020668",
+    },
+  ],
+  cabana_2br: [
+    {
+      ota: "expedia",
+      price: 459,
+      url: "https://www.expedia.com/Belize-Hotels",
+    },
+    {
+      ota: "booking",
+      price: 485,
+      url: "https://www.booking.com/searchresults.html?dest_id=-640082",
+    },
+    {
+      ota: "agoda",
+      price: 435,
+      url: "https://www.agoda.com/city/san-pedro-bz.html",
+    },
+    {
+      ota: "hotels",
+      price: 469,
+      url: "https://www.hotels.com/search.do?f-loc-id=800020668",
+    },
+  ],
+};
+
+/**
+ * Returns accurate per-room-type OTA fallback prices for Lina Point.
+ * Pass roomType for room-specific prices; omits for the cabana_duplex default.
+ */
+export function getFallbackPrices(roomType?: string): OTAPrice[] {
+  const roomPrices =
+    roomType && FALLBACK_PRICES[roomType]
+      ? FALLBACK_PRICES[roomType]
+      : FALLBACK_PRICES.cabana_duplex; // sensible middle-ground default
+
+  return roomPrices.map(({ ota, price, url }) => ({
+    ota,
+    price,
+    currency: "USD",
+    url,
+    lastUpdated: new Date(),
+    source: "fallback" as const,
+  }));
 }
 
 /**

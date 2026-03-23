@@ -8,6 +8,13 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
+  async redirects() {
+    return [
+      { source: '/book', destination: '/booking', permanent: true },
+      { source: '/reserve', destination: '/booking', permanent: true },
+      { source: '/reservations', destination: '/booking', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {
