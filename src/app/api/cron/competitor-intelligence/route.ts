@@ -11,6 +11,11 @@ import { createClient } from "@supabase/supabase-js";
 import { verifyCronSecret } from "@/lib/cronAuth";
 import { runCompetitorIntelligenceAgent } from "@/lib/agents/competitorIntelligenceAgent";
 
+const isProd = process.env.NODE_ENV === "production";
+const debugLog = (...args: unknown[]) => {
+  if (!isProd) console.log(...args);
+};
+
 export async function GET(request: NextRequest) {
   const denied = verifyCronSecret(request.headers.get("authorization"));
   if (denied) return denied;
@@ -22,9 +27,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const patterns = await runCompetitorIntelligenceAgent(supabase);
-    console.log(
-      `[CompetitorIntelligence] Detected ${patterns.length} patterns`,
-    );
+    debugLog(`[CompetitorIntelligence] Detected ${patterns.length} patterns`);
     return NextResponse.json({ success: true, patterns: patterns.length });
   } catch (err) {
     console.error("[CompetitorIntelligence] Error:", err);

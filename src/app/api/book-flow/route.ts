@@ -25,6 +25,8 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
+import { checkRateLimit, rateLimitKey } from "@/lib/rateLimit";
+
 const BookFlowRequestSchema = z.object({
   roomType: z.string().min(2).max(64),
   checkInDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -76,6 +78,9 @@ interface BookFlowResponse {
 export async function POST(
   request: NextRequest,
 ): Promise<NextResponse<BookFlowResponse>> {
+  const limited = checkRateLimit(rateLimitKey(request), 15); // 15 booking attempts/min per IP
+  if (limited) return limited as NextResponse<BookFlowResponse>;
+
   try {
     // Get user session
     const supabase = await createServerSupabaseClient();

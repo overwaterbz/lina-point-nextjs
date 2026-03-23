@@ -209,6 +209,7 @@ export function useAuth() {
     loading,
     error,
     token,
+    emailVerified: user ? !!user.email_confirmed_at : false,
     signIn,
     signUp,
     signOut,

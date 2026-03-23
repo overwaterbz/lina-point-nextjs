@@ -12,6 +12,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyCronSecret } from "@/lib/cronAuth";
 
+const isProd = process.env.NODE_ENV === "production";
+const debugLog = (...args: unknown[]) => {
+  if (!isProd) console.log(...args);
+};
+
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret
@@ -130,7 +135,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(
+    debugLog(
       `[RevenueSnapshot] ${today}: ${totalReservations} reservations, $${totalRoomRevenue} room rev, ${occupancyPct}% occupancy`,
     );
 

@@ -2,8 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkRateLimit, rateLimitKey } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  const limited = checkRateLimit(rateLimitKey(request), 100); // 100 error-logs/min per IP
+  if (limited) return limited;
+
   const { context, error, userAgent, url, timestamp } = await request.json();
 
   try {

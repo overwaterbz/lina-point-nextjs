@@ -17,6 +17,12 @@ const NAV_SECTIONS = [
       { href: "/admin/group-bookings", label: "Group Bookings", icon: "🎉" },
       { href: "/admin/tours", label: "Tours", icon: "🌊" },
       { href: "/admin/housekeeping", label: "Housekeeping", icon: "🧹" },
+      {
+        href: "/admin/incidents",
+        label: "Incidents",
+        icon: "🔴",
+        minRole: "front_desk" as const,
+      },
     ],
   },
   {
@@ -44,10 +50,27 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    title: "Settings",
+    items: [
+      {
+        href: "/admin/settings/refund-policy",
+        label: "Refund Policy",
+        icon: "💵",
+        minRole: "manager" as const,
+      },
+    ],
+  },
+  {
     title: "System",
     items: [
       { href: "/admin/ai-monitor", label: "AI Monitor", icon: "🤖" },
       { href: "/admin/notifications", label: "Notifications", icon: "🔔" },
+      {
+        href: "/admin/system/cron-status",
+        label: "Cron Status",
+        icon: "⏱️",
+        minRole: "manager" as const,
+      },
       { href: "/admin/ecosystem", label: "Ecosystem", icon: "🌐" },
     ],
   },
@@ -67,7 +90,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, emailVerified } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -257,6 +280,22 @@ export default function AdminLayout({
             </div>
           </div>
         </header>
+
+        {/* Email verification banner */}
+        {user && !emailVerified && (
+          <div className="bg-amber-50 border-b border-amber-200 px-4 lg:px-6 py-2 flex items-center justify-between text-xs text-amber-800">
+            <span>
+              ⚠️ Your email address is not verified. Some features may be
+              limited.
+            </span>
+            <a
+              href={`mailto:${user.email}`}
+              className="font-medium underline hover:text-amber-900 ml-4"
+            >
+              Check inbox for verification link
+            </a>
+          </div>
+        )}
 
         {/* Page content */}
         <main className="flex-1 p-4 lg:p-6">{children}</main>
