@@ -60,6 +60,27 @@ jest.mock("@/lib/emailTemplates", () => ({
   adminNotificationHtml: jest.fn(() => "<html>admin</html>"),
 }));
 
+jest.mock("@/lib/otaIntegration", () => ({
+  getFallbackPrices: jest.fn(() => [
+    {
+      ota: "agoda",
+      price: 275,
+      currency: "USD",
+      url: "https://agoda.com",
+      lastUpdated: new Date(),
+      source: "fallback",
+    },
+    {
+      ota: "expedia",
+      price: 289,
+      currency: "USD",
+      url: "https://expedia.com",
+      lastUpdated: new Date(),
+      source: "fallback",
+    },
+  ]),
+}));
+
 import { POST } from "@/app/api/book-flow/route";
 import { NextRequest } from "next/server";
 
@@ -82,22 +103,18 @@ function setupHappyPath() {
       return {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
-            single: jest
-              .fn()
-              .mockResolvedValue({
-                data: { interests: ["snorkeling"], activity_level: "medium" },
-                error: null,
-              }),
-            maybeSingle: jest
-              .fn()
-              .mockResolvedValue({
-                data: {
-                  interests: ["snorkeling"],
-                  activity_level: "medium",
-                  opt_in_magic: true,
-                },
-                error: null,
-              }),
+            single: jest.fn().mockResolvedValue({
+              data: { interests: ["snorkeling"], activity_level: "medium" },
+              error: null,
+            }),
+            maybeSingle: jest.fn().mockResolvedValue({
+              data: {
+                interests: ["snorkeling"],
+                activity_level: "medium",
+                opt_in_magic: true,
+              },
+              error: null,
+            }),
           }),
         }),
       };
@@ -110,12 +127,10 @@ function setupHappyPath() {
     if (table === "tour_bookings") {
       return {
         insert: jest.fn().mockReturnValue({
-          select: jest
-            .fn()
-            .mockResolvedValue({
-              data: [{ id: "tb-1" }, { id: "tb-2" }],
-              error: null,
-            }),
+          select: jest.fn().mockResolvedValue({
+            data: [{ id: "tb-1" }, { id: "tb-2" }],
+            error: null,
+          }),
         }),
       };
     }
@@ -126,11 +141,9 @@ function setupHappyPath() {
     }
     return {
       select: jest.fn(),
-      insert: jest
-        .fn()
-        .mockReturnValue({
-          select: jest.fn().mockResolvedValue({ data: [], error: null }),
-        }),
+      insert: jest.fn().mockReturnValue({
+        select: jest.fn().mockResolvedValue({ data: [], error: null }),
+      }),
     };
   });
 
