@@ -90,7 +90,6 @@ export async function GET(request: NextRequest) {
       savingsPercent,
       guaranteeBadge: savingsPercent > 0,
       beatPercentage: BEAT_PERCENTAGE * 100,
-      error: "OTA price comparison unavailable: using fallback prices.",
     });
   }
 
@@ -227,7 +226,6 @@ export async function GET(request: NextRequest) {
         savingsPercent,
         guaranteeBadge: savingsPercent > 0,
         beatPercentage: BEAT_PERCENTAGE * 100,
-        error: "OTA price comparison unavailable: using fallback prices.",
       });
     }
   }
