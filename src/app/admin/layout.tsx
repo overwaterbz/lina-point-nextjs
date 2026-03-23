@@ -14,6 +14,7 @@ const NAV_SECTIONS = [
       { href: "/admin/calendar", label: "Calendar", icon: "🗓️" },
       { href: "/admin/rooms", label: "Rooms", icon: "🏨" },
       { href: "/admin/guests", label: "Guests", icon: "👥" },
+      { href: "/admin/group-bookings", label: "Group Bookings", icon: "🎉" },
       { href: "/admin/tours", label: "Tours", icon: "🌊" },
       { href: "/admin/housekeeping", label: "Housekeeping", icon: "🧹" },
     ],
@@ -29,6 +30,7 @@ const NAV_SECTIONS = [
         minRole: "manager" as const,
       },
       { href: "/admin/ota-commission", label: "OTA Channels", icon: "📡" },
+      { href: "/admin/invoices", label: "Invoices", icon: "🧾" },
     ],
   },
   {
