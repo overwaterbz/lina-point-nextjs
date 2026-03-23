@@ -4,6 +4,10 @@ import toast from "react-hot-toast";
 import { trackEvent, getUtmParams } from "@/lib/analytics";
 import { logClientError } from "@/lib/logClientError";
 
+// A/B session IDs — stored in sessionStorage so they persist across wizard steps
+const AB_SESSION_KEY = "funnel_session_id";
+const AB_VARIANT_KEY = "funnel_variant";
+
 // ---- Shared types ----
 
 export type RoomType =
@@ -173,6 +177,54 @@ export function useBookingWizard(initialData?: {
   const [showPayment, setShowPayment] = useState(false);
   const [paymentMode, setPaymentMode] = useState<"square" | "stripe">("square");
   const [squareSdkReady, setSquareSdkReady] = useState(false);
+
+  // A/B testing — session ID and variant assigned on mount, persisted in sessionStorage
+  const [abVariant, setAbVariant] = useState<"A" | "B">("A");
+  const [funnelSessionId, setFunnelSessionId] = useState("");
+
+  // Ref snapshot for use inside callbacks without re-render loops
+  const abVariantRef = useRef<"A" | "B">("A");
+  const funnelSessionIdRef = useRef("");
+
+  // Initialize A/B variant + session on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let sid = sessionStorage.getItem(AB_SESSION_KEY);
+    if (!sid) {
+      sid =
+        typeof crypto !== "undefined"
+          ? crypto.randomUUID()
+          : String(Date.now());
+      sessionStorage.setItem(AB_SESSION_KEY, sid);
+    }
+    let v = sessionStorage.getItem(AB_VARIANT_KEY) as "A" | "B" | null;
+    if (!v) {
+      v = Math.random() < 0.5 ? "A" : "B";
+      sessionStorage.setItem(AB_VARIANT_KEY, v);
+    }
+    setFunnelSessionId(sid);
+    setAbVariant(v);
+    funnelSessionIdRef.current = sid;
+    abVariantRef.current = v;
+  }, []);
+
+  // Track funnel step advancement
+  useEffect(() => {
+    const sid = funnelSessionIdRef.current;
+    if (!sid || step < 1) return;
+    fetch("/api/analytics/funnel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: sid,
+        variant: abVariantRef.current,
+        stepReached: step,
+        roomType: roomType || null,
+        checkIn: checkInDate || null,
+      }),
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   // Derived
   const nights = useMemo(() => {
@@ -449,6 +501,20 @@ export function useBookingWizard(initialData?: {
         payment_method: method,
         ...getUtmParams(),
       });
+      // Record A/B conversion
+      const sid = funnelSessionIdRef.current;
+      if (sid) {
+        fetch("/api/analytics/funnel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: sid,
+            variant: abVariantRef.current,
+            stepReached: 6,
+            converted: true,
+          }),
+        }).catch(() => {});
+      }
       if (packageResult.confirmationNumber) {
         router.push(
           `/booking/confirmation/${packageResult.confirmationNumber}`,
@@ -514,6 +580,9 @@ export function useBookingWizard(initialData?: {
     setBundleSelected,
     // Guest mode
     guestMode,
+    // A/B testing
+    abVariant,
+    funnelSessionId,
     // Actions
     nextStep,
     prevStep,
