@@ -1,8 +1,13 @@
-import fetch, { RequestInit, Response } from "node-fetch";
+import fetch, { RequestInit } from "node-fetch";
 import AbortController from "abort-controller";
 /**
- * OTA Integration Module — Real price scraping via Tavily Search API
- * Falls back to cached/default prices when API is unavailable
+ * OTA Integration Module — Real-time prices via SerpAPI Google Hotels
+ * Falls back to Tavily text search, then hardcoded prices when APIs are unavailable.
+ *
+ * Data flow:
+ *   1. SerpAPI Google Hotels → structured JSON, same source guests see on Google
+ *   2. Tavily web search → text scraping fallback (less reliable)
+ *   3. FALLBACK_PRICES → hardcoded estimates (cross-verified March 2026)
  */
 
 export interface OTAPrice {
@@ -19,7 +24,6 @@ const debugLog = (...args: unknown[]) => {
   if (!isProd) {
     console.log(...args);
   } else {
-    // In production, escalate to error log for critical OTA issues
     if (
       args.length > 0 &&
       typeof args[0] === "string" &&
@@ -30,31 +34,137 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
+const SERPAPI_KEY = process.env.SERPAPI_KEY || "";
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY || "";
 
-// Cache to avoid hitting API repeatedly for the same query
+// In-process cache to avoid hitting API repeatedly for the same query
 const priceCache = new Map<string, { prices: OTAPrice[]; cachedAt: number }>();
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
- * Search OTA sites for real hotel prices using Tavily web search.
- * Tavily returns structured results from live web pages.
+ * Maps Google Hotels / OTA source display names → our internal OTA keys.
  */
-async function searchOTAPrices(
-  roomType: string,
+const SOURCE_NAME_MAP: Record<string, string> = {
+  expedia: "expedia",
+  "booking.com": "booking",
+  agoda: "agoda",
+  "hotels.com": "hotels",
+  airbnb: "airbnb",
+  hostelworld: "hostelworld",
+  tripadvisor: "tripadvisor",
+};
+
+function normaliseOTAName(source: string): string | null {
+  const lower = source.toLowerCase();
+  for (const [key, value] of Object.entries(SOURCE_NAME_MAP)) {
+    if (lower.includes(key)) return value;
+  }
+  return null;
+}
+
+/**
+ * Fetch real-time OTA prices from SerpAPI's Google Hotels endpoint.
+ * Returns structured nightly rates for Lina Point from the same data
+ * Google shows travellers when they compare prices.
+ */
+async function searchViaSerp(
   checkInDate: string,
   checkOutDate: string,
-  location: string,
 ): Promise<OTAPrice[]> {
-  if (!TAVILY_API_KEY) {
-    debugLog("[OTA] No TAVILY_API_KEY set, using fallback prices");
+  if (!SERPAPI_KEY) {
+    debugLog("[OTA] No SERPAPI_KEY set, skipping SerpAPI");
+    return [];
+  }
+
+  const params = new URLSearchParams({
+    engine: "google_hotels",
+    q: "Lina Point Overwater Resort Belize",
+    check_in_date: checkInDate,
+    check_out_date: checkOutDate,
+    currency: "USD",
+    adults: "2",
+    api_key: SERPAPI_KEY,
+  });
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(
+      `https://serpapi.com/search.json?${params.toString()}`,
+      { signal: controller.signal } as RequestInit,
+    );
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      debugLog(`[OTA] SerpAPI returned ${response.status}`);
+      return [];
+    }
+
+    const data = (await response.json()) as {
+      properties?: Array<{
+        name: string;
+        prices?: Array<{
+          source: string;
+          link?: string;
+          rate_per_night?: { extracted_lowest?: number };
+        }>;
+      }>;
+    };
+
+    // Find the Lina Point property in results
+    const property = (data.properties || []).find((p) =>
+      p.name.toLowerCase().includes("lina point"),
+    );
+
+    if (!property?.prices?.length) {
+      debugLog("[OTA] SerpAPI: Lina Point not found in results");
+      return [];
+    }
+
+    const prices: OTAPrice[] = [];
+    for (const entry of property.prices) {
+      const otaKey = normaliseOTAName(entry.source);
+      if (!otaKey) continue;
+      const nightly = entry.rate_per_night?.extracted_lowest;
+      if (!nightly || nightly < 50 || nightly > 5000) continue;
+
+      prices.push({
+        ota: otaKey,
+        price: Math.round(nightly),
+        currency: "USD",
+        url: entry.link || "",
+        lastUpdated: new Date(),
+        source: "live",
+      });
+    }
+
+    debugLog(`[OTA] SerpAPI: found ${prices.length} prices for Lina Point`);
+    return prices;
+  } catch (err) {
+    debugLog(
+      "[OTA] SerpAPI request failed:",
+      err instanceof Error ? err.message : err,
+    );
     if (isProd) {
       console.error(
-        "[OTA] No TAVILY_API_KEY set in production environment! OTA price comparison will not work.",
+        "[OTA] SerpAPI failed in production:",
+        err instanceof Error ? err.message : err,
       );
     }
     return [];
   }
+}
+
+/**
+ * Fallback: Tavily web search price extraction.
+ * Used when SerpAPI is unavailable. Returns fewer results and less reliably.
+ */
+async function searchViaTavily(
+  checkInDate: string,
+  checkOutDate: string,
+  location: string,
+): Promise<OTAPrice[]> {
+  if (!TAVILY_API_KEY) return [];
 
   const otas = [
     { name: "expedia", domain: "expedia.com" },
@@ -65,9 +175,6 @@ async function searchOTAPrices(
     { name: "hostelworld", domain: "hostelworld.com" },
   ];
 
-  const prices: OTAPrice[] = [];
-
-  // Search specifically for Lina Point to get accurate property-level pricing
   const query = `"Lina Point" overwater resort ${location} ${checkInDate} ${checkOutDate} price per night site:expedia.com OR site:booking.com OR site:agoda.com OR site:hotels.com OR site:airbnb.com OR site:hostelworld.com`;
 
   try {
@@ -89,36 +196,22 @@ async function searchOTAPrices(
     } as RequestInit);
     clearTimeout(timeout);
 
-    if (!response.ok) {
-      debugLog(`[OTA] Tavily API returned ${response.status}`);
-      if (isProd) {
-        console.error(
-          `[OTA] Tavily API returned status ${response.status} in production.`,
-        );
-      }
-      return [];
-    }
+    if (!response.ok) return [];
 
     const data = (await response.json()) as {
-      results?: Array<{ url: string; content: string; title: string }>;
-      answer?: string;
+      results?: Array<{ url: string; content: string }>;
     };
-    const results: Array<{ url: string; content: string; title: string }> =
-      data.results || [];
+    const results = data.results || [];
+    const prices: OTAPrice[] = [];
 
     for (const result of results) {
-      // Extract price from result content — look for dollar amounts
+      const matchedOta = otas.find((o) => result.url.includes(o.domain));
+      if (!matchedOta || prices.some((p) => p.ota === matchedOta.name))
+        continue;
+
       const priceMatches = result.content.match(/\$\s?(\d{2,4}(?:\.\d{2})?)/g);
-      if (!priceMatches || priceMatches.length === 0) continue;
+      if (!priceMatches) continue;
 
-      // Find which OTA this result belongs to
-      const matchedOta = otas.find((ota) => result.url.includes(ota.domain));
-      if (!matchedOta) continue;
-
-      // Already have a price for this OTA? Skip duplicates
-      if (prices.some((p) => p.ota === matchedOta.name)) continue;
-
-      // Parse the first reasonable nightly price ($50–$2000 range)
       for (const match of priceMatches) {
         const amount = parseFloat(match.replace("$", "").replace(/\s/g, ""));
         if (amount >= 50 && amount <= 2000) {
@@ -135,29 +228,44 @@ async function searchOTAPrices(
       }
     }
 
-    // Also try to extract from Tavily's AI answer
-    if (data.answer && prices.length < 3) {
-      const answerPrices = data.answer.match(/\$(\d{2,4}(?:\.\d{2})?)/g);
-      if (answerPrices) {
-        debugLog(`[OTA] Found ${answerPrices.length} prices in Tavily answer`);
-      }
-    }
+    debugLog(`[OTA] Tavily: found ${prices.length} prices`);
+    return prices;
+  } catch {
+    return [];
+  }
+}
 
-    debugLog(`[OTA] Found ${prices.length} live OTA prices`);
-  } catch (error) {
-    debugLog(
-      "[OTA] Tavily search failed:",
-      error instanceof Error ? error.message : error,
-    );
+/**
+ * Primary entry point: fetch OTA prices with SerpAPI → Tavily → fallback chain.
+ */
+async function searchOTAPrices(
+  _roomType: string,
+  checkInDate: string,
+  checkOutDate: string,
+  location: string,
+): Promise<OTAPrice[]> {
+  // Try SerpAPI first (structured, reliable)
+  const serpPrices = await searchViaSerp(checkInDate, checkOutDate);
+  if (serpPrices.length >= 2) return serpPrices;
+
+  if (!SERPAPI_KEY) {
+    debugLog("[OTA] No SERPAPI_KEY — add SERPAPI_KEY to .env for live prices");
     if (isProd) {
       console.error(
-        "[OTA] Tavily search failed in production:",
-        error instanceof Error ? error.message : error,
+        "[OTA] SERPAPI_KEY not set in production. Live OTA prices unavailable.",
       );
     }
   }
 
-  return prices;
+  // Fallback: Tavily text scraping
+  const tavilyPrices = await searchViaTavily(
+    checkInDate,
+    checkOutDate,
+    location,
+  );
+  if (tavilyPrices.length >= 2) return tavilyPrices;
+
+  return [];
 }
 
 /**
