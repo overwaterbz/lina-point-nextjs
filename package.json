@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "doppler run -- next dev --turbo",
-    "build": "doppler run -- next build",
+    "build": "next build",
+    "build:local": "doppler run -- next build",
     "start": "next start",
     "lint": "eslint",
     "test": "jest --watch",
