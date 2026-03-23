@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
-    "build": "next build",
+    "dev": "doppler run -- next dev --turbo",
+    "build": "doppler run -- next build",
     "start": "next start",
     "lint": "eslint",
     "test": "jest --watch",
