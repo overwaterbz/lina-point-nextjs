@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS marketing_campaigns (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_marketing_campaigns_status ON marketing_campaigns(status);
-CREATE INDEX idx_marketing_campaigns_created_at ON marketing_campaigns(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_marketing_campaigns_status ON marketing_campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_marketing_campaigns_created_at ON marketing_campaigns(created_at DESC);
 
 ALTER TABLE marketing_campaigns ENABLE ROW LEVEL SECURITY;
 
