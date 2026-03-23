@@ -66,6 +66,7 @@ interface StepExperiencesProps {
   onSetTourBudget: (n: number) => void;
   onToggleInterest: (interest: string) => void;
   onGeneratePackage: () => Promise<void>;
+  onSkip: () => void;
   onBack: () => void;
 }
 
@@ -78,6 +79,7 @@ export default function StepExperiences({
   onSetTourBudget,
   onToggleInterest,
   onGeneratePackage,
+  onSkip,
   onBack,
 }: StepExperiencesProps) {
   return (
@@ -223,6 +225,21 @@ export default function StepExperiences({
             Price Scout scanning OTAs · Experience Curator building itinerary…
           </p>
         )}
+      </div>
+
+      {/* Skip experiences */}
+      <div className="text-center pt-1">
+        <p className="text-xs text-gray-400 mb-2">
+          Not interested in tours or dining?
+        </p>
+        <button
+          type="button"
+          onClick={onSkip}
+          disabled={isLoading}
+          className="text-sm text-gray-500 hover:text-gray-700 font-medium underline decoration-dotted underline-offset-2 disabled:opacity-40 transition-colors"
+        >
+          Skip — just the room reservation →
+        </button>
       </div>
     </div>
   );

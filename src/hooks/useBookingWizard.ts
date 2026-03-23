@@ -154,6 +154,9 @@ export function useBookingWizard(initialData?: {
   const [promoLoading, setPromoLoading] = useState(false);
   const [showPromo, setShowPromo] = useState(false);
 
+  // Step 4 — bundle vs room-only selection
+  const [bundleSelected, setBundleSelected] = useState(true);
+
   // Step 5 — checkout
   const [guestDetails, setGuestDetails] = useState<GuestDetails>({
     name: "",
@@ -265,6 +268,7 @@ export function useBookingWizard(initialData?: {
       );
       if (!data.success) throw new Error(data.error || "Booking failed");
       setPackageResult(data);
+      setBundleSelected(true);
       toast.dismiss(loadingToast);
       toast.success("Your package is ready!");
       setStep(4);
@@ -286,6 +290,47 @@ export function useBookingWizard(initialData?: {
     interests,
     activityLevel,
   ]);
+
+  // Skip experiences — build a room-only package locally (no API call)
+  const generateRoomOnlyPackage = useCallback(() => {
+    const pricePerNight =
+      selectedRoom?.dynamicRate ?? selectedRoom?.baseRate ?? 0;
+    if (!pricePerNight || nights <= 0) {
+      toast.error("Please select your dates and room first");
+      return;
+    }
+    const roomTotal = pricePerNight * nights;
+    // Approximate OTA reference: our direct price is 6% below OTA
+    const otaPerNight = Math.round(pricePerNight * 1.064);
+    const roomOnlyPackage: BookingResult = {
+      success: true,
+      beat_price: roomTotal,
+      beat_price_per_night: pricePerNight,
+      savings_percent: 6,
+      nights,
+      curated_package: {
+        room: {
+          price_per_night: otaPerNight,
+          room_total: roomTotal,
+          ota: "Best OTA Rate",
+          url: "",
+        },
+        tours: [],
+        dinner: { name: "Dining not included", price: 0 },
+        total: roomTotal,
+        affiliate_links: [],
+      },
+      recommendations: [
+        "Book direct for the guaranteed best price — always 6% below OTA rates",
+        "You can add tours and experiences after booking by contacting our concierge",
+      ],
+    };
+    setPackageResult(roomOnlyPackage);
+    setBundleSelected(false);
+    setStep(4);
+    if (typeof window !== "undefined")
+      window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [selectedRoom, nights]);
 
   // Validate promo code
   const validatePromo = useCallback(async () => {
@@ -447,11 +492,15 @@ export function useBookingWizard(initialData?: {
     setPaymentOptions,
     setSquareSdkReady,
     clearPromo,
+    // Bundle selection
+    bundleSelected,
+    setBundleSelected,
     // Actions
     nextStep,
     prevStep,
     goToStep,
     generatePackage,
+    generateRoomOnlyPackage,
     validatePromo,
     handlePay,
     handlePaymentSuccess,
