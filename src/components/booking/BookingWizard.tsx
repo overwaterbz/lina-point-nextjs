@@ -12,6 +12,7 @@ import StepRooms from "./steps/StepRooms";
 import StepExperiences from "./steps/StepExperiences";
 import StepReview from "./steps/StepReview";
 import StepCheckout from "./steps/StepCheckout";
+import StepMagicFamily from "./steps/StepMagicFamily";
 
 interface BookingWizardProps {
   initialData?: {
@@ -27,7 +28,7 @@ export default function BookingWizard({ initialData }: BookingWizardProps) {
 
   // Steps below current are "completed" and can be navigated back to
   const completedSteps = new Set<WizardStep>(
-    ([1, 2, 3, 4, 5] as WizardStep[]).filter((s) => s < wizard.step),
+    ([1, 2, 3, 4, 5, 6] as WizardStep[]).filter((s) => s < wizard.step),
   );
 
   // Total available rooms for the availability tip on Step 1
@@ -113,11 +114,26 @@ export default function BookingWizard({ initialData }: BookingWizardProps) {
         )}
 
         {wizard.step === 5 && wizard.packageResult && (
+          <StepMagicFamily
+            packageResult={wizard.packageResult}
+            checkInDate={wizard.checkInDate}
+            checkOutDate={wizard.checkOutDate}
+            nights={wizard.nights}
+            bundleSelected={wizard.bundleSelected}
+            promoResult={wizard.promoResult}
+            onAuthComplete={wizard.proceedToCheckout}
+            onGuestCheckout={wizard.proceedAsGuest}
+            onBack={wizard.prevStep}
+          />
+        )}
+
+        {wizard.step === 6 && wizard.packageResult && (
           <StepCheckout
             packageResult={wizard.packageResult}
             promoResult={wizard.promoResult}
             nights={wizard.nights}
             bundleSelected={wizard.bundleSelected}
+            guestMode={wizard.guestMode}
             guestDetails={wizard.guestDetails}
             paymentOptions={wizard.paymentOptions}
             paymentMode={wizard.paymentMode}
