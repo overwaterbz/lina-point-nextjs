@@ -1,13 +1,13 @@
 /**
  * MarketingAgentCrew: Autonomous Ecosystem Marketing System
- * 
+ *
  * 5 Specialized Agents with Recursion:
  * 1. ResearchAgent - Scans trends, identifies opportunities, analyzes competitors
  * 2. ContentAgent - Generates social posts, scripts, emails for Overwater, Lina Point, or Magic Is You
  * 3. PostingAgent - Schedules & posts to Instagram, TikTok, X, Facebook
  * 4. EngagementAgent - Replies to comments, builds email list, engagement campaigns
  * 5. SelfImprovementAgent - Analytics, ML-based refinement, prompt optimization
- * 
+ *
  * Generate → Execute → Measure → Refine (max 3 iterations per agent)
  */
 
@@ -16,9 +16,16 @@ import { runWithRecursion } from "@/lib/agents/agentRecursion";
 import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
 import { getActivePrompt } from "@/lib/agents/promptManager";
 import { grokLLM } from "@/lib/grokIntegration";
-import { publishToSocial, type SocialPostResult } from "@/lib/socialMediaService";
-import { createClient } from '@supabase/supabase-js';
-import { BRAND_PROFILES, getEcosystemContext, type BrandProfile } from "@/lib/agents/ecosystemBrands";
+import {
+  publishToSocial,
+  type SocialPostResult,
+} from "@/lib/socialMediaService";
+import { createClient } from "@supabase/supabase-js";
+import {
+  BRAND_PROFILES,
+  getEcosystemContext,
+  type BrandProfile,
+} from "@/lib/agents/ecosystemBrands";
 
 const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
@@ -31,7 +38,11 @@ const debugLog = (...args: unknown[]) => {
 
 export interface CampaignBrief {
   campaignId: string;
-  objective: "direct_bookings" | "brand_awareness" | "engagement" | "email_growth";
+  objective:
+    | "direct_bookings"
+    | "brand_awareness"
+    | "engagement"
+    | "email_growth";
   targetAudience: string;
   keyMessages: string[];
   platforms: ("instagram" | "tiktok" | "facebook" | "x" | "email")[];
@@ -68,7 +79,7 @@ export interface CampaignMetrics {
 export interface MarketingCrewState {
   campaignId: string;
   campaignBrief: CampaignBrief;
-  
+
   // Research phase
   researchData: {
     trends: string[];
@@ -77,32 +88,39 @@ export interface MarketingCrewState {
     opportunities: string[];
     refinementNotes: string;
   };
-  
+
   // Content generation phase
   generatedContent: MarketingContent[];
   contentRefinement: string;
-  
+
   // Posting phase
   scheduleStatus: {
     platform: string;
     status: "pending" | "scheduled" | "posted" | "failed";
     url?: string;
   }[];
-  
+
   // Engagement phase
   engagementCampaigns: {
     type: "reply_sequence" | "email_drip" | "dms";
     status: string;
     response: string;
   }[];
-  
+
   // Metrics & Learning
   currentMetrics: CampaignMetrics;
   mlInsights: string[];
   promptUpdates: string[];
-  
+
   iteration: number;
-  status: "researching" | "generating_content" | "scheduling_posts" | "engaging" | "measuring" | "optimizing" | "completed";
+  status:
+    | "researching"
+    | "generating_content"
+    | "scheduling_posts"
+    | "engaging"
+    | "measuring"
+    | "optimizing"
+    | "completed";
 }
 
 const MarketingCrewAnnotation = Annotation.Root({
@@ -117,16 +135,28 @@ const MarketingCrewAnnotation = Annotation.Root({
   mlInsights: Annotation<string[]>,
   promptUpdates: Annotation<string[]>,
   iteration: Annotation<number>,
-  status: Annotation<"researching" | "generating_content" | "scheduling_posts" | "engaging" | "measuring" | "optimizing" | "completed">,
+  status: Annotation<
+    | "researching"
+    | "generating_content"
+    | "scheduling_posts"
+    | "engaging"
+    | "measuring"
+    | "optimizing"
+    | "completed"
+  >,
 });
 
 // ============================================================================
 // AGENT 1: RESEARCH AGENT
 // ============================================================================
 
-async function researchTrendsAndOpportunities(state: typeof MarketingCrewAnnotation.State) {
-  debugLog(`[ResearchAgent] Iteration ${state.iteration}: Researching trends and opportunities...`);
-  
+async function researchTrendsAndOpportunities(
+  state: typeof MarketingCrewAnnotation.State,
+) {
+  debugLog(
+    `[ResearchAgent] Iteration ${state.iteration}: Researching trends and opportunities...`,
+  );
+
   const brand = state.campaignBrief.brand || "lina-point";
   const brandProfile = BRAND_PROFILES[brand];
   const brandContext = brandProfile
@@ -150,14 +180,20 @@ Campaign objective: ${state.campaignBrief.objective}
 Return JSON with: { trends: [], competitors: [], influencers: [], opportunities: [], marketingAngle: "" }`;
 
   try {
-    const researchSystemPrompt = await getActivePrompt('marketing_research', 'You are a marketing research assistant. Return only valid JSON.');
+    const researchSystemPrompt = await getActivePrompt(
+      "marketing_research",
+      "You are a marketing research assistant. Return only valid JSON.",
+    );
     const response = await grokLLM.invoke([
       { role: "system", content: researchSystemPrompt },
-      { role: "user", content: prompt }
+      { role: "user", content: prompt },
     ]);
 
-    const content = typeof response.content === 'string' ? response.content : String(response.content);
-    const research = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    const content =
+      typeof response.content === "string"
+        ? response.content
+        : String(response.content);
+    const research = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || "{}");
 
     return {
       ...state,
@@ -166,9 +202,9 @@ Return JSON with: { trends: [], competitors: [], influencers: [], opportunities:
         competitors: research.competitors || [],
         influencers: research.influencers || [],
         opportunities: research.opportunities || [],
-        refinementNotes: `Analyzed 30-day trends for ${state.campaignBrief.targetAudience}. Found ${research.opportunities?.length || 0} opportunities.`
+        refinementNotes: `Analyzed 30-day trends for ${state.campaignBrief.targetAudience}. Found ${research.opportunities?.length || 0} opportunities.`,
       },
-      status: "researching" as const
+      status: "researching" as const,
     };
   } catch (error) {
     debugLog("[ResearchAgent] Error:", error);
@@ -179,8 +215,8 @@ Return JSON with: { trends: [], competitors: [], influencers: [], opportunities:
         competitors: ["Turneffe Island", "South Water Caye"],
         influencers: ["travel bloggers", "wellness influencers"],
         opportunities: ["early bird bookings", "couples packages"],
-        refinementNotes: "Fallback research data loaded"
-      }
+        refinementNotes: "Fallback research data loaded",
+      },
     };
   }
 }
@@ -189,16 +225,57 @@ Return JSON with: { trends: [], competitors: [], influencers: [], opportunities:
 // AGENT 2: CONTENT GENERATION AGENT
 // ============================================================================
 
-async function generateMarketingContent(state: typeof MarketingCrewAnnotation.State) {
-  debugLog(`[ContentAgent] Iteration ${state.iteration}: Generating marketing content with recursive refinement...`);
-  
+/** Fetch top-performing posts from the last 30 days so the ContentAgent
+ *  can learn from what drove real engagement and replicate those patterns. */
+async function fetchTopPerformingContent(): Promise<string> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+    );
+    const monthAgo = new Date(
+      Date.now() - 30 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const { data } = await supabase
+      .from("content_calendar")
+      .select("platform, title, hashtags, impressions, clicks, engagements")
+      .gte("created_at", monthAgo)
+      .not("engagements", "is", null)
+      .gt("engagements", 0)
+      .order("engagements", { ascending: false })
+      .limit(5);
+    if (!data?.length) return "";
+    const lines = data.map(
+      (p) =>
+        `[${p.platform}] "${p.title}" - ${p.engagements} eng, ${p.clicks || 0} clicks`,
+    );
+    return `Past top-performing posts (replicate hooks and style that drove engagement):\n${lines.join("\n")}`;
+  } catch {
+    return "";
+  }
+}
+
+async function generateMarketingContent(
+  state: typeof MarketingCrewAnnotation.State,
+) {
+  debugLog(
+    `[ContentAgent] Iteration ${state.iteration}: Generating marketing content with recursive refinement...`,
+  );
+
   const brand = state.campaignBrief.brand || "lina-point";
   const brandProfile = BRAND_PROFILES[brand];
   const isEcosystem = brand === "ecosystem";
 
-  const brandVoice = brandProfile
-    ? `Brand: ${brandProfile.name} — "${brandProfile.tagline}"\nVoice: ${brandProfile.voice}\nKey Messages:\n${brandProfile.keyMessages.map(m => `- ${m}`).join("\n")}\nHashtags: ${brandProfile.hashtags.join(" ")}\nCTA: ${brandProfile.callToAction}`
-    : getEcosystemContext();
+  const [brandVoiceBase, pastPerformance] = await Promise.all([
+    Promise.resolve(
+      brandProfile
+        ? `Brand: ${brandProfile.name} — "${brandProfile.tagline}"\nVoice: ${brandProfile.voice}\nKey Messages:\n${brandProfile.keyMessages.map((m) => `- ${m}`).join("\n")}\nHashtags: ${brandProfile.hashtags.join(" ")}\nCTA: ${brandProfile.callToAction}`
+        : getEcosystemContext(),
+    ),
+    fetchTopPerformingContent(),
+  ]);
+
+  const brandVoice = brandVoiceBase;
 
   const contentBrief = `Create marketing content for ${brandProfile?.name || "the Overwater ecosystem"}.
 
@@ -211,17 +288,21 @@ Target: ${state.campaignBrief.targetAudience}
 Platforms: ${state.campaignBrief.platforms.join(", ")}
 Key Messages: ${state.campaignBrief.keyMessages.join(", ")}
 
-${brand === "lina-point" ? `DIRECT BOOKING ADVANTAGE — weave this into every piece:
+${
+  brand === "lina-point"
+    ? `DIRECT BOOKING ADVANTAGE — weave this into every piece:
 - Lina Point guarantees 6% below any OTA (Expedia, Booking.com, Agoda)
 - Use promo code DIRECT10 for 10% off first direct booking
 - Loyalty program: earn points on every stay, unlock VIP perks
-- "Why pay Expedia's markup? Book direct at lina-point.com and save."` : ""}
+- "Why pay Expedia's markup? Book direct at lina-point.com and save."`
+    : ""
+}
 
 Research insights:
 - Trends: ${state.researchData.trends.join(", ")}
 - Opportunities: ${state.researchData.opportunities.join(", ")}
 
-Generate 3 posts:
+${pastPerformance ? pastPerformance + "\n" : ""}Generate 3 posts:
 1. Instagram post (caption + hashtags)
 2. TikTok script (9-15 sec, trending sounds)
 3. Email subject line & opening
@@ -234,66 +315,96 @@ Format as JSON array: [{ type, platform, content, hashtags, cta }]`;
     const defaultSystemPrompt = brandProfile
       ? `You are a creative marketing copywriter for ${brandProfile.name}. Voice: ${brandProfile.voice}. Return valid JSON array.`
       : `You are a creative marketing copywriter for a three-brand ecosystem (Overwater.com, Lina Point Resort, The Magic Is You). Create cohesive cross-brand content. Return valid JSON array.`;
-    const contentSystemPrompt = await getActivePrompt('marketing_content', defaultSystemPrompt);
-    const refineSystemPrompt = await getActivePrompt('marketing_content_refine', 'You are a creative marketing copywriter. Refine the content based on feedback. Return valid JSON array.');
+    const contentSystemPrompt = await getActivePrompt(
+      "marketing_content",
+      defaultSystemPrompt,
+    );
+    const refineSystemPrompt = await getActivePrompt(
+      "marketing_content_refine",
+      "You are a creative marketing copywriter. Refine the content based on feedback. Return valid JSON array.",
+    );
     const recursionResult = await runWithRecursion<string>(
       // Generate
       async (_iteration) => {
         const response = await grokLLM.invoke([
           { role: "system", content: contentSystemPrompt },
-          { role: "user", content: contentBrief }
+          { role: "user", content: contentBrief },
         ]);
-        return typeof response.content === 'string' ? response.content : String(response.content);
+        return typeof response.content === "string"
+          ? response.content
+          : String(response.content);
       },
       // Evaluate — must return { score, feedback, data }
       async (output, _iteration) => {
         const evalResult = await evaluateTextQuality(goal, output);
-        return { score: evalResult.score, feedback: evalResult.feedback, data: output };
+        return {
+          score: evalResult.score,
+          feedback: evalResult.feedback,
+          data: output,
+        };
       },
       // Refine
       async (output, feedback, _iteration) => {
         const refineResponse = await grokLLM.invoke([
           { role: "system", content: refineSystemPrompt },
-          { role: "user", content: `Improve this marketing content based on feedback:\n\nCurrent content:\n${output}\n\nFeedback:\n${feedback}\n\nReturn improved JSON array: [{ type, platform, content, hashtags, cta }]` }
+          {
+            role: "user",
+            content: `Improve this marketing content based on feedback:\n\nCurrent content:\n${output}\n\nFeedback:\n${feedback}\n\nReturn improved JSON array: [{ type, platform, content, hashtags, cta }]`,
+          },
         ]);
-        return typeof refineResponse.content === 'string' ? refineResponse.content : String(refineResponse.content);
+        return typeof refineResponse.content === "string"
+          ? refineResponse.content
+          : String(refineResponse.content);
       },
-      { maxIterations: 3, minScore: 0.8 }
+      { maxIterations: 3, minScore: 0.8 },
     );
 
     const bestContent = recursionResult.result;
-    const contentArray = JSON.parse(bestContent.match(/\[[\s\S]*\]/)?.[0] || '[]');
+    const contentArray = JSON.parse(
+      bestContent.match(/\[[\s\S]*\]/)?.[0] || "[]",
+    );
 
-    const generatedContent: MarketingContent[] = contentArray.map((item: any, idx: number) => ({
-      type: item.type || "social_post",
-      platform: item.platform || state.campaignBrief.platforms[idx % state.campaignBrief.platforms.length],
-      title: item.title || `Post ${idx + 1}`,
-      content: item.content || "",
-      hashtags: item.hashtags || [],
-      callToAction: item.cta || "Book direct at lina-point.com — guaranteed 6% below any OTA",
-      status: "draft"
-    }));
+    const generatedContent: MarketingContent[] = contentArray.map(
+      (item: any, idx: number) => ({
+        type: item.type || "social_post",
+        platform:
+          item.platform ||
+          state.campaignBrief.platforms[
+            idx % state.campaignBrief.platforms.length
+          ],
+        title: item.title || `Post ${idx + 1}`,
+        content: item.content || "",
+        hashtags: item.hashtags || [],
+        callToAction:
+          item.cta ||
+          "Book direct at lina-point.com — guaranteed 6% below any OTA",
+        status: "draft",
+      }),
+    );
 
     return {
       ...state,
       generatedContent,
       contentRefinement: `Generated ${generatedContent.length} pieces of content`,
-      status: "generating_content" as const
+      status: "generating_content" as const,
     };
   } catch (error) {
     debugLog("[ContentAgent] Error:", error);
     return {
       ...state,
-      generatedContent: [{
-        type: "social_post" as const,
-        platform: "instagram",
-        title: "The Magic Awaits",
-        content: "✨ The magic is YOU. Discover your transformation at Lina Point. #MagicIsYou #OverwaterLuxury",
-        hashtags: ["#linapoint", "#belize", "#wellness"],
-        callToAction: "Book now",
-        status: "draft" as const,
-      }],
-      contentRefinement: "Fallback content generated"
+      generatedContent: [
+        {
+          type: "social_post" as const,
+          platform: "instagram",
+          title: "The Magic Awaits",
+          content:
+            "✨ The magic is YOU. Discover your transformation at Lina Point. #MagicIsYou #OverwaterLuxury",
+          hashtags: ["#linapoint", "#belize", "#wellness"],
+          callToAction: "Book now",
+          status: "draft" as const,
+        },
+      ],
+      contentRefinement: "Fallback content generated",
     };
   }
 }
@@ -302,14 +413,18 @@ Format as JSON array: [{ type, platform, content, hashtags, cta }]`;
 // AGENT 3: POSTING AGENT
 // ============================================================================
 
-async function scheduleAndPostContent(state: typeof MarketingCrewAnnotation.State) {
-  debugLog(`[PostingAgent] Iteration ${state.iteration}: Publishing posts via real APIs...`);
-  
+async function scheduleAndPostContent(
+  state: typeof MarketingCrewAnnotation.State,
+) {
+  debugLog(
+    `[PostingAgent] Iteration ${state.iteration}: Publishing posts via real APIs...`,
+  );
+
   const scheduleStatus: any[] = [];
 
   for (const content of state.generatedContent) {
     // If content is a blog post, upsert into blog_posts table
-    if (content.type === 'blog') {
+    if (content.type === "blog") {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -317,46 +432,51 @@ async function scheduleAndPostContent(state: typeof MarketingCrewAnnotation.Stat
           const supabase = createClient(supabaseUrl, supabaseKey);
           const slug = content.title
             .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '')
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
             .substring(0, 80);
 
-          const { error } = await supabase.from('blog_posts').upsert({
-            slug,
-            title: content.title,
-            excerpt: content.content.substring(0, 200),
-            content: content.content,
-            cover_image: content.mediaUrl || null,
-            author: 'Lina Point AI',
-            brand: state.campaignBrief.brand || 'lina-point',
-            category: 'travel',
-            tags: content.hashtags || [],
-            meta_title: content.title,
-            meta_description: content.content.substring(0, 160),
-            published: true,
-            published_at: new Date().toISOString(),
-          }, { onConflict: 'slug,brand' });
+          const { error } = await supabase.from("blog_posts").upsert(
+            {
+              slug,
+              title: content.title,
+              excerpt: content.content.substring(0, 200),
+              content: content.content,
+              cover_image: content.mediaUrl || null,
+              author: "Lina Point AI",
+              brand: state.campaignBrief.brand || "lina-point",
+              category: "travel",
+              tags: content.hashtags || [],
+              meta_title: content.title,
+              meta_description: content.content.substring(0, 160),
+              published: true,
+              published_at: new Date().toISOString(),
+            },
+            { onConflict: "slug,brand" },
+          );
 
           scheduleStatus.push({
-            platform: 'blog',
+            platform: "blog",
             contentId: `${state.campaignId}-blog-${scheduleStatus.length}`,
             title: content.title,
             scheduledTime: new Date(),
-            status: error ? 'failed' : 'posted',
+            status: error ? "failed" : "posted",
             url: `/blog/${slug}`,
             postId: slug,
             error: error?.message || null,
           });
-          debugLog(`[PostingAgent] blog: ${error ? '❌ ' + error.message : '✅ published to /blog/' + slug}`);
+          debugLog(
+            `[PostingAgent] blog: ${error ? "❌ " + error.message : "✅ published to /blog/" + slug}`,
+          );
         }
       } catch (err: any) {
         debugLog(`[PostingAgent] blog insert error:`, err.message);
         scheduleStatus.push({
-          platform: 'blog',
+          platform: "blog",
           contentId: `${state.campaignId}-blog-${scheduleStatus.length}`,
           title: content.title,
           scheduledTime: new Date(),
-          status: 'failed',
+          status: "failed",
           error: err.message,
         });
       }
@@ -365,15 +485,15 @@ async function scheduleAndPostContent(state: typeof MarketingCrewAnnotation.Stat
 
     const platform = content.platform;
     const text = content.hashtags?.length
-      ? `${content.content}\n\n${content.hashtags.join(' ')}`
+      ? `${content.content}\n\n${content.hashtags.join(" ")}`
       : content.content;
 
     // Attempt real API post
     const result: SocialPostResult = await publishToSocial(
       platform,
       text,
-      content.mediaUrl,       // image/video URL if available
-      'https://linapoint.com' // fallback link
+      content.mediaUrl, // image/video URL if available
+      "https://linapoint.com", // fallback link
     );
 
     scheduleStatus.push({
@@ -381,22 +501,24 @@ async function scheduleAndPostContent(state: typeof MarketingCrewAnnotation.Stat
       contentId: `${state.campaignId}-${scheduleStatus.length}`,
       title: content.title,
       scheduledTime: new Date(),
-      status: result.success ? 'posted' : 'failed',
+      status: result.success ? "posted" : "failed",
       url: result.postUrl || null,
       postId: result.postId || null,
       error: result.error || null,
     });
 
-    debugLog(`[PostingAgent] ${platform}: ${result.success ? '✅ posted' : '❌ ' + result.error}`);
+    debugLog(
+      `[PostingAgent] ${platform}: ${result.success ? "✅ posted" : "❌ " + result.error}`,
+    );
   }
 
-  const posted = scheduleStatus.filter(s => s.status === 'posted').length;
+  const posted = scheduleStatus.filter((s) => s.status === "posted").length;
   debugLog(`[PostingAgent] Published ${posted}/${scheduleStatus.length} posts`);
 
   return {
     ...state,
     scheduleStatus,
-    status: "scheduling_posts" as const
+    status: "scheduling_posts" as const,
   };
 }
 
@@ -404,9 +526,13 @@ async function scheduleAndPostContent(state: typeof MarketingCrewAnnotation.Stat
 // AGENT 4: ENGAGEMENT AGENT
 // ============================================================================
 
-async function setupEngagementCampaigns(state: typeof MarketingCrewAnnotation.State) {
-  debugLog(`[EngagementAgent] Iteration ${state.iteration}: Setting up engagement campaigns...`);
-  
+async function setupEngagementCampaigns(
+  state: typeof MarketingCrewAnnotation.State,
+) {
+  debugLog(
+    `[EngagementAgent] Iteration ${state.iteration}: Setting up engagement campaigns...`,
+  );
+
   const engagementCampaigns = [
     {
       type: "reply_sequence" as const,
@@ -416,7 +542,7 @@ async function setupEngagementCampaigns(state: typeof MarketingCrewAnnotation.St
         Always include a soft CTA to book direct at lina-point.com (we beat OTA prices by 6%).
         If someone mentions finding us on Expedia/Booking.com, let them know they save more booking direct.`,
       status: "active",
-      response: "Reply generator activated for top posts"
+      response: "Reply generator activated for top posts",
     },
     {
       type: "email_drip" as const,
@@ -426,7 +552,7 @@ async function setupEngagementCampaigns(state: typeof MarketingCrewAnnotation.St
         Email 2: Price comparison showing we beat Expedia by 6% + loyalty program benefits
         Email 3: Last-minute deal for return visitors + exclusive promo code for loyal guests`,
       status: "configured",
-      response: "Email drip sequence configured"
+      response: "Email drip sequence configured",
     },
     {
       type: "dms" as const,
@@ -436,14 +562,14 @@ async function setupEngagementCampaigns(state: typeof MarketingCrewAnnotation.St
         When they show interest, share that booking direct saves 6% vs any OTA.
         Include direct booking link to lina-point.com/booking.`,
       status: "pending_activation",
-      response: "DM campaign template ready"
-    }
+      response: "DM campaign template ready",
+    },
   ];
 
   return {
     ...state,
     engagementCampaigns,
-    status: "engaging" as const
+    status: "engaging" as const,
   };
 }
 
@@ -452,8 +578,10 @@ async function setupEngagementCampaigns(state: typeof MarketingCrewAnnotation.St
 // ============================================================================
 
 async function measureAndOptimize(state: typeof MarketingCrewAnnotation.State) {
-  debugLog(`[SelfImprovementAgent] Iteration ${state.iteration}: Analyzing metrics and generating improvements...`);
-  
+  debugLog(
+    `[SelfImprovementAgent] Iteration ${state.iteration}: Analyzing metrics and generating improvements...`,
+  );
+
   // Fetch real metrics from Supabase
   const realMetrics = await fetchRealCampaignMetrics(state.campaignId);
 
@@ -480,21 +608,27 @@ Generate JSON with:
 }`;
 
   try {
-    const analyticsSystemPrompt = await getActivePrompt('marketing_analytics', 'You are a marketing analytics expert. Return valid JSON.');
+    const analyticsSystemPrompt = await getActivePrompt(
+      "marketing_analytics",
+      "You are a marketing analytics expert. Return valid JSON.",
+    );
     const response = await grokLLM.invoke([
       { role: "system", content: analyticsSystemPrompt },
-      { role: "user", content: analysisPrompt }
+      { role: "user", content: analysisPrompt },
     ]);
 
-    const content = typeof response.content === 'string' ? response.content : String(response.content);
-    const analysis = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    const content =
+      typeof response.content === "string"
+        ? response.content
+        : String(response.content);
+    const analysis = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || "{}");
 
     return {
       ...state,
       currentMetrics: realMetrics,
       mlInsights: analysis.mlInsights || [],
       promptUpdates: analysis.promptUpdates || [],
-      status: "optimizing" as const
+      status: "optimizing" as const,
     };
   } catch (error) {
     debugLog("[SelfImprovementAgent] Error:", error);
@@ -502,31 +636,33 @@ Generate JSON with:
       ...state,
       currentMetrics: realMetrics,
       mlInsights: [
-        `CTR is ${(realMetrics.ctr * 100).toFixed(1)}% - ${realMetrics.ctr > 0.02 ? 'strong' : 'needs improvement'}`,
+        `CTR is ${(realMetrics.ctr * 100).toFixed(1)}% - ${realMetrics.ctr > 0.02 ? "strong" : "needs improvement"}`,
         `Conversion rate: ${(realMetrics.conversionRate * 100).toFixed(1)}% - test urgency CTAs if below 3%`,
-        `${realMetrics.emailsCollected} emails collected this period`
+        `${realMetrics.emailsCollected} emails collected this period`,
       ],
       promptUpdates: [
         "Increase frequency of urgency-based CTAs",
         "Add limited-time offer mentions to emails",
-        "Emphasize exclusivity in social posts"
-      ]
+        "Emphasize exclusivity in social posts",
+      ],
     };
   }
 }
 
 /** Fetch real campaign metrics from Supabase marketing_campaigns + promo_codes */
-async function fetchRealCampaignMetrics(campaignId: string): Promise<CampaignMetrics> {
+async function fetchRealCampaignMetrics(
+  campaignId: string,
+): Promise<CampaignMetrics> {
   const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "",
   );
 
   // Fetch the campaign's performance_metrics if stored
   const { data: campaign } = await supabase
-    .from('marketing_campaigns')
-    .select('performance_metrics')
-    .eq('campaign_id', campaignId)
+    .from("marketing_campaigns")
+    .select("performance_metrics")
+    .eq("campaign_id", campaignId)
     .maybeSingle();
 
   if (campaign?.performance_metrics) {
@@ -548,11 +684,14 @@ async function fetchRealCampaignMetrics(campaignId: string): Promise<CampaignMet
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const [promoResult, bookingResult] = await Promise.all([
-    supabase.from('promo_codes').select('usage_count').eq('active', true),
-    supabase.from('reservations').select('id').gte('created_at', weekAgo),
+    supabase.from("promo_codes").select("usage_count").eq("active", true),
+    supabase.from("reservations").select("id").gte("created_at", weekAgo),
   ]);
 
-  const totalPromoUses = (promoResult.data || []).reduce((s, p) => s + (p.usage_count || 0), 0);
+  const totalPromoUses = (promoResult.data || []).reduce(
+    (s, p) => s + (p.usage_count || 0),
+    0,
+  );
   const recentBookings = bookingResult.data?.length || 0;
 
   return {
@@ -572,13 +711,21 @@ async function fetchRealCampaignMetrics(campaignId: string): Promise<CampaignMet
 // CREW ORCHESTRATOR
 // ============================================================================
 
-export async function runMarketingCrew(campaignBrief: CampaignBrief): Promise<MarketingCrewState> {
+export async function runMarketingCrew(
+  campaignBrief: CampaignBrief,
+): Promise<MarketingCrewState> {
   debugLog("\n🚀 [MarketingCrew] Starting campaign orchestration...\n");
 
   const initialState: MarketingCrewState = {
     campaignId: `campaign-${Date.now()}`,
     campaignBrief,
-    researchData: { trends: [], competitors: [], influencers: [], opportunities: [], refinementNotes: "" },
+    researchData: {
+      trends: [],
+      competitors: [],
+      influencers: [],
+      opportunities: [],
+      refinementNotes: "",
+    },
     generatedContent: [],
     contentRefinement: "",
     scheduleStatus: [],
@@ -587,7 +734,7 @@ export async function runMarketingCrew(campaignBrief: CampaignBrief): Promise<Ma
     mlInsights: [],
     promptUpdates: [],
     iteration: 1,
-    status: "researching"
+    status: "researching",
   };
 
   // Execute agents sequentially
@@ -597,7 +744,7 @@ export async function runMarketingCrew(campaignBrief: CampaignBrief): Promise<Ma
   debugLog("📊 PHASE 1: Research Agent");
   state = await researchTrendsAndOpportunities(state);
 
-  // Phase 2: Content Generation  
+  // Phase 2: Content Generation
   debugLog("✍️  PHASE 2: Content Agent");
   state = await generateMarketingContent(state);
 
@@ -620,4 +767,10 @@ export async function runMarketingCrew(campaignBrief: CampaignBrief): Promise<Ma
 }
 
 // Export agent functions for testing
-export { researchTrendsAndOpportunities, generateMarketingContent, scheduleAndPostContent, setupEngagementCampaigns, measureAndOptimize };
+export {
+  researchTrendsAndOpportunities,
+  generateMarketingContent,
+  scheduleAndPostContent,
+  setupEngagementCampaigns,
+  measureAndOptimize,
+};
