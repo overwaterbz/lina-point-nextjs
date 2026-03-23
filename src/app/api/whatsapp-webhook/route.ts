@@ -22,6 +22,11 @@ import {
   logInteraction,
   getGuestMemories,
 } from "@/lib/agents/guestIntelligenceAgent";
+import {
+  detectGroupInquiry,
+  generateGroupQuote,
+  formatGroupQuoteForWhatsApp,
+} from "@/lib/agents/groupBookingAgent";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -186,6 +191,38 @@ export async function POST(request: NextRequest) {
     let replyText = agentResult.replyText;
     const pending = agentResult.updatedContext.pending_action;
     let actionHandled = false;
+
+    // ── Group Booking Detection ──────────────────────────────────────────────
+    // Must run before the individual booking state machine
+    const groupCheck = detectGroupInquiry(message);
+    if (groupCheck.isGroup && !actionHandled) {
+      try {
+        const dateMatch = message.match(/(\d{4}-\d{2}-\d{2})/g) ?? [];
+        if (dateMatch.length >= 2) {
+          const [checkInDate, checkOutDate] = dateMatch as [string, string];
+          const groupQuote = await generateGroupQuote(supabase, {
+            checkInDate,
+            checkOutDate,
+            totalGuests: groupCheck.estimatedSize,
+            roomsRequired: Math.ceil(groupCheck.estimatedSize / 2),
+            eventType: groupCheck.eventType ?? "general",
+            contactName: profile?.full_name ?? undefined,
+            contactPhone: phone,
+            specialRequirements: message,
+          });
+          replyText = formatGroupQuoteForWhatsApp(groupQuote);
+        } else {
+          const eventLabel = groupCheck.eventType
+            ? ` for your ${groupCheck.eventType}`
+            : "";
+          replyText = `I'd love to help with your group booking${eventLabel}! 🌴 For a group of ${groupCheck.estimatedSize}+ guests I can prepare a full proposal with exclusive rates.\n\nCould you confirm your preferred check-in and check-out dates? (e.g. 2026-06-10 to 2026-06-14)`;
+        }
+        actionHandled = true;
+      } catch (groupErr) {
+        console.error("[WhatsApp] Group booking error:", groupErr);
+        // Fall through to regular handling
+      }
+    }
 
     // ── Booking State Machine ────────────────────────────────────────────────
     // Check if active booking flow in session or message signals booking intent

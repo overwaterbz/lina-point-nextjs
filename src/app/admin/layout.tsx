@@ -28,6 +28,7 @@ const NAV_SECTIONS = [
         icon: "🏷️",
         minRole: "manager" as const,
       },
+      { href: "/admin/ota-commission", label: "OTA Channels", icon: "📡" },
     ],
   },
   {
@@ -35,6 +36,7 @@ const NAV_SECTIONS = [
     items: [
       { href: "/admin/marketing-dashboard", label: "Campaigns", icon: "📱" },
       { href: "/admin/whatsapp", label: "WhatsApp", icon: "💬" },
+      { href: "/admin/reputation", label: "Reputation", icon: "⭐" },
     ],
   },
   {
