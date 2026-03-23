@@ -10,6 +10,7 @@ import { randomUUID } from "crypto";
 import { createAgentRun, finishAgentRun } from "@/lib/agents/agentRunLogger";
 import { generateMagicContent } from "@/lib/magicContent";
 import { createReservation } from "@/lib/bookingFulfillment";
+import { getFallbackPrices } from "@/lib/otaIntegration";
 import {
   confirmationEmailHtml,
   adminNotificationHtml,
@@ -250,16 +251,23 @@ export async function POST(
           );
         }
       }
-      // Fallback pricing
+      // Fallback pricing — compute dynamically from per-room-type OTA data
+      const fallbackOTAPrices = getFallbackPrices(body.roomType);
+      const lowestFallbackOTA = fallbackOTAPrices.reduce(
+        (min, p) => (p.price < min.price ? p : min),
+        fallbackOTAPrices[0],
+      );
+      const fallbackBestPrice = lowestFallbackOTA?.price ?? 250;
+      const fallbackBeatPrice = Math.round(fallbackBestPrice * 0.94);
       priceScoutResult = {
-        bestPrice: 250,
-        bestOTA: "direct",
-        beatPrice: 235,
+        bestPrice: fallbackBestPrice,
+        bestOTA: lowestFallbackOTA?.ota ?? "direct",
+        beatPrice: fallbackBeatPrice,
         savingsPercent: 6,
-        savings: 15,
+        savings: Math.round(fallbackBestPrice * 0.06),
         iterations: 0,
         priceUrl: `https://linapoint.com/book?room_type=${encodeURIComponent(body.roomType)}`,
-        allPrices: { direct: 250 },
+        allPrices: { direct: fallbackBeatPrice },
       };
     }
 

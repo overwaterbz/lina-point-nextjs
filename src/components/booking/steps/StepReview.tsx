@@ -103,32 +103,6 @@ export default function StepReview({
         </div>
       )}
 
-      {/* Price summary — OTA vs Direct rate strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-red-50 border-l-4 border-red-500 rounded-xl p-4">
-          <p className="text-xs font-semibold text-gray-500 mb-1">OTA Price</p>
-          <p className="text-2xl font-bold text-red-600">
-            ${packageResult.curated_package.room.price_per_night}{" "}
-            <span className="text-sm font-normal text-gray-400">USD/night</span>
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {packageResult.curated_package.room.ota}
-          </p>
-        </div>
-        <div className="bg-green-50 border-l-4 border-green-500 rounded-xl p-4">
-          <p className="text-xs font-semibold text-gray-500 mb-1">
-            Your Direct Price
-          </p>
-          <p className="text-2xl font-bold text-green-600">
-            ${packageResult.beat_price_per_night}{" "}
-            <span className="text-sm font-normal text-gray-400">USD/night</span>
-          </p>
-          <p className="text-xs text-green-700 font-medium mt-1">
-            Save {packageResult.savings_percent}% vs OTA
-          </p>
-        </div>
-      </div>
-
       {/* Package tier selector */}
       <div>
         <p className="text-sm font-semibold text-gray-700 mb-3">

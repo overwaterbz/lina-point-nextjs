@@ -60,12 +60,15 @@ async function searchOTAPrices(
     { name: "expedia", domain: "expedia.com" },
     { name: "booking", domain: "booking.com" },
     { name: "agoda", domain: "agoda.com" },
+    { name: "hotels", domain: "hotels.com" },
+    { name: "airbnb", domain: "airbnb.com" },
+    { name: "hostelworld", domain: "hostelworld.com" },
   ];
 
   const prices: OTAPrice[] = [];
 
   // Search specifically for Lina Point to get accurate property-level pricing
-  const query = `"Lina Point" overwater resort ${location} ${checkInDate} ${checkOutDate} price per night site:expedia.com OR site:booking.com OR site:agoda.com OR site:hotels.com`;
+  const query = `"Lina Point" overwater resort ${location} ${checkInDate} ${checkOutDate} price per night site:expedia.com OR site:booking.com OR site:agoda.com OR site:hotels.com OR site:airbnb.com OR site:hostelworld.com`;
 
   try {
     const controller = new AbortController();
@@ -187,6 +190,16 @@ const FALLBACK_PRICES: Record<
       price: 169,
       url: "https://www.hotels.com/search.do?f-loc-id=800020668",
     },
+    {
+      ota: "airbnb",
+      price: 171,
+      url: "https://www.airbnb.com/s/San-Pedro--Belize/homes",
+    },
+    {
+      ota: "hostelworld",
+      price: 182,
+      url: "https://www.hostelworld.com/search?search_keywords=San+Pedro%2C+Belize",
+    },
   ],
   suite_1st_floor: [
     {
@@ -208,6 +221,16 @@ const FALLBACK_PRICES: Record<
       ota: "hotels",
       price: 194,
       url: "https://www.hotels.com/search.do?f-loc-id=800020668",
+    },
+    {
+      ota: "airbnb",
+      price: 197,
+      url: "https://www.airbnb.com/s/San-Pedro--Belize/homes",
+    },
+    {
+      ota: "hostelworld",
+      price: 211,
+      url: "https://www.hostelworld.com/search?search_keywords=San+Pedro%2C+Belize",
     },
   ],
   cabana_duplex: [
@@ -231,6 +254,16 @@ const FALLBACK_PRICES: Record<
       price: 295,
       url: "https://www.hotels.com/search.do?f-loc-id=800020668",
     },
+    {
+      ota: "airbnb",
+      price: 302,
+      url: "https://www.airbnb.com/s/San-Pedro--Belize/homes",
+    },
+    {
+      ota: "hostelworld",
+      price: 325,
+      url: "https://www.hostelworld.com/search?search_keywords=San+Pedro%2C+Belize",
+    },
   ],
   cabana_1br: [
     {
@@ -253,6 +286,16 @@ const FALLBACK_PRICES: Record<
       price: 355,
       url: "https://www.hotels.com/search.do?f-loc-id=800020668",
     },
+    {
+      ota: "airbnb",
+      price: 361,
+      url: "https://www.airbnb.com/s/San-Pedro--Belize/homes",
+    },
+    {
+      ota: "hostelworld",
+      price: 388,
+      url: "https://www.hostelworld.com/search?search_keywords=San+Pedro%2C+Belize",
+    },
   ],
   cabana_2br: [
     {
@@ -274,6 +317,16 @@ const FALLBACK_PRICES: Record<
       ota: "hotels",
       price: 469,
       url: "https://www.hotels.com/search.do?f-loc-id=800020668",
+    },
+    {
+      ota: "airbnb",
+      price: 478,
+      url: "https://www.airbnb.com/s/San-Pedro--Belize/homes",
+    },
+    {
+      ota: "hostelworld",
+      price: 514,
+      url: "https://www.hostelworld.com/search?search_keywords=San+Pedro%2C+Belize",
     },
   ],
 };

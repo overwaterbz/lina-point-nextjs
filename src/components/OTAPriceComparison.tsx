@@ -34,6 +34,12 @@ const OTA_DISPLAY: Record<
     color: "text-green-700",
     bg: "bg-green-50",
   },
+  airbnb: { label: "Airbnb", color: "text-pink-700", bg: "bg-pink-50" },
+  hostelworld: {
+    label: "Hostelworld",
+    color: "text-orange-700",
+    bg: "bg-orange-50",
+  },
 };
 
 export default function OTAPriceComparison({
@@ -150,7 +156,7 @@ export default function OTAPriceComparison({
       {/* Header */}
       <div className="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4">
         <h3 className="text-white font-bold text-lg">
-          Compare Prices — We Beat Every OTA
+          Compare Prices — We Beat Every Online Travel Site
         </h3>
         <p className="text-teal-100 text-sm mt-1">
           Transparent pricing for {nights} night{nights !== 1 ? "s" : ""} · per
