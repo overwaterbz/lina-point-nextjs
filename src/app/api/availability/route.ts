@@ -62,7 +62,9 @@ export async function GET(request: NextRequest) {
             ...item,
             dynamicRate: pricing.finalRate,
             totalForStay: pricing.totalForStay,
-            appliedRules: pricing.appliedRules,
+            appliedRules: pricing.appliedRules.map(
+              (r: { name: string }) => r.name,
+            ),
             savingsVsBase: pricing.savingsVsBase,
           };
         } catch {

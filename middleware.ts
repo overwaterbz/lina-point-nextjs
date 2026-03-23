@@ -35,6 +35,10 @@ const SEO_ROUTES = [
 const SELF_AUTH_API_ROUTES = [
   "/api/cron/",
   "/api/availability",
+  "/api/book-flow",
+  "/api/ota-prices",
+  "/api/promo/",
+  "/api/pricing",
   "/api/whatsapp-webhook",
   "/api/whatsapp-proactive",
   "/api/stripe/webhook",
