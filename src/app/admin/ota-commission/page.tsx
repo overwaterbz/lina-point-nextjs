@@ -113,10 +113,10 @@ export default function OtaCommissionPage() {
     setRunning(true);
     setRunMsg("");
     try {
-      const res = await fetch(`/api/cron/channel-manager`, {
-        headers: {
-          authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? ""}`,
-        },
+      const res = await fetch(`/api/admin/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "channel-manager" }),
       });
       const json = await res.json();
       setRunMsg(

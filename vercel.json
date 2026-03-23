@@ -51,6 +51,38 @@
     {
       "path": "/api/cron/social-content",
       "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/demand-forecast",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/competitor-intelligence",
+      "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/cron/pricing-outcome-eval",
+      "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/in-stay-agent",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/welcome-preparation",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/post-stay-memory",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/channel-manager",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/reputation-monitor",
+      "schedule": "0 10 * * *"
     }
   ]
 }

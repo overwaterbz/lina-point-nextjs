@@ -2,18 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyCronSecret } from "@/lib/cronAuth";
 import { runWelcomePreparation } from "@/lib/agents/welcomeAgent";
 
-function verifyCronSecret(authHeader: string | null): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return authHeader === `Bearer ${secret}`;
-}
-
 export async function GET(request: NextRequest) {
-  if (!verifyCronSecret(request.headers.get("authorization"))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = verifyCronSecret(request.headers.get("authorization"));
+  if (denied) return denied;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

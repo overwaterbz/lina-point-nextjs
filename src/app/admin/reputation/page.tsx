@@ -68,10 +68,10 @@ export default function ReputationPage() {
     setRunning(true);
     setRunMsg("");
     try {
-      const res = await fetch(`/api/cron/reputation-monitor`, {
-        headers: {
-          authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? ""}`,
-        },
+      const res = await fetch(`/api/admin/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: "reputation-monitor" }),
       });
       const json = await res.json();
       setRunMsg(
