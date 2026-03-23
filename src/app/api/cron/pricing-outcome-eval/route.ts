@@ -16,6 +16,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyCronSecret } from "@/lib/cronAuth";
 
+const isProd = process.env.NODE_ENV === "production";
+const debugLog = (...args: unknown[]) => {
+  if (!isProd) console.log(...args);
+};
+
 export async function GET(request: NextRequest) {
   const denied = verifyCronSecret(request.headers.get("authorization"));
   if (denied) return denied;
@@ -133,9 +138,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  console.log(
-    `[OutcomeEval] Evaluated ${evaluated} outcomes, ${errors} errors`,
-  );
+  debugLog(`[OutcomeEval] Evaluated ${evaluated} outcomes, ${errors} errors`);
 
   return NextResponse.json({
     success: true,

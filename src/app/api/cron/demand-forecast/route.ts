@@ -11,6 +11,11 @@ import { createClient } from "@supabase/supabase-js";
 import { verifyCronSecret } from "@/lib/cronAuth";
 import { runDemandForecast } from "@/lib/demandForecasting";
 
+const isProd = process.env.NODE_ENV === "production";
+const debugLog = (...args: unknown[]) => {
+  if (!isProd) console.log(...args);
+};
+
 export async function GET(request: NextRequest) {
   const denied = verifyCronSecret(request.headers.get("authorization"));
   if (denied) return denied;
@@ -22,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const entries = await runDemandForecast(supabase);
-    console.log(`[DemandForecast] Computed ${entries.length} entries`);
+    debugLog(`[DemandForecast] Computed ${entries.length} entries`);
     return NextResponse.json({ success: true, entries: entries.length });
   } catch (err) {
     console.error("[DemandForecast] Error:", err);

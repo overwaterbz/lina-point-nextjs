@@ -173,6 +173,50 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── 2.5. 24-hour pre-arrival reminder ──────────────────
+    const arrivals24h = await findUpcomingArrivals(supabase, 1);
+
+    for (const res of arrivals24h) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("phone_number, full_name")
+          .eq("user_id", res.guest_id)
+          .maybeSingle();
+
+        if (!profile?.phone_number) continue;
+
+        // Only send if no outbound in last 12 hours (distinct window from 48h)
+        const twelveHoursAgo = new Date(
+          Date.now() - 12 * 60 * 60 * 1000,
+        ).toISOString();
+        const { data: recentMsg } = await supabase
+          .from("whatsapp_messages")
+          .select("id")
+          .eq("phone_number", profile.phone_number)
+          .eq("direction", "outbound")
+          .gte("created_at", twelveHoursAgo)
+          .limit(1);
+
+        if (recentMsg && recentMsg.length > 0) continue;
+
+        const firstName = profile.full_name?.split(" ")[0] || "there";
+        const roomLabel = (res.room_type || "room").replace(/_/g, " ");
+        const checkInDate = new Date(res.check_in_date).toLocaleDateString(
+          "en-US",
+          { weekday: "long", month: "long", day: "numeric" },
+        );
+        const msg = `Hi ${firstName}! 🌴 Tomorrow is the big day — you arrive at Lina Point Resort on ${checkInDate}. Check-in is from 3 PM. Your ${roomLabel} will be ready and waiting! 🌊 Text here if you need anything before you arrive.`;
+
+        await sendWhatsAppMessage(profile.phone_number, msg);
+      } catch (err) {
+        console.error(
+          `[DailyGuestOps] 24h follow-up error for ${res.id}:`,
+          err,
+        );
+      }
+    }
+
     // ── 3. During-stay morning greetings ────────────────────
     const today = new Date().toISOString().split("T")[0];
 
