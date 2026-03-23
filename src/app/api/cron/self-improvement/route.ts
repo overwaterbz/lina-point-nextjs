@@ -205,42 +205,120 @@ async function gatherPreferencesSummary(): Promise<string> {
     .join(", ")}`;
 }
 
-/** Summarize conversion funnel data */
+/** Summarize conversion funnel data — includes all guest searches via booking_analytics */
 async function gatherConversionSummary(): Promise<string> {
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const monthAgo = new Date(
+    Date.now() - 30 * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
-  // Check direct booking conversion via promo usage
-  const { data: promos } = await supabase
-    .from("promo_codes")
-    .select("code, usage_count, max_uses, active")
-    .limit(20);
-
-  // Marketing campaign performance
-  const { data: campaigns } = await supabase
-    .from("marketing_campaigns")
-    .select("campaign_type, status, performance_metrics, created_at")
-    .gte("created_at", weekAgo)
-    .limit(20);
+  const [promosResult, campaignsResult, analyticsResult, reservationsResult] =
+    await Promise.all([
+      // Direct booking conversion via promo usage
+      supabase
+        .from("promo_codes")
+        .select("code, usage_count, max_uses, active")
+        .limit(20),
+      // Marketing campaign performance
+      supabase
+        .from("marketing_campaigns")
+        .select("campaign_type, status, performance_metrics, created_at")
+        .gte("created_at", weekAgo)
+        .limit(20),
+      // ALL guest searches (authenticated + anonymous) via booking_analytics
+      supabase
+        .from("booking_analytics")
+        .select(
+          "room_type, nights, savings_percent, best_ota, experiment_variant, created_at",
+        )
+        .gte("created_at", weekAgo)
+        .limit(500),
+      // Confirmed reservations (authenticated) for conversion rate calc
+      supabase
+        .from("reservations")
+        .select("room_type, status, created_at")
+        .gte("created_at", weekAgo)
+        .limit(200),
+    ]);
 
   const parts: string[] = [];
 
-  if (promos?.length) {
-    const activePromos = promos.filter((p) => p.active);
-    const totalUsage = promos.reduce((s, p) => s + (p.usage_count || 0), 0);
+  // Promo usage
+  if (promosResult.data?.length) {
+    const activePromos = promosResult.data.filter((p) => p.active);
+    const totalUsage = promosResult.data.reduce(
+      (s, p) => s + (p.usage_count || 0),
+      0,
+    );
     parts.push(
       `Promo codes: ${activePromos.length} active, ${totalUsage} total uses`,
     );
   }
 
-  if (campaigns?.length) {
+  // Campaign performance
+  if (campaignsResult.data?.length) {
     const byType = new Map<string, number>();
-    for (const c of campaigns)
+    for (const c of campaignsResult.data)
       byType.set(c.campaign_type, (byType.get(c.campaign_type) || 0) + 1);
     parts.push(
       `Recent campaigns: ${Array.from(byType.entries())
         .map(([t, c]) => `${t}:${c}`)
         .join(", ")}`,
     );
+  }
+
+  // Guest search analytics — the full funnel picture including anonymous visitors
+  if (analyticsResult.data?.length) {
+    const searches = analyticsResult.data;
+    const confirmedBookings = reservationsResult.data?.length || 0;
+    const conversionRate =
+      searches.length > 0
+        ? ((confirmedBookings / searches.length) * 100).toFixed(1)
+        : "0";
+    const avgSavings =
+      searches.reduce((s, a) => s + (a.savings_percent || 0), 0) /
+      searches.length;
+
+    // Top searched rooms
+    const roomCounts = new Map<string, number>();
+    for (const a of searches)
+      roomCounts.set(a.room_type, (roomCounts.get(a.room_type) || 0) + 1);
+    const topRooms = Array.from(roomCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([r, c]) => `${r}:${c}`)
+      .join(", ");
+
+    // Average stay length
+    const avgNights =
+      searches.reduce((s, a) => s + (a.nights || 0), 0) / searches.length;
+
+    parts.push(
+      `Booking funnel (7d): ${searches.length} searches → ${confirmedBookings} confirmed (${conversionRate}% conversion)`,
+    );
+    parts.push(
+      `Avg savings shown: ${avgSavings.toFixed(1)}%, avg stay: ${avgNights.toFixed(1)} nights`,
+    );
+    parts.push(`Most searched rooms: ${topRooms || "none"}`);
+  }
+
+  // Top content calendar engagement
+  const { data: topContent } = await supabase
+    .from("content_calendar")
+    .select("platform, title, engagements, clicks")
+    .gte("created_at", monthAgo)
+    .not("engagements", "is", null)
+    .order("engagements", { ascending: false })
+    .limit(3);
+
+  if (topContent?.length) {
+    const topPosts = topContent
+      .map(
+        (p) =>
+          `[${p.platform}] "${p.title}" — ${p.engagements || 0} engagements`,
+      )
+      .join("; ");
+    parts.push(`Top content (30d): ${topPosts}`);
   }
 
   return parts.length

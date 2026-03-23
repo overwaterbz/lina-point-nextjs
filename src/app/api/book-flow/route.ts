@@ -417,6 +417,33 @@ export async function POST(
         confirmationNumber = reservation.confirmationNumber;
         debugLog(`[BookFlow] Reservation created: ${confirmationNumber}`);
 
+        // Log conversion event for self-improvement agent's feedback loop.
+        // "booking_conversion" entries let the weekly self-improvement job
+        // see which pricing/curation runs led to actual confirmed bookings.
+        void (async () => {
+          try {
+            await supabase.from("agent_runs").insert({
+              user_id: user.id,
+              agent_name: "booking_conversion",
+              status: "success",
+              input: JSON.stringify({
+                room_type: body.roomType,
+                nights,
+                total_amount: packageTotal,
+                price_scout_run_id: priceRunId,
+                curator_run_id: curatorRunId,
+              }),
+              output: JSON.stringify({
+                confirmation_number: confirmationNumber,
+                outcome: "converted",
+              }),
+              duration_ms: 0,
+            });
+          } catch {
+            // Non-fatal — don't break the booking flow
+          }
+        })();
+
         // Send confirmation email
         try {
           const { Resend } = await import("resend");
