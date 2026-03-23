@@ -39,6 +39,8 @@ const NAV_SECTIONS = [
       { href: "/admin/marketing-dashboard", label: "Campaigns", icon: "📱" },
       { href: "/admin/whatsapp", label: "WhatsApp", icon: "💬" },
       { href: "/admin/reputation", label: "Reputation", icon: "⭐" },
+      { href: "/admin/blog", label: "Blog", icon: "📝" },
+      { href: "/admin/promos", label: "Promo Codes", icon: "🎟️" },
     ],
   },
   {
@@ -46,6 +48,7 @@ const NAV_SECTIONS = [
     items: [
       { href: "/admin/ai-monitor", label: "AI Monitor", icon: "🤖" },
       { href: "/admin/notifications", label: "Notifications", icon: "🔔" },
+      { href: "/admin/ecosystem", label: "Ecosystem", icon: "🌐" },
     ],
   },
 ];

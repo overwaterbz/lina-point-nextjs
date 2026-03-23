@@ -23,6 +23,7 @@ interface Room {
 const TYPE_LABELS: Record<string, string> = {
   suite_1st_floor: "1st Floor Hotel Suite",
   suite_2nd_floor: "2nd Hotel Suite",
+  cabana_duplex: "1 Bed Duplex Cabana",
   cabana_1br: "1BR Overwater Cabana",
   cabana_2br: "2BR Overwater Cabana",
 };
