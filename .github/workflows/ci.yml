@@ -35,7 +35,22 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: placeholder
           OPENAI_API_KEY: placeholder
           STRIPE_SECRET_KEY: placeholder
+          STRIPE_WEBHOOK_SECRET: placeholder
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: placeholder
           RESEND_API_KEY: placeholder
+          GROK_API_KEY: placeholder
+          TWILIO_ACCOUNT_SID: placeholder
+          TWILIO_AUTH_TOKEN: placeholder
+          TWILIO_WHATSAPP_FROM: placeholder
+          SQUARE_ACCESS_TOKEN: placeholder
+          SQUARE_LOCATION_ID: placeholder
+          SQUARE_WEBHOOK_SECRET: placeholder
+          N8N_WEBHOOK_URL: https://placeholder.n8n.cloud/webhook/placeholder
+          N8N_WEBHOOK_SECRET: placeholder
+          CRON_SECRET: placeholder
+          SERPAPI_KEY: placeholder
+          SENTRY_DSN: https://placeholder@placeholder.ingest.sentry.io/0
+          ADMIN_EMAILS: admin@example.com
 
       - name: Lighthouse CI
         run: |
