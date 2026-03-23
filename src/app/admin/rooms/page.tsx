@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import toast from "react-hot-toast";
 
 interface Room {
   id: string;
@@ -21,10 +22,12 @@ interface Room {
 
 const TYPE_LABELS: Record<string, string> = {
   suite_1st_floor: "1st Floor Hotel Suite",
-  suite_2nd_floor: "2nd Floor Hotel Suite",
+  suite_2nd_floor: "2nd Hotel Suite",
   cabana_1br: "1BR Overwater Cabana",
   cabana_2br: "2BR Overwater Cabana",
 };
+
+const ROOM_TYPES = Object.keys(TYPE_LABELS);
 
 const STATUS_BADGE: Record<string, string> = {
   active: "bg-green-100 text-green-700",
@@ -44,6 +47,8 @@ export default function RoomsPage() {
   const [icalUrl, setIcalUrl] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editRoom, setEditRoom] = useState<Room | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchRooms();
@@ -74,6 +79,40 @@ export default function RoomsPage() {
       .eq("id", room.id);
     setEditingId(null);
     fetchRooms();
+  };
+
+  const handleEditSave = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editRoom) return;
+    setSaving(true);
+    const form = new FormData(e.currentTarget);
+    const payload = {
+      name: form.get("name") as string,
+      fish_name: form.get("fish_name") as string,
+      description: form.get("description") as string,
+      room_type: form.get("room_type") as string,
+      room_number: form.get("room_number") as string,
+      floor: parseInt(form.get("floor") as string, 10) || null,
+      base_rate_usd: parseFloat(form.get("base_rate_usd") as string),
+      capacity: parseInt(form.get("capacity") as string, 10),
+      amenities: (form.get("amenities") as string)
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean),
+    };
+    const supabase = createBrowserSupabaseClient();
+    const { error } = await supabase
+      .from("rooms")
+      .update(payload)
+      .eq("id", editRoom.id);
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to save: " + error.message);
+    } else {
+      toast.success("Room updated");
+      setEditRoom(null);
+      fetchRooms();
+    }
   };
 
   const handleIcalSave = async (room: Room) => {
@@ -344,6 +383,12 @@ export default function RoomsPage() {
                           >
                             iCal
                           </button>
+                          <button
+                            onClick={() => setEditRoom(room)}
+                            className="text-xs text-teal-600 hover:text-teal-800 font-medium"
+                          >
+                            Edit
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -352,6 +397,152 @@ export default function RoomsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Full Edit Room Modal */}
+      {editRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b">
+              <h2 className="text-lg font-bold text-gray-900">
+                Edit Room — {editRoom.name}
+              </h2>
+              <button
+                onClick={() => setEditRoom(null)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <form
+              onSubmit={handleEditSave}
+              className="p-5 grid gap-4 sm:grid-cols-2"
+            >
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Room Name
+                </label>
+                <input
+                  name="name"
+                  defaultValue={editRoom.name}
+                  required
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Fish Name (nickname)
+                </label>
+                <input
+                  name="fish_name"
+                  defaultValue={editRoom.fish_name}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Room Number
+                </label>
+                <input
+                  name="room_number"
+                  defaultValue={editRoom.room_number}
+                  required
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Room Type
+                </label>
+                <select
+                  name="room_type"
+                  defaultValue={editRoom.room_type}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                >
+                  {ROOM_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {TYPE_LABELS[t] || t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Floor
+                </label>
+                <input
+                  name="floor"
+                  type="number"
+                  defaultValue={editRoom.floor ?? ""}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Base Rate (USD/night)
+                </label>
+                <input
+                  name="base_rate_usd"
+                  type="number"
+                  step="0.01"
+                  defaultValue={editRoom.base_rate_usd}
+                  required
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Capacity (guests)
+                </label>
+                <input
+                  name="capacity"
+                  type="number"
+                  defaultValue={editRoom.capacity}
+                  required
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  defaultValue={editRoom.description ?? ""}
+                  rows={3}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Amenities (comma-separated)
+                </label>
+                <input
+                  name="amenities"
+                  defaultValue={(editRoom.amenities || []).join(", ")}
+                  placeholder="WiFi, AC, Ocean View, Mini Bar"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="sm:col-span-2 flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+                >
+                  {saving ? "Saving…" : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditRoom(null)}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
