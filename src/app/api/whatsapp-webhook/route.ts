@@ -5,6 +5,11 @@ import { createClient } from "@supabase/supabase-js";
 import { validateRequest } from "twilio/lib/webhooks/webhooks";
 import crypto from "crypto";
 import { runWhatsAppConciergeAgent } from "@/lib/agents/whatsappConciergeAgent";
+import {
+  advanceBookingFlow,
+  isBookingIntent,
+} from "@/lib/agents/whatsappBookingFlow";
+import type { BookingFlowState } from "@/lib/agents/whatsappBookingFlow";
 import { normalizePhoneNumber, sendWhatsAppMessage } from "@/lib/whatsapp";
 import { runPriceScout } from "@/lib/priceScoutAgent";
 import { runExperienceCurator } from "@/lib/experienceCuratorAgent";
@@ -13,7 +18,10 @@ import { generateMagicContent } from "@/lib/magicContent";
 import { checkAvailability } from "@/lib/inventory";
 import { getReservation } from "@/lib/bookingFulfillment";
 import { generateTripPlan } from "@/lib/agents/tripPlannerAgent";
-import { logInteraction } from "@/lib/agents/guestIntelligenceAgent";
+import {
+  logInteraction,
+  getGuestMemories,
+} from "@/lib/agents/guestIntelligenceAgent";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -79,6 +87,17 @@ export async function POST(request: NextRequest) {
       .select("*")
       .eq("phone_number", phone)
       .maybeSingle();
+
+    // Load guest memories for personalised responses
+    let guestMemories: string[] = [];
+    if (profile?.user_id) {
+      try {
+        const memories = await getGuestMemories(supabase, profile.user_id, 10);
+        guestMemories = memories.map((m) => m.content);
+      } catch {
+        // non-fatal
+      }
+    }
 
     const existingContext = (existingSession?.context as any) || {
       messages: [],
@@ -149,6 +168,7 @@ export async function POST(request: NextRequest) {
       phone,
       profile,
       sessionContext,
+      guestMemories,
     });
 
     if (conciergeRunId) {
@@ -166,6 +186,47 @@ export async function POST(request: NextRequest) {
     let replyText = agentResult.replyText;
     const pending = agentResult.updatedContext.pending_action;
     let actionHandled = false;
+
+    // ── Booking State Machine ────────────────────────────────────────────────
+    // Check if active booking flow in session or message signals booking intent
+    const existingBookingFlow = (sessionContext as any).booking_flow as
+      | BookingFlowState
+      | undefined;
+    const isBooking =
+      existingBookingFlow?.step &&
+      existingBookingFlow.step !== "CONFIRMED" &&
+      existingBookingFlow.step !== "INQUIRY"
+        ? true
+        : pending?.type === "book_flow" || isBookingIntent(message);
+
+    if (isBooking && !actionHandled) {
+      try {
+        const currentFlowState: BookingFlowState = existingBookingFlow || {
+          step: "INQUIRY",
+          data: {},
+        };
+        const loyaltyTier = (profile as any)?.loyalty_tier || null;
+        const flowResult = await advanceBookingFlow(
+          supabase,
+          message,
+          currentFlowState,
+          profile?.user_id || null,
+          profile?.full_name || null,
+          phone,
+          loyaltyTier,
+        );
+        replyText = flowResult.reply;
+        // Persist updated booking flow state to session context
+        agentResult.updatedContext = {
+          ...agentResult.updatedContext,
+          booking_flow: flowResult.done ? null : flowResult.nextState,
+        } as any;
+        actionHandled = true;
+      } catch (bfErr) {
+        console.error("[WhatsApp] Booking flow error:", bfErr);
+        // Fall through to default action handling
+      }
+    }
 
     if (pending?.type === "book_flow") {
       const data = pending.data || {};
