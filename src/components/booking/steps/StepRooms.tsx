@@ -182,7 +182,7 @@ export default function StepRooms({
             >
               <div className="flex flex-col sm:flex-row">
                 {/* Photo */}
-                <div className="relative w-full sm:w-52 h-44 sm:h-auto shrink-0">
+                <div className="relative w-full sm:w-52 h-44 sm:h-48 shrink-0">
                   <Image
                     src={config.image}
                     alt={config.name}

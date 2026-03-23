@@ -22,10 +22,12 @@ interface StepReviewProps {
   checkOutDate: string;
   nights: number;
   selectedRoom: AvailabilityItem | null;
+  bundleSelected: boolean;
   promoCode: string;
   promoResult: PromoResult | null;
   promoLoading: boolean;
   showPromo: boolean;
+  onSetBundleSelected: (v: boolean) => void;
   onSetPromoCode: (code: string) => void;
   onValidatePromo: () => Promise<void>;
   onClearPromo: () => void;
@@ -41,10 +43,12 @@ export default function StepReview({
   checkOutDate,
   nights,
   selectedRoom,
+  bundleSelected,
   promoCode,
   promoResult,
   promoLoading,
   showPromo,
+  onSetBundleSelected,
   onSetPromoCode,
   onValidatePromo,
   onClearPromo,
@@ -52,10 +56,22 @@ export default function StepReview({
   onNext,
   onBack,
 }: StepReviewProps) {
-  const finalTotal =
-    promoResult?.valid && promoResult?.discount
-      ? Math.max(0, packageResult.curated_package.total - promoResult.discount)
-      : packageResult.curated_package.total;
+  const hasExperiences =
+    packageResult.curated_package.tours.length > 0 ||
+    packageResult.curated_package.dinner.price > 0;
+
+  const promoDiscount =
+    promoResult?.valid && promoResult?.discount ? promoResult.discount : 0;
+
+  const roomOnlyTotal = Math.max(
+    0,
+    packageResult.curated_package.room.room_total - promoDiscount,
+  );
+  const bundleTotal = Math.max(
+    0,
+    packageResult.curated_package.total - promoDiscount,
+  );
+  const finalTotal = bundleSelected ? bundleTotal : roomOnlyTotal;
 
   const remaining = selectedRoom?.availableRooms ?? null;
 
@@ -87,8 +103,8 @@ export default function StepReview({
         </div>
       )}
 
-      {/* Price summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Price summary — OTA vs Direct rate strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-red-50 border-l-4 border-red-500 rounded-xl p-4">
           <p className="text-xs font-semibold text-gray-500 mb-1">OTA Price</p>
           <p className="text-2xl font-bold text-red-600">
@@ -111,16 +127,111 @@ export default function StepReview({
             Save {packageResult.savings_percent}% vs OTA
           </p>
         </div>
-        <div className="bg-purple-50 border-l-4 border-purple-500 rounded-xl p-4">
-          <p className="text-xs font-semibold text-gray-500 mb-1">
-            Total Package
-          </p>
-          <p className="text-2xl font-bold text-purple-600">
-            ${finalTotal}{" "}
-            <span className="text-sm font-normal text-gray-400">USD</span>
-          </p>
-          <p className="text-xs text-gray-500 mt-1">Room + tours + dinner</p>
-        </div>
+      </div>
+
+      {/* Package tier selector */}
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-3">
+          Choose What to Include
+        </p>
+        {hasExperiences ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Room Only card */}
+            <button
+              type="button"
+              onClick={() => onSetBundleSelected(false)}
+              className={[
+                "text-left rounded-2xl border-2 p-4 transition-all",
+                !bundleSelected
+                  ? "border-teal-500 bg-teal-50 ring-2 ring-teal-200 shadow-md"
+                  : "border-gray-200 bg-white hover:border-gray-300",
+              ].join(" ")}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-base">🏨</span>
+                {!bundleSelected && (
+                  <span className="text-xs bg-teal-600 text-white px-2 py-0.5 rounded-full font-medium">
+                    Selected
+                  </span>
+                )}
+              </div>
+              <p className="font-bold text-gray-900 text-sm">Room Only</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Accommodation only — no tours or dining
+              </p>
+              <p className="text-xl font-bold text-teal-700 mt-2">
+                ${packageResult.curated_package.room.room_total}{" "}
+                <span className="text-sm font-normal text-gray-400">USD</span>
+              </p>
+              <p className="text-xs text-gray-400">
+                {nights} night{nights !== 1 ? "s" : ""}
+              </p>
+            </button>
+
+            {/* Room + Experiences card */}
+            <button
+              type="button"
+              onClick={() => onSetBundleSelected(true)}
+              className={[
+                "text-left rounded-2xl border-2 p-4 transition-all",
+                bundleSelected
+                  ? "border-teal-500 bg-teal-50 ring-2 ring-teal-200 shadow-md"
+                  : "border-gray-200 bg-white hover:border-gray-300",
+              ].join(" ")}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-base">🌴</span>
+                {bundleSelected && (
+                  <span className="text-xs bg-teal-600 text-white px-2 py-0.5 rounded-full font-medium">
+                    Selected
+                  </span>
+                )}
+              </div>
+              <p className="font-bold text-gray-900 text-sm">
+                Room + Experiences
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {packageResult.curated_package.tours.length} tour
+                {packageResult.curated_package.tours.length !== 1 ? "s" : ""} +
+                dining included
+              </p>
+              <p className="text-xl font-bold text-teal-700 mt-2">
+                ${packageResult.curated_package.total}{" "}
+                <span className="text-sm font-normal text-gray-400">USD</span>
+              </p>
+              <p className="text-xs text-gray-400">Room + tours + dining</p>
+            </button>
+          </div>
+        ) : (
+          /* Skip path — room only, no selector needed */
+          <div className="bg-teal-50 border-2 border-teal-500 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🏨</span>
+              <div>
+                <p className="font-bold text-gray-900">Room Only Reservation</p>
+                <p className="text-xs text-gray-500">
+                  No tours or dining — want to add experiences?{" "}
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="text-teal-600 underline hover:text-teal-800"
+                  >
+                    Go back
+                  </button>
+                </p>
+              </div>
+              <div className="ml-auto text-right shrink-0">
+                <p className="text-xl font-bold text-teal-700">
+                  ${packageResult.curated_package.room.room_total}{" "}
+                  <span className="text-sm font-normal text-gray-400">USD</span>
+                </p>
+                <p className="text-xs text-gray-400">
+                  {nights} night{nights !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* OTA price comparison widget */}
@@ -151,28 +262,33 @@ export default function StepReview({
               ${packageResult.curated_package.room.room_total}
             </span>
           </div>
-          {packageResult.curated_package.tours.map((tour, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-5 py-3"
-            >
-              <div>
-                <p className="font-medium text-gray-900 text-sm">{tour.name}</p>
-                <p className="text-xs text-gray-400">{tour.duration}</p>
+          {bundleSelected &&
+            packageResult.curated_package.tours.map((tour, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between px-5 py-3"
+              >
+                <div>
+                  <p className="font-medium text-gray-900 text-sm">
+                    {tour.name}
+                  </p>
+                  <p className="text-xs text-gray-400">{tour.duration}</p>
+                </div>
+                <span className="font-semibold text-gray-900 text-sm">
+                  ${tour.price}
+                </span>
               </div>
+            ))}
+          {bundleSelected && packageResult.curated_package.dinner.price > 0 && (
+            <div className="flex items-center justify-between px-5 py-3">
+              <p className="font-medium text-gray-900 text-sm">
+                {packageResult.curated_package.dinner.name}
+              </p>
               <span className="font-semibold text-gray-900 text-sm">
-                ${tour.price}
+                ${packageResult.curated_package.dinner.price}
               </span>
             </div>
-          ))}
-          <div className="flex items-center justify-between px-5 py-3">
-            <p className="font-medium text-gray-900 text-sm">
-              {packageResult.curated_package.dinner.name}
-            </p>
-            <span className="font-semibold text-gray-900 text-sm">
-              ${packageResult.curated_package.dinner.price}
-            </span>
-          </div>
+          )}
           {promoResult?.valid && promoResult?.discount && (
             <div className="flex items-center justify-between px-5 py-3 bg-green-50">
               <p className="font-medium text-green-700 text-sm">
@@ -281,7 +397,9 @@ export default function StepReview({
         onClick={onNext}
         className="w-full py-4 bg-teal-600 text-white text-lg font-bold rounded-xl hover:bg-teal-700 transition-all shadow-lg"
       >
-        Continue to Checkout →
+        {bundleSelected && hasExperiences
+          ? `Continue with Room + Experiences — $${finalTotal} USD →`
+          : `Continue with Room Only — $${finalTotal} USD →`}
       </button>
     </div>
   );

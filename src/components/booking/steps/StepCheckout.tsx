@@ -133,6 +133,7 @@ interface StepCheckoutProps {
   packageResult: BookingResult;
   promoResult: PromoResult | null;
   nights: number;
+  bundleSelected: boolean;
   guestDetails: GuestDetails;
   paymentOptions: { clientSecret: string } | null;
   paymentMode: "square" | "stripe";
@@ -152,6 +153,7 @@ export default function StepCheckout({
   packageResult,
   promoResult,
   nights,
+  bundleSelected,
   guestDetails,
   paymentOptions,
   paymentMode,
@@ -168,10 +170,13 @@ export default function StepCheckout({
 }: StepCheckoutProps) {
   const [attempted, setAttempted] = useState(false);
 
+  const baseTotal = bundleSelected
+    ? packageResult.curated_package.total
+    : packageResult.curated_package.room.room_total;
   const finalTotal =
     promoResult?.valid && promoResult?.discount
-      ? Math.max(0, packageResult.curated_package.total - promoResult.discount)
-      : packageResult.curated_package.total;
+      ? Math.max(0, baseTotal - promoResult.discount)
+      : baseTotal;
 
   const stripePromise = useMemo(
     () =>
@@ -370,20 +375,26 @@ export default function StepCheckout({
                   ${packageResult.curated_package.room.room_total}
                 </span>
               </div>
-              {packageResult.curated_package.tours.map((t, i) => (
-                <div key={i} className="flex justify-between">
-                  <span className="text-gray-600 truncate mr-2">{t.name}</span>
-                  <span className="font-medium shrink-0">${t.price}</span>
-                </div>
-              ))}
-              <div className="flex justify-between">
-                <span className="text-gray-600 truncate mr-2">
-                  {packageResult.curated_package.dinner.name}
-                </span>
-                <span className="font-medium shrink-0">
-                  ${packageResult.curated_package.dinner.price}
-                </span>
-              </div>
+              {bundleSelected &&
+                packageResult.curated_package.tours.map((t, i) => (
+                  <div key={i} className="flex justify-between">
+                    <span className="text-gray-600 truncate mr-2">
+                      {t.name}
+                    </span>
+                    <span className="font-medium shrink-0">${t.price}</span>
+                  </div>
+                ))}
+              {bundleSelected &&
+                packageResult.curated_package.dinner.price > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 truncate mr-2">
+                      {packageResult.curated_package.dinner.name}
+                    </span>
+                    <span className="font-medium shrink-0">
+                      ${packageResult.curated_package.dinner.price}
+                    </span>
+                  </div>
+                )}
               {promoResult?.valid && promoResult?.discount && (
                 <div className="flex justify-between text-green-600">
                   <span>Promo discount</span>

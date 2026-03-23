@@ -84,6 +84,7 @@ export default function BookingWizard({ initialData }: BookingWizardProps) {
             onSetTourBudget={wizard.setTourBudget}
             onToggleInterest={wizard.toggleInterest}
             onGeneratePackage={wizard.generatePackage}
+            onSkip={wizard.generateRoomOnlyPackage}
             onBack={wizard.prevStep}
           />
         )}
@@ -96,6 +97,8 @@ export default function BookingWizard({ initialData }: BookingWizardProps) {
             checkOutDate={wizard.checkOutDate}
             nights={wizard.nights}
             selectedRoom={wizard.selectedRoom}
+            bundleSelected={wizard.bundleSelected}
+            onSetBundleSelected={wizard.setBundleSelected}
             promoCode={wizard.promoCode}
             promoResult={wizard.promoResult}
             promoLoading={wizard.promoLoading}
@@ -114,6 +117,7 @@ export default function BookingWizard({ initialData }: BookingWizardProps) {
             packageResult={wizard.packageResult}
             promoResult={wizard.promoResult}
             nights={wizard.nights}
+            bundleSelected={wizard.bundleSelected}
             guestDetails={wizard.guestDetails}
             paymentOptions={wizard.paymentOptions}
             paymentMode={wizard.paymentMode}
