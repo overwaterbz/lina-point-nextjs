@@ -189,15 +189,31 @@ export async function POST(
       }
     }
 
-    // Run both agents in parallel
+    // Run both agents in parallel with a hard timeout so slow AI calls
+    // never cause the overall request to exceed Vercel's 60s limit.
+    const agentTimeout = (ms: number) =>
+      new Promise<never>((_, reject) => {
+        const t = setTimeout(
+          () => reject(new Error(`Agent timeout after ${ms}ms`)),
+          ms,
+        );
+        t.unref(); // don't block Node from exiting during tests
+      });
+
     const [priceScoutSettled, curatorSettled] = await Promise.allSettled([
-      runPriceScout(
-        body.roomType,
-        body.checkInDate,
-        body.checkOutDate,
-        body.location,
-      ),
-      runExperienceCurator(userPreferences, body.groupSize, body.tourBudget),
+      Promise.race([
+        runPriceScout(
+          body.roomType,
+          body.checkInDate,
+          body.checkOutDate,
+          body.location,
+        ),
+        agentTimeout(12000),
+      ]),
+      Promise.race([
+        runExperienceCurator(userPreferences, body.groupSize, body.tourBudget),
+        agentTimeout(12000),
+      ]),
     ]);
 
     // Extract results (with fallbacks)
