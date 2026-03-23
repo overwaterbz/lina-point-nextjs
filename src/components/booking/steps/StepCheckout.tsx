@@ -134,6 +134,7 @@ interface StepCheckoutProps {
   promoResult: PromoResult | null;
   nights: number;
   bundleSelected: boolean;
+  guestMode: boolean;
   guestDetails: GuestDetails;
   paymentOptions: { clientSecret: string } | null;
   paymentMode: "square" | "stripe";
@@ -154,6 +155,7 @@ export default function StepCheckout({
   promoResult,
   nights,
   bundleSelected,
+  guestMode,
   guestDetails,
   paymentOptions,
   paymentMode,
@@ -230,6 +232,28 @@ export default function StepCheckout({
           ← Back
         </button>
       </div>
+
+      {guestMode && !user && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
+          <span className="text-amber-500 mt-0.5">👤</span>
+          <div>
+            <p className="text-sm font-semibold text-amber-800">
+              Booking as Guest
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Enter your details below to complete your reservation. You can{" "}
+              <a
+                href="/auth/signup"
+                className="underline font-medium hover:text-amber-900"
+              >
+                create a free Lina Point account
+              </a>{" "}
+              after booking to unlock your personalized song, loyalty rewards,
+              and concierge access.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left: guest form + payment */}

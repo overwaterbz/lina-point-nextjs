@@ -14,7 +14,7 @@ export type RoomType =
   | "cabana_2br";
 
 export type ActivityLevel = "low" | "medium" | "high";
-export type WizardStep = 1 | 2 | 3 | 4 | 5;
+export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface AvailabilityItem {
   roomType: string;
@@ -157,7 +157,10 @@ export function useBookingWizard(initialData?: {
   // Step 4 — bundle vs room-only selection
   const [bundleSelected, setBundleSelected] = useState(true);
 
-  // Step 5 — checkout
+  // Step 5 — Magic Family (auth/join)
+  const [guestMode, setGuestMode] = useState(false);
+
+  // Step 6 — checkout
   const [guestDetails, setGuestDetails] = useState<GuestDetails>({
     name: "",
     email: "",
@@ -233,6 +236,19 @@ export function useBookingWizard(initialData?: {
 
   const goToStep = useCallback((n: WizardStep) => {
     setStep(n);
+    if (typeof window !== "undefined")
+      window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const proceedToCheckout = useCallback(() => {
+    setStep(6 as WizardStep);
+    if (typeof window !== "undefined")
+      window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const proceedAsGuest = useCallback(() => {
+    setGuestMode(true);
+    setStep(6 as WizardStep);
     if (typeof window !== "undefined")
       window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
@@ -405,9 +421,10 @@ export function useBookingWizard(initialData?: {
   const handlePay = useCallback(
     async (user: any) => {
       if (!packageResult) return;
-      if (!user) {
-        toast.error("Please log in or sign up to reserve your room.");
-        router.push("/auth/login");
+      if (!user && !guestMode) {
+        toast.error(
+          "Please sign in, create an account, or continue as a guest.",
+        );
         return;
       }
       setPaymentMode(hasSquare ? "square" : "stripe");
@@ -417,7 +434,7 @@ export function useBookingWizard(initialData?: {
       }
       setShowPayment(true);
     },
-    [packageResult, hasSquare, fallbackToStripe, router],
+    [packageResult, hasSquare, fallbackToStripe, guestMode],
   );
 
   // Post-payment success
@@ -495,10 +512,14 @@ export function useBookingWizard(initialData?: {
     // Bundle selection
     bundleSelected,
     setBundleSelected,
+    // Guest mode
+    guestMode,
     // Actions
     nextStep,
     prevStep,
     goToStep,
+    proceedToCheckout,
+    proceedAsGuest,
     generatePackage,
     generateRoomOnlyPackage,
     validatePromo,

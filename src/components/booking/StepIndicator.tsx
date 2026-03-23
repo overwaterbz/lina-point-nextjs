@@ -7,7 +7,8 @@ const STEPS: { num: WizardStep; label: string }[] = [
   { num: 2, label: "Room" },
   { num: 3, label: "Experiences" },
   { num: 4, label: "Review" },
-  { num: 5, label: "Checkout" },
+  { num: 5, label: "Your Magic" },
+  { num: 6, label: "Checkout" },
 ];
 
 interface StepIndicatorProps {
