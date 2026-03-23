@@ -670,10 +670,12 @@ export default function BookingPage() {
                       return (
                         <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3">
                           <p className="text-sm font-semibold text-green-800">
-                            Dynamic Rate: ${selected.dynamicRate}/night
+                            Dynamic Rate: ${selected.dynamicRate}{" "}
+                            <span className="text-xs font-normal">USD</span>
+                            /night
                             {selected.savingsVsBase ? (
                               <span className="ml-2 text-green-600">
-                                (save ${selected.savingsVsBase}/night)
+                                (save ${selected.savingsVsBase} USD/night)
                               </span>
                             ) : null}
                           </p>
@@ -682,8 +684,9 @@ export default function BookingPage() {
                           </p>
                           {selected.totalForStay && (
                             <p className="text-sm font-bold text-green-900 mt-1">
-                              Total: ${selected.totalForStay} for{" "}
-                              {selected.nights} night
+                              Total: ${selected.totalForStay}{" "}
+                              <span className="text-xs font-normal">USD</span>{" "}
+                              for {selected.nights} night
                               {selected.nights !== 1 ? "s" : ""}
                             </p>
                           )}
@@ -998,13 +1001,14 @@ export default function BookingPage() {
             </div>
 
             {/* Price Comparison */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
               <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-6 border-l-4 border-red-600">
                 <p className="text-gray-600 text-sm font-semibold">OTA Price</p>
                 <p className="text-3xl font-bold text-red-600">
                   ${result.curated_package.room.price_per_night}
                   <span className="text-sm font-normal text-gray-500">
-                    /night
+                    {" "}
+                    USD/night
                   </span>
                 </p>
                 <p className="text-xs text-gray-600 mt-1">
@@ -1027,7 +1031,8 @@ export default function BookingPage() {
                 <p className="text-3xl font-bold text-green-600">
                   ${result.beat_price_per_night}
                   <span className="text-sm font-normal text-gray-500">
-                    /night
+                    {" "}
+                    USD/night
                   </span>
                 </p>
                 <p className="text-xs text-gray-600 mt-1">
@@ -1051,6 +1056,10 @@ export default function BookingPage() {
                         result.curated_package.total - promoResult.discount,
                       ).toFixed(0)
                     : result.curated_package.total}
+                  <span className="text-sm font-normal text-gray-500">
+                    {" "}
+                    USD
+                  </span>
                 </p>
                 {promoResult?.valid && promoResult?.discount ? (
                   <p className="text-xs text-green-600 mt-1">
@@ -1061,6 +1070,16 @@ export default function BookingPage() {
                   Room + tours + dinner
                 </p>
               </div>
+            </div>
+
+            {/* OTA Price Breakdown */}
+            <div className="mb-8">
+              <OTAPriceComparison
+                roomType={formData.roomType}
+                checkIn={formData.checkInDate}
+                checkOut={formData.checkOutDate}
+                nights={result.nights}
+              />
             </div>
 
             {/* Package Details */}
