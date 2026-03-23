@@ -20,6 +20,8 @@ import { runWithRecursion } from "@/lib/agents/agentRecursion";
 import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
 import { getActivePrompt } from "@/lib/agents/promptManager";
 import { fetchCompetitivePrices } from "@/lib/otaIntegration";
+import { getCompetitorPatternSummary } from "@/lib/agents/competitorIntelligenceAgent";
+import { getDemandForecastSummary } from "@/lib/demandForecasting";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
@@ -220,14 +222,21 @@ async function getActiveRules() {
 export async function runPricingOptimization(): Promise<PricingOptimizationResult> {
   console.log("[PricingAgent] Starting pricing optimization...");
 
-  const [occupancyForecast, revenue, rules, marketSnapshot] = await Promise.all(
-    [
-      getOccupancyForecast(),
-      getRevenueTrend(),
-      getActiveRules(),
-      getMarketRates(),
-    ],
-  );
+  const [
+    occupancyForecast,
+    revenue,
+    rules,
+    marketSnapshot,
+    competitorPatternSummary,
+    demandSummary,
+  ] = await Promise.all([
+    getOccupancyForecast(),
+    getRevenueTrend(),
+    getActiveRules(),
+    getMarketRates(),
+    getCompetitorPatternSummary(supabase),
+    getDemandForecastSummary(supabase),
+  ]);
 
   const hasLiveMarketData = marketSnapshot.some((s) => s.source === "live");
   console.log(
@@ -293,13 +302,16 @@ export async function runPricingOptimization(): Promise<PricingOptimizationResul
             ? `Live Google Hotels data — our target direct rate ($${s.targetDirectRate}) is 6% below lowest competitor ($${s.lowestOTAName} at $${s.lowestOTAPrice})`
             : "Estimated prices — install SERPAPI_KEY for live Google Hotels data",
       })),
+      competitorPatterns: competitorPatternSummary,
+      demandForecast: demandSummary,
     },
     null,
     2,
   );
 
   const defaultPrompt = `You are a revenue management AI for Lina Point Resort (16-room boutique resort in San Pedro, Belize).
-Analyze occupancy forecasts, revenue trends, current pricing rules, AND live competitor market rates.
+Analyze occupancy forecasts, revenue trends, current pricing rules, live competitor market rates,
+detected OTA competitor patterns (competitorPatterns), AND the 90-day demand forecast (demandForecast).
 
 Our pricing strategy: always beat the lowest OTA price by exactly 6% for direct bookings.
 If competitors raise prices → we can raise ours and still beat them.
@@ -315,19 +327,20 @@ Return JSON:
       "roomType": "all" | specific type,
       "currentMultiplier": 1.2,
       "suggestedMultiplier": 1.15,
-      "reasoning": "why this change — reference specific competitor prices and occupancy data"
+      "reasoning": "why this change — reference competitor prices, demand forecast, and detected patterns"
     }
   ],
-  "revenueTrend": "brief trend summary including market position vs competitors"
+  "revenueTrend": "brief trend summary including market position vs competitors and demand outlook"
 }
 
 RULES:
 - Never suggest multipliers below 0.75 or above 1.50 (protect revenue floor and guest trust)
 - Prefer small incremental adjustments (±5-10%) over dramatic changes
 - Consider both revenue maximization AND occupancy — empty rooms earn $0
-- If marketCompetitorRates shows live SerpAPI data, weight it heavily in recommendations
+- Weight demandForecast: raise rates on high-demand weeks, offer discounts on soft weeks
+- Weight competitorPatterns: panic discounting = opportunity; arrival-curve signals = adjust windows
+- If marketCompetitorRates shows live SerpAPI data, use it as primary pricing anchor
 - If competitors are charging significantly more than our base rates, recommend raising multipliers
-- If low occupancy + competitor prices falling, recommend modest discounts to fill rooms
 - Return ONLY valid JSON, no markdown fences.`;
 
   const systemPrompt = await getActivePrompt(
