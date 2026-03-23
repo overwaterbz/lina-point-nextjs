@@ -233,6 +233,9 @@ export async function calculateDynamicPrice(
       const applied: Array<{ name: string; multiplier: number }> = [
         { name: "OTA Beat Rate (−6%)", multiplier: 0.94 },
       ];
+      const hasLoyaltyRuleMatch = loyaltyRules.some(
+        (r) => r.loyalty_tier && loyaltyTier && r.loyalty_tier === loyaltyTier,
+      );
       for (const rule of loyaltyRules) {
         if (
           rule.loyalty_tier &&
@@ -242,6 +245,17 @@ export async function calculateDynamicPrice(
           finalRate = Math.round(finalRate * rule.multiplier * 100) / 100;
           applied.push({ name: rule.rule_name, multiplier: rule.multiplier });
         }
+      }
+      // VIP auto-discount — applies when no DB loyalty rule exists for this tier
+      if (!hasLoyaltyRuleMatch && loyaltyTier === "vip") {
+        finalRate = Math.round(finalRate * 0.85 * 100) / 100;
+        applied.push({ name: "VIP Welcome Back −15%", multiplier: 0.85 });
+      } else if (!hasLoyaltyRuleMatch && loyaltyTier === "loyal") {
+        finalRate = Math.round(finalRate * 0.9 * 100) / 100;
+        applied.push({ name: "Loyal Guest −10%", multiplier: 0.9 });
+      } else if (!hasLoyaltyRuleMatch && loyaltyTier === "returning") {
+        finalRate = Math.round(finalRate * 0.95 * 100) / 100;
+        applied.push({ name: "Returning Guest −5%", multiplier: 0.95 });
       }
       nightlyRates.push({ date: dateStr, rate: Math.max(finalRate, 50) });
       for (const a of applied) {
@@ -274,6 +288,25 @@ export async function calculateDynamicPrice(
         if (windowTier) {
           rate = Math.round(rate * windowTier.multiplier * 100) / 100;
           applied.push(windowTier);
+        }
+      }
+
+      // VIP / loyalty auto-discount — only when no DB loyalty rule matched
+      const hasLoyaltyRuleMatch = applied.some(
+        (a) =>
+          a.name.toLowerCase().includes("loyal") ||
+          a.name.toLowerCase().includes("vip"),
+      );
+      if (!hasLoyaltyRuleMatch) {
+        if (loyaltyTier === "vip") {
+          rate = Math.round(rate * 0.85 * 100) / 100;
+          applied.push({ name: "VIP Welcome Back −15%", multiplier: 0.85 });
+        } else if (loyaltyTier === "loyal") {
+          rate = Math.round(rate * 0.9 * 100) / 100;
+          applied.push({ name: "Loyal Guest −10%", multiplier: 0.9 });
+        } else if (loyaltyTier === "returning") {
+          rate = Math.round(rate * 0.95 * 100) / 100;
+          applied.push({ name: "Returning Guest −5%", multiplier: 0.95 });
         }
       }
 

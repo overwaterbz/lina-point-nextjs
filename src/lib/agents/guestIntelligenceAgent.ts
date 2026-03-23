@@ -6,24 +6,24 @@
  * personalized recommendations across the entire guest journey.
  */
 
-import { grokLLM } from '@/lib/grokIntegration'
-import { HumanMessage, SystemMessage } from '@langchain/core/messages'
-import { runWithRecursion } from '@/lib/agents/agentRecursion'
-import { evaluateTextQuality } from '@/lib/agents/recursionEvaluators'
-import { getActivePrompt } from '@/lib/agents/promptManager'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { grokLLM } from "@/lib/grokIntegration";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { runWithRecursion } from "@/lib/agents/agentRecursion";
+import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
+import { getActivePrompt } from "@/lib/agents/promptManager";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface GuestInsights {
-  travelStyle: string
-  preferredRoomType: string | null
-  dietaryPreferences: string[]
-  activityInterests: string[]
-  budgetTier: 'budget' | 'mid' | 'luxury'
-  communicationStyle: string
-  specialOccasions: Array<{ type: string; date: string }>
-  loyaltyTier: 'new' | 'returning' | 'loyal' | 'vip'
-  sentimentTrend: 'positive' | 'neutral' | 'declining'
-  personalizedTips: string[]
+  travelStyle: string;
+  preferredRoomType: string | null;
+  dietaryPreferences: string[];
+  activityInterests: string[];
+  budgetTier: "budget" | "mid" | "luxury";
+  communicationStyle: string;
+  specialOccasions: Array<{ type: string; date: string }>;
+  loyaltyTier: "new" | "returning" | "loyal" | "vip";
+  sentimentTrend: "positive" | "neutral" | "declining";
+  personalizedTips: string[];
 }
 
 /**
@@ -34,42 +34,52 @@ export async function analyzeGuest(
   userId: string,
 ): Promise<GuestInsights> {
   // Parallel fetch of all guest data
-  const [profileRes, reservationsRes, interactionsRes, tourBookingsRes, messagesRes] =
-    await Promise.all([
-      supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
-      supabase
-        .from('reservations')
-        .select('room_type, check_in_date, check_out_date, total_amount, status, special_requests')
-        .eq('guest_id', userId)
-        .order('check_in_date', { ascending: false })
-        .limit(20),
-      supabase
-        .from('guest_interactions')
-        .select('interaction_type, channel, summary, sentiment, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(50),
-      supabase
-        .from('tour_bookings')
-        .select('tour_name, tour_type, price, status')
-        .eq('user_id', userId)
-        .limit(20),
-      supabase
-        .from('whatsapp_messages')
-        .select('body, direction, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(30),
-    ])
+  const [
+    profileRes,
+    reservationsRes,
+    interactionsRes,
+    tourBookingsRes,
+    messagesRes,
+  ] = await Promise.all([
+    supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+    supabase
+      .from("reservations")
+      .select(
+        "room_type, check_in_date, check_out_date, total_amount, status, special_requests",
+      )
+      .eq("guest_id", userId)
+      .order("check_in_date", { ascending: false })
+      .limit(20),
+    supabase
+      .from("guest_interactions")
+      .select("interaction_type, channel, summary, sentiment, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("tour_bookings")
+      .select("tour_name, tour_type, price, status")
+      .eq("user_id", userId)
+      .limit(20),
+    supabase
+      .from("whatsapp_messages")
+      .select("body, direction, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(30),
+  ]);
 
-  const profile = profileRes.data
-  const reservations = reservationsRes.data || []
-  const interactions = interactionsRes.data || []
-  const tourBookings = tourBookingsRes.data || []
-  const messages = messagesRes.data || []
+  const profile = profileRes.data;
+  const reservations = reservationsRes.data || [];
+  const interactions = interactionsRes.data || [];
+  const tourBookings = tourBookingsRes.data || [];
+  const messages = messagesRes.data || [];
 
-  const totalSpend = reservations.reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0)
-  const stayCount = reservations.filter((r) => r.status !== 'cancelled').length
+  const totalSpend = reservations.reduce(
+    (sum, r) => sum + (Number(r.total_amount) || 0),
+    0,
+  );
+  const stayCount = reservations.filter((r) => r.status !== "cancelled").length;
 
   // Build context for Grok analysis
   const guestData = JSON.stringify(
@@ -91,13 +101,13 @@ export async function analyzeGuest(
       })),
       tourHistory: tourBookings.slice(0, 10),
       recentConversations: messages.slice(0, 15).map((m) => ({
-        role: m.direction === 'inbound' ? 'guest' : 'maya',
+        role: m.direction === "inbound" ? "guest" : "maya",
         text: m.body,
       })),
       interactionSummary: {
         total: interactions.length,
-        positive: interactions.filter((i) => i.sentiment === 'positive').length,
-        negative: interactions.filter((i) => i.sentiment === 'negative').length,
+        positive: interactions.filter((i) => i.sentiment === "positive").length,
+        negative: interactions.filter((i) => i.sentiment === "negative").length,
         channels: [...new Set(interactions.map((i) => i.channel))],
       },
       totalSpend,
@@ -105,7 +115,7 @@ export async function analyzeGuest(
     },
     null,
     2,
-  )
+  );
 
   const defaultPrompt = `You are a luxury hospitality AI analyst for Lina Point Resort (San Pedro, Belize).
 Analyze this guest's complete history and return a JSON object with EXACTLY these fields:
@@ -124,9 +134,12 @@ Analyze this guest's complete history and return a JSON object with EXACTLY thes
 Rules:
 - loyaltyTier: new=0 stays, returning=1-2, loyal=3-5, vip=6+
 - budgetTier: based on spending patterns and room choices
-- Return ONLY valid JSON, no markdown fences.`
+- Return ONLY valid JSON, no markdown fences.`;
 
-  const systemPrompt = await getActivePrompt('guest_intelligence', defaultPrompt)
+  const systemPrompt = await getActivePrompt(
+    "guest_intelligence",
+    defaultPrompt,
+  );
 
   try {
     const { result: text } = await runWithRecursion<string>(
@@ -134,43 +147,60 @@ Rules:
         const response = await grokLLM.invoke([
           new SystemMessage(systemPrompt),
           new HumanMessage(guestData),
-        ])
-        return typeof response.content === 'string' ? response.content : String(response.content)
+        ]);
+        return typeof response.content === "string"
+          ? response.content
+          : String(response.content);
       },
       async (output) => {
         const evalResult = await evaluateTextQuality(
-          'Analyze guest history and return detailed preference profile as valid JSON with all required fields',
+          "Analyze guest history and return detailed preference profile as valid JSON with all required fields",
           output,
-        )
-        return { ...evalResult, data: output }
+        );
+        return { ...evalResult, data: output };
       },
       async (_prev, feedback) => {
         const response = await grokLLM.invoke([
           new SystemMessage(systemPrompt),
-          new HumanMessage(`${guestData}\n\nPrevious attempt feedback: ${feedback}\nPlease improve the analysis.`),
-        ])
-        return typeof response.content === 'string' ? response.content : String(response.content)
+          new HumanMessage(
+            `${guestData}\n\nPrevious attempt feedback: ${feedback}\nPlease improve the analysis.`,
+          ),
+        ]);
+        return typeof response.content === "string"
+          ? response.content
+          : String(response.content);
       },
-    )
-    const cleaned = text.replace(/```json\n?/g, '').replace(/```/g, '').trim()
-    const insights: GuestInsights = JSON.parse(cleaned)
-    return insights
+    );
+    const cleaned = text
+      .replace(/```json\n?/g, "")
+      .replace(/```/g, "")
+      .trim();
+    const insights: GuestInsights = JSON.parse(cleaned);
+    return insights;
   } catch {
     // Fallback: compute basic insights without LLM
     return {
-      travelStyle: 'leisure',
+      travelStyle: "leisure",
       preferredRoomType: reservations[0]?.room_type || null,
       dietaryPreferences: (profile?.dietary_restrictions as string[]) || [],
       activityInterests: (profile?.maya_interests as string[]) || [],
-      budgetTier: totalSpend > 5000 ? 'luxury' : totalSpend > 2000 ? 'mid' : 'budget',
-      communicationStyle: 'brief',
+      budgetTier:
+        totalSpend > 5000 ? "luxury" : totalSpend > 2000 ? "mid" : "budget",
+      communicationStyle: "brief",
       specialOccasions: profile?.birthday
-        ? [{ type: 'birthday', date: profile.birthday.slice(5) }]
+        ? [{ type: "birthday", date: profile.birthday.slice(5) }]
         : [],
-      loyaltyTier: stayCount >= 6 ? 'vip' : stayCount >= 3 ? 'loyal' : stayCount >= 1 ? 'returning' : 'new',
-      sentimentTrend: 'neutral',
+      loyaltyTier:
+        stayCount >= 6
+          ? "vip"
+          : stayCount >= 3
+            ? "loyal"
+            : stayCount >= 1
+              ? "returning"
+              : "new",
+      sentimentTrend: "neutral",
       personalizedTips: [],
-    }
+    };
   }
 }
 
@@ -181,27 +211,31 @@ export async function updateGuestIntelligence(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GuestInsights> {
-  const insights = await analyzeGuest(supabase, userId)
+  const insights = await analyzeGuest(supabase, userId);
 
   // Enrich with upsell optimization data
-  const upsellAffinity = await computeUpsellAffinity(supabase, userId, insights)
+  const upsellAffinity = await computeUpsellAffinity(
+    supabase,
+    userId,
+    insights,
+  );
 
   const enrichedPreferences = {
     ...insights,
     upsellAffinity,
-  }
+  };
 
   await supabase
-    .from('profiles')
+    .from("profiles")
     .update({
       travel_style: insights.travelStyle,
       loyalty_tier: insights.loyaltyTier,
       ai_preferences: enrichedPreferences as any,
       updated_at: new Date().toISOString(),
     })
-    .eq('user_id', userId)
+    .eq("user_id", userId);
 
-  return insights
+  return insights;
 }
 
 /**
@@ -215,62 +249,135 @@ async function computeUpsellAffinity(
 ): Promise<Record<string, number>> {
   // Get this guest's past upsell responses
   const { data: upsells } = await supabase
-    .from('upsell_offers')
-    .select('offer_type, status')
-    .eq('user_id', userId)
+    .from("upsell_offers")
+    .select("offer_type, status")
+    .eq("user_id", userId);
 
   // Get segment-level acceptance rates for guests with same travel style
   const { data: segmentUpsells } = await supabase
-    .from('upsell_offers')
-    .select('offer_type, status')
-    .limit(500)
+    .from("upsell_offers")
+    .select("offer_type, status")
+    .limit(500);
 
-  const affinity: Record<string, number> = {}
+  const affinity: Record<string, number> = {};
 
   // Personal acceptance rate (weighted 70%) + segment rate (weighted 30%)
-  const personalRates = computeAcceptanceRates(upsells || [])
-  const segmentRates = computeAcceptanceRates(segmentUpsells || [])
+  const personalRates = computeAcceptanceRates(upsells || []);
+  const segmentRates = computeAcceptanceRates(segmentUpsells || []);
 
-  const allTypes = new Set([...Object.keys(personalRates), ...Object.keys(segmentRates)])
+  const allTypes = new Set([
+    ...Object.keys(personalRates),
+    ...Object.keys(segmentRates),
+  ]);
 
   for (const offerType of allTypes) {
-    const personal = personalRates[offerType]
-    const segment = segmentRates[offerType]
+    const personal = personalRates[offerType];
+    const segment = segmentRates[offerType];
 
     if (personal !== undefined && segment !== undefined) {
-      affinity[offerType] = personal * 0.7 + segment * 0.3
+      affinity[offerType] = personal * 0.7 + segment * 0.3;
     } else if (personal !== undefined) {
-      affinity[offerType] = personal
+      affinity[offerType] = personal;
     } else if (segment !== undefined) {
-      affinity[offerType] = segment
+      affinity[offerType] = segment;
     }
   }
 
   // Boost based on loyalty tier
-  const tierBoost = { new: 0, returning: 0.05, loyal: 0.1, vip: 0.15 }
-  const boost = tierBoost[insights.loyaltyTier] || 0
+  const tierBoost = { new: 0, returning: 0.05, loyal: 0.1, vip: 0.15 };
+  const boost = tierBoost[insights.loyaltyTier] || 0;
   for (const key of Object.keys(affinity)) {
-    affinity[key] = Math.min(1, affinity[key] + boost)
+    affinity[key] = Math.min(1, affinity[key] + boost);
   }
 
-  return affinity
+  return affinity;
 }
 
 function computeAcceptanceRates(
   upsells: Array<{ offer_type: string; status: string }>,
 ): Record<string, number> {
-  const counts: Record<string, { accepted: number; total: number }> = {}
+  const counts: Record<string, { accepted: number; total: number }> = {};
   for (const u of upsells) {
-    if (!counts[u.offer_type]) counts[u.offer_type] = { accepted: 0, total: 0 }
-    counts[u.offer_type].total++
-    if (u.status === 'accepted') counts[u.offer_type].accepted++
+    if (!counts[u.offer_type]) counts[u.offer_type] = { accepted: 0, total: 0 };
+    counts[u.offer_type].total++;
+    if (u.status === "accepted") counts[u.offer_type].accepted++;
   }
-  const rates: Record<string, number> = {}
+  const rates: Record<string, number> = {};
   for (const [type, c] of Object.entries(counts)) {
-    rates[type] = c.total > 0 ? c.accepted / c.total : 0
+    rates[type] = c.total > 0 ? c.accepted / c.total : 0;
   }
-  return rates
+  return rates;
 }
+
+// ── Guest Memory ──────────────────────────────────────────────────────────
+
+export interface GuestMemoryEntry {
+  id: string;
+  memory_type:
+    | "preference"
+    | "experience"
+    | "milestone"
+    | "feedback"
+    | "observation";
+  content: string;
+  source: string | null;
+  confidence: number;
+  reservation_id: string | null;
+  created_at: string;
+}
+
+/**
+ * Retrieve the most recent N memories for a guest.
+ * Used to inject context into Maya's system prompt before each reply.
+ */
+export async function getGuestMemories(
+  supabase: SupabaseClient,
+  guestId: string,
+  limit = 10,
+): Promise<GuestMemoryEntry[]> {
+  const { data } = await supabase
+    .from("guest_memory")
+    .select(
+      "id, memory_type, content, source, confidence, reservation_id, created_at",
+    )
+    .eq("guest_id", guestId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return (data || []) as GuestMemoryEntry[];
+}
+
+/**
+ * Write a new memory for a guest.
+ * Called by in-stay agent, post-stay survey, and observation pipeline.
+ */
+export async function writeGuestMemory(
+  supabase: SupabaseClient,
+  guestId: string,
+  memory: {
+    memory_type:
+      | "preference"
+      | "experience"
+      | "milestone"
+      | "feedback"
+      | "observation";
+    content: string;
+    source?: string;
+    confidence?: number;
+    reservation_id?: string | null;
+  },
+): Promise<void> {
+  await supabase.from("guest_memory").insert({
+    guest_id: guestId,
+    memory_type: memory.memory_type,
+    content: memory.content,
+    source: memory.source || "agent_observation",
+    confidence: memory.confidence ?? 1.0,
+    reservation_id: memory.reservation_id ?? null,
+  });
+}
+
+// ── Guest Interactions ────────────────────────────────────────────────────
 
 /**
  * Log a guest interaction for future intelligence processing.
@@ -278,22 +385,22 @@ function computeAcceptanceRates(
 export async function logInteraction(
   supabase: SupabaseClient,
   params: {
-    userId: string
-    type: string
-    channel: string
-    summary: string
-    sentiment?: string
-    metadata?: Record<string, any>
-    reservationId?: string
+    userId: string;
+    type: string;
+    channel: string;
+    summary: string;
+    sentiment?: string;
+    metadata?: Record<string, any>;
+    reservationId?: string;
   },
 ) {
-  await supabase.from('guest_interactions').insert({
+  await supabase.from("guest_interactions").insert({
     user_id: params.userId,
     interaction_type: params.type,
     channel: params.channel,
     summary: params.summary,
-    sentiment: params.sentiment || 'neutral',
+    sentiment: params.sentiment || "neutral",
     metadata: params.metadata || {},
     reservation_id: params.reservationId || null,
-  })
+  });
 }
