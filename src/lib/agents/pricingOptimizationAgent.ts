@@ -428,6 +428,22 @@ RULES:
           },
           occupancy_pct: 0,
         });
+
+        // Record outcome baseline — the eval cron will fill in booking metrics after 7 days
+        void (async () => {
+          try {
+            await supabase.from("pricing_rule_outcomes").insert({
+              rule_id: insight.ruleId,
+              rule_name: insight.ruleName || "",
+              room_type: insight.roomType || null,
+              multiplier_before: insight.currentMultiplier,
+              multiplier_after: insight.suggestedMultiplier,
+              applied_at: new Date().toISOString(),
+            });
+          } catch {
+            /* non-fatal */
+          }
+        })();
       }
     } else {
       // Flag for admin review

@@ -488,6 +488,10 @@ export async function fetchCompetitivePrices(
 
   if (livePrices.length >= 2) {
     priceCache.set(cacheKey, { prices: livePrices, cachedAt: Date.now() });
+    // Persist live prices to DB for trend analysis (fire-and-forget)
+    persistPriceHistory(roomType, checkInDate, checkOutDate, livePrices).catch(
+      () => {},
+    );
     return livePrices;
   }
 
@@ -500,8 +504,99 @@ export async function fetchCompetitivePrices(
     }
   }
 
+  // Persist any live prices we did get (even partial)
+  if (livePrices.length > 0) {
+    persistPriceHistory(roomType, checkInDate, checkOutDate, livePrices).catch(
+      () => {},
+    );
+  }
+
   priceCache.set(cacheKey, { prices: combined, cachedAt: Date.now() });
   return combined;
+}
+
+/**
+ * Persist fetched OTA prices to ota_price_history for trend analysis.
+ * Called fire-and-forget — never blocks the price fetch pipeline.
+ */
+async function persistPriceHistory(
+  roomType: string,
+  checkIn: string,
+  checkOut: string,
+  prices: OTAPrice[],
+): Promise<void> {
+  if (!prices.length) return;
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+    );
+    const rows = prices.map((p) => ({
+      room_type: roomType,
+      check_in: checkIn,
+      check_out: checkOut,
+      ota_name: p.ota,
+      price: p.price,
+      source: p.source,
+      fetched_at: new Date().toISOString(),
+    }));
+    await supabase
+      .from("ota_price_history")
+      .upsert(rows, {
+        onConflict: "room_type,check_in,check_out,ota_name,fetched_at",
+      });
+  } catch {
+    // Non-fatal — price history is analytics, not critical path
+  }
+}
+
+/**
+ * Get rolling average OTA prices for a room type over the last N days.
+ * Used by pricingOptimizationAgent for trend analysis.
+ */
+export async function getCompetitorPriceTrend(
+  supabase: any,
+  roomType: string,
+  days: number = 7,
+): Promise<
+  Record<
+    string,
+    { avgPrice: number; minPrice: number; maxPrice: number; samples: number }
+  >
+> {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const { data } = await supabase
+    .from("ota_price_history")
+    .select("ota_name, price")
+    .eq("room_type", roomType)
+    .eq("source", "live")
+    .gte("fetched_at", since.toISOString());
+
+  const byOta: Record<string, number[]> = {};
+  for (const row of data || []) {
+    if (!byOta[row.ota_name]) byOta[row.ota_name] = [];
+    byOta[row.ota_name].push(Number(row.price));
+  }
+
+  const result: Record<
+    string,
+    { avgPrice: number; minPrice: number; maxPrice: number; samples: number }
+  > = {};
+  for (const [ota, prices] of Object.entries(byOta)) {
+    if (!prices.length) continue;
+    result[ota] = {
+      avgPrice:
+        Math.round((prices.reduce((a, b) => a + b, 0) / prices.length) * 100) /
+        100,
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+      samples: prices.length,
+    };
+  }
+  return result;
 }
 
 /**

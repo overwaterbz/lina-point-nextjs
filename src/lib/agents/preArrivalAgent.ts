@@ -10,23 +10,23 @@
  * Sends via email (Resend) and optionally WhatsApp.
  */
 
-import { grokLLM } from '@/lib/grokIntegration'
-import { HumanMessage, SystemMessage } from '@langchain/core/messages'
-import { runWithRecursion } from '@/lib/agents/agentRecursion'
-import { evaluateTextQuality } from '@/lib/agents/recursionEvaluators'
-import { getActivePrompt } from '@/lib/agents/promptManager'
-import { sendWhatsAppMessage } from '@/lib/whatsapp'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { grokLLM } from "@/lib/grokIntegration";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { runWithRecursion } from "@/lib/agents/agentRecursion";
+import { evaluateTextQuality } from "@/lib/agents/recursionEvaluators";
+import { getActivePrompt } from "@/lib/agents/promptManager";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface PreArrivalPacket {
-  reservationId: string
-  guestName: string
-  checkIn: string
-  weatherSummary: string
-  recommendedTours: Array<{ name: string; price: number; why: string }>
-  diningSuggestions: Array<{ name: string; description: string }>
-  personalizedTips: string
-  whatsAppMessage: string
+  reservationId: string;
+  guestName: string;
+  checkIn: string;
+  weatherSummary: string;
+  recommendedTours: Array<{ name: string; price: number; why: string }>;
+  diningSuggestions: Array<{ name: string; description: string }>;
+  personalizedTips: string;
+  whatsAppMessage: string;
 }
 
 /**
@@ -36,12 +36,12 @@ export async function findUpcomingArrivals(
   supabase: SupabaseClient,
   daysOut: number = 7,
 ) {
-  const targetDate = new Date()
-  targetDate.setDate(targetDate.getDate() + daysOut)
-  const dateStr = targetDate.toISOString().split('T')[0]
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + daysOut);
+  const dateStr = targetDate.toISOString().split("T")[0];
 
   const { data } = await supabase
-    .from('reservations')
+    .from("reservations")
     .select(
       `
       id,
@@ -56,10 +56,10 @@ export async function findUpcomingArrivals(
       status
     `,
     )
-    .eq('check_in_date', dateStr)
-    .eq('status', 'confirmed')
+    .eq("check_in_date", dateStr)
+    .eq("status", "confirmed");
 
-  return data || []
+  return data || [];
 }
 
 /**
@@ -68,32 +68,48 @@ export async function findUpcomingArrivals(
 export async function generatePreArrivalPacket(
   supabase: SupabaseClient,
   reservation: {
-    id: string
-    guest_id: string
-    confirmation_number: string
-    room_type: string
-    check_in_date: string
-    check_out_date: string
-    special_requests?: string
+    id: string;
+    guest_id: string;
+    confirmation_number: string;
+    room_type: string;
+    check_in_date: string;
+    check_out_date: string;
+    special_requests?: string;
   },
 ): Promise<PreArrivalPacket> {
-  // Fetch guest profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, phone_number, maya_interests, music_style, dietary_restrictions, travel_style, ai_preferences')
-    .eq('user_id', reservation.guest_id)
-    .maybeSingle()
+  // Fetch guest profile and intelligence in parallel
+  const [{ data: profile }, { data: guestIntel }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(
+        "full_name, phone_number, maya_interests, music_style, dietary_restrictions, travel_style, ai_preferences",
+      )
+      .eq("user_id", reservation.guest_id)
+      .maybeSingle(),
+    supabase
+      .from("guest_intelligence")
+      .select(
+        "interest_tags, previous_tours, predicted_ltv, anniversary, birthday, music_style, activity_level, engagement_score",
+      )
+      .eq("guest_id", reservation.guest_id)
+      .maybeSingle(),
+  ]);
 
-  const guestName = profile?.full_name || 'Guest'
-  const interests = profile?.maya_interests || []
-  const dietary = profile?.dietary_restrictions || []
-  const travelStyle = profile?.travel_style || 'leisure'
-  const aiPrefs = (profile?.ai_preferences as any) || {}
+  const guestName = profile?.full_name || "Guest";
+  const interests = guestIntel?.interest_tags || profile?.maya_interests || [];
+  const dietary = profile?.dietary_restrictions || [];
+  const travelStyle = profile?.travel_style || "leisure";
+  const aiPrefs = (profile?.ai_preferences as Record<string, unknown>) || {};
+  const musicStyle = guestIntel?.music_style || profile?.music_style || null;
+  const previousTours = (guestIntel?.previous_tours as string[]) || [];
+  const anniversary = guestIntel?.anniversary || null;
+  const birthday = guestIntel?.birthday || null;
 
   const nights = Math.round(
-    (new Date(reservation.check_out_date).getTime() - new Date(reservation.check_in_date).getTime()) /
+    (new Date(reservation.check_out_date).getTime() -
+      new Date(reservation.check_in_date).getTime()) /
       (1000 * 60 * 60 * 24),
-  )
+  );
 
   const defaultPrompt = `You are Maya, the AI concierge at Lina Point Resort in San Pedro, Belize.
 Generate a pre-arrival packet for a guest arriving in 7 days.
@@ -109,9 +125,15 @@ Return a JSON object:
 
 Available tours: Hol Chan Snorkeling ($95-150), Sport Fishing ($250-500), Mayan Ruins ($120-200), Cenote Swimming ($80-180), Mangrove Kayaking ($60-120), Blue Hole Diving ($180-450), Island Hopping ($100-200).
 Dining: Reef Restaurant (seafood, 7AM-10PM), Palapa Bar (cocktails, 11AM-midnight), Room Service (7AM-9PM).
-Return ONLY valid JSON, no markdown fences.`
 
-  const systemPrompt = await getActivePrompt('pre_arrival', defaultPrompt)
+Personalization rules:
+- If anniversary or birthday falls during the stay, prominently mention a complimentary surprise setup (champagne, flowers, special table) in personalizedTips and whatsAppMessage.
+- NEVER recommend tours the guest has already done (previousTours list). Choose alternatives.
+- Match tour energy to activityLevel: low = snorkeling/kayaking, high = fishing/diving/ruins.
+- If musicStyle is provided, mention it in the room prep note.
+Return ONLY valid JSON, no markdown fences.`;
+
+  const systemPrompt = await getActivePrompt("pre_arrival", defaultPrompt);
 
   const guestContext = JSON.stringify({
     name: guestName,
@@ -123,9 +145,13 @@ Return ONLY valid JSON, no markdown fences.`
     dietary,
     travelStyle,
     specialRequests: reservation.special_requests,
-    activityInterests: aiPrefs.activityInterests || [],
-    budgetTier: aiPrefs.budgetTier || 'mid',
-  })
+    activityInterests: (aiPrefs.activityInterests as string[]) || [],
+    budgetTier: (aiPrefs.budgetTier as string) || "mid",
+    musicStyle,
+    previousTours,
+    anniversary,
+    birthday,
+  });
 
   try {
     const { result: text } = await runWithRecursion<string>(
@@ -133,51 +159,75 @@ Return ONLY valid JSON, no markdown fences.`
         const response = await grokLLM.invoke([
           new SystemMessage(systemPrompt),
           new HumanMessage(guestContext),
-        ])
-        return typeof response.content === 'string' ? response.content : String(response.content)
+        ]);
+        return typeof response.content === "string"
+          ? response.content
+          : String(response.content);
       },
       async (output) => {
         const evalResult = await evaluateTextQuality(
-          'Generate a personalized pre-arrival packet as valid JSON with weather, tours, dining, tips, and WhatsApp message',
+          "Generate a personalized pre-arrival packet as valid JSON with weather, tours, dining, tips, and WhatsApp message",
           output,
-        )
-        return { ...evalResult, data: output }
+        );
+        return { ...evalResult, data: output };
       },
       async (_prev, feedback) => {
         const response = await grokLLM.invoke([
           new SystemMessage(systemPrompt),
-          new HumanMessage(`${guestContext}\n\nPrevious attempt feedback: ${feedback}\nPlease improve the output.`),
-        ])
-        return typeof response.content === 'string' ? response.content : String(response.content)
+          new HumanMessage(
+            `${guestContext}\n\nPrevious attempt feedback: ${feedback}\nPlease improve the output.`,
+          ),
+        ]);
+        return typeof response.content === "string"
+          ? response.content
+          : String(response.content);
       },
-    )
-    const cleaned = text.replace(/```json\n?/g, '').replace(/```/g, '').trim()
-    const packet = JSON.parse(cleaned)
+    );
+    const cleaned = text
+      .replace(/```json\n?/g, "")
+      .replace(/```/g, "")
+      .trim();
+    const packet = JSON.parse(cleaned);
 
     return {
       reservationId: reservation.id,
       guestName,
       checkIn: reservation.check_in_date,
       ...packet,
-    }
+    };
   } catch {
     return {
       reservationId: reservation.id,
       guestName,
       checkIn: reservation.check_in_date,
       weatherSummary:
-        'Expect warm tropical weather in San Pedro — highs around 85°F with gentle Caribbean breezes.',
+        "Expect warm tropical weather in San Pedro — highs around 85°F with gentle Caribbean breezes.",
       recommendedTours: [
-        { name: 'Hol Chan Marine Reserve Snorkeling', price: 95, why: 'Our most popular tour — pristine reef!' },
-        { name: 'Mangrove Kayaking', price: 60, why: 'Great for wildlife spotting.' },
+        {
+          name: "Hol Chan Marine Reserve Snorkeling",
+          price: 95,
+          why: "Our most popular tour — pristine reef!",
+        },
+        {
+          name: "Mangrove Kayaking",
+          price: 60,
+          why: "Great for wildlife spotting.",
+        },
       ],
       diningSuggestions: [
-        { name: 'Reef Restaurant', description: 'Fresh seafood with ocean views, open 7AM-10PM' },
-        { name: 'Palapa Bar', description: 'Handcrafted cocktails over the water' },
+        {
+          name: "Reef Restaurant",
+          description: "Fresh seafood with ocean views, open 7AM-10PM",
+        },
+        {
+          name: "Palapa Bar",
+          description: "Handcrafted cocktails over the water",
+        },
       ],
-      personalizedTips: 'Pack reef-safe sunscreen and water shoes for the best snorkeling experience.',
-      whatsAppMessage: `Hi ${guestName}! 🌴 Your Lina Point getaway is just 7 days away! The weather is looking beautiful. We'll have your ${reservation.room_type.replace(/_/g, ' ')} ready. Any special requests? Just reply here!`,
-    }
+      personalizedTips:
+        "Pack reef-safe sunscreen and water shoes for the best snorkeling experience.",
+      whatsAppMessage: `Hi ${guestName}! 🌴 Your Lina Point getaway is just 7 days away! The weather is looking beautiful. We'll have your ${reservation.room_type.replace(/_/g, " ")} ready. Any special requests? Just reply here!`,
+    };
   }
 }
 
@@ -193,52 +243,53 @@ export async function sendPreArrivalPacket(
   // Send WhatsApp if phone available
   if (guestPhone && packet.whatsAppMessage) {
     try {
-      await sendWhatsAppMessage(guestPhone, packet.whatsAppMessage)
+      await sendWhatsAppMessage(guestPhone, packet.whatsAppMessage);
     } catch (err) {
-      console.error('[PreArrival] WhatsApp send failed:', err)
+      console.error("[PreArrival] WhatsApp send failed:", err);
     }
   }
 
   // Send email via Resend
   if (guestEmail) {
     try {
-      const resendKey = process.env.RESEND_API_KEY
+      const resendKey = process.env.RESEND_API_KEY;
       if (resendKey) {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
           headers: {
             Authorization: `Bearer ${resendKey}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: 'Lina Point Resort <concierge@linapoint.com>',
+            from: "Lina Point Resort <concierge@linapoint.com>",
             to: [guestEmail],
             subject: `${packet.guestName}, your Lina Point trip is 7 days away! 🌊`,
             html: buildPreArrivalEmailHtml(packet),
           }),
-        })
+        });
       }
     } catch (err) {
-      console.error('[PreArrival] Email send failed:', err)
+      console.error("[PreArrival] Email send failed:", err);
     }
   }
 
   // Record in DB
-  await supabase.from('pre_arrival_packets').insert({
+  await supabase.from("pre_arrival_packets").insert({
     reservation_id: packet.reservationId,
     user_id: (
       await supabase
-        .from('reservations')
-        .select('guest_id')
-        .eq('id', packet.reservationId)
+        .from("reservations")
+        .select("guest_id")
+        .eq("id", packet.reservationId)
         .single()
     ).data?.guest_id,
-    sent_via: guestPhone && guestEmail ? 'both' : guestPhone ? 'whatsapp' : 'email',
+    sent_via:
+      guestPhone && guestEmail ? "both" : guestPhone ? "whatsapp" : "email",
     weather_forecast: { summary: packet.weatherSummary },
     recommended_tours: packet.recommendedTours,
     dining_suggestions: packet.diningSuggestions,
     personalized_tips: packet.personalizedTips,
-  })
+  });
 }
 
 function buildPreArrivalEmailHtml(packet: PreArrivalPacket): string {
@@ -247,11 +298,11 @@ function buildPreArrivalEmailHtml(packet: PreArrivalPacket): string {
       (t) =>
         `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb">${t.name}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right">$${t.price}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:13px">${t.why}</td></tr>`,
     )
-    .join('')
+    .join("");
 
   const diningList = packet.diningSuggestions
     .map((d) => `<li><strong>${d.name}</strong> — ${d.description}</li>`)
-    .join('')
+    .join("");
 
   return `
 <!DOCTYPE html>
@@ -264,7 +315,7 @@ function buildPreArrivalEmailHtml(packet: PreArrivalPacket): string {
   </div>
   <div style="background:white;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
     <h2 style="color:#0d9488;margin-top:0">Hello ${packet.guestName}!</h2>
-    <p>We're counting down the days until your arrival on <strong>${new Date(packet.checkIn + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong>.</p>
+    <p>We're counting down the days until your arrival on <strong>${new Date(packet.checkIn + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</strong>.</p>
 
     <h3 style="color:#374151">🌤 Weather</h3>
     <p>${packet.weatherSummary}</p>
@@ -287,5 +338,5 @@ function buildPreArrivalEmailHtml(packet: PreArrivalPacket): string {
     </div>
   </div>
 </body>
-</html>`
+</html>`;
 }

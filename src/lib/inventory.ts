@@ -1,74 +1,94 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient } from "@supabase/supabase-js";
 
-export type RoomType = 'suite_2nd_floor' | 'suite_1st_floor' | 'cabana_duplex' | 'cabana_1br' | 'cabana_2br'
+export type RoomType =
+  | "suite_2nd_floor"
+  | "suite_1st_floor"
+  | "cabana_duplex"
+  | "cabana_1br"
+  | "cabana_2br";
 
 /** Maps the booking page's display names to DB enum values */
 const ROOM_TYPE_MAP: Record<string, RoomType> = {
-  '2nd floor suite': 'suite_2nd_floor',
-  'reef suite': 'suite_2nd_floor',
-  'suite_2nd_floor': 'suite_2nd_floor',
-  '1st floor suite': 'suite_1st_floor',
-  'hotel suite': 'suite_1st_floor',
-  'suite_1st_floor': 'suite_1st_floor',
-  'duplex cabana': 'cabana_duplex',
-  'cabana duplex': 'cabana_duplex',
-  'cabana_duplex': 'cabana_duplex',
-  '1 bed duplex': 'cabana_duplex',
-  'overwater cabana': 'cabana_1br',
-  'cabana 1br': 'cabana_1br',
-  'cabana_1br': 'cabana_1br',
-  '1 bedroom cabana': 'cabana_1br',
-  'cabana 2br': 'cabana_2br',
-  'cabana_2br': 'cabana_2br',
-  '2 bedroom cabana': 'cabana_2br',
-  'family cabana': 'cabana_2br',
+  "2nd floor suite": "suite_2nd_floor",
+  "reef suite": "suite_2nd_floor",
+  suite_2nd_floor: "suite_2nd_floor",
+  "1st floor suite": "suite_1st_floor",
+  "hotel suite": "suite_1st_floor",
+  suite_1st_floor: "suite_1st_floor",
+  "duplex cabana": "cabana_duplex",
+  "cabana duplex": "cabana_duplex",
+  cabana_duplex: "cabana_duplex",
+  "1 bed duplex": "cabana_duplex",
+  "overwater cabana": "cabana_1br",
+  "cabana 1br": "cabana_1br",
+  cabana_1br: "cabana_1br",
+  "1 bedroom cabana": "cabana_1br",
+  "cabana 2br": "cabana_2br",
+  cabana_2br: "cabana_2br",
+  "2 bedroom cabana": "cabana_2br",
+  "family cabana": "cabana_2br",
   // Legacy aliases
-  'overwater bungalow': 'cabana_duplex',
-  'overwater suite': 'suite_1st_floor',
-  'overwater_suite': 'suite_1st_floor',
-  'beach villa': 'cabana_1br',
-}
+  "overwater bungalow": "cabana_duplex",
+  "overwater suite": "suite_1st_floor",
+  overwater_suite: "suite_1st_floor",
+  "beach villa": "cabana_1br",
+};
 
 /** Room type display labels, total counts, and base nightly rates */
-const ROOM_TYPE_INFO: Record<RoomType, { label: string; total: number; baseRate: number }> = {
-  suite_2nd_floor: { label: '2nd Floor Overwater Hotel Suite', total: 4, baseRate: 130 },
-  suite_1st_floor: { label: '1st Floor Overwater Hotel Suite', total: 4, baseRate: 150 },
-  cabana_duplex:   { label: '1 Bed Overwater Cabana (Duplex)', total: 6, baseRate: 250 },
-  cabana_1br:      { label: '1 Bedroom Overwater Cabana',      total: 1, baseRate: 300 },
-  cabana_2br:      { label: '2 Bedroom Overwater Cabana',      total: 1, baseRate: 400 },
-}
+const ROOM_TYPE_INFO: Record<
+  RoomType,
+  { label: string; total: number; baseRate: number }
+> = {
+  suite_2nd_floor: {
+    label: "2nd Floor Overwater Hotel Suite",
+    total: 4,
+    baseRate: 130,
+  },
+  suite_1st_floor: {
+    label: "1st Floor Overwater Hotel Suite",
+    total: 4,
+    baseRate: 150,
+  },
+  cabana_duplex: {
+    label: "1 Bed Overwater Cabana (Duplex)",
+    total: 6,
+    baseRate: 250,
+  },
+  cabana_1br: { label: "1 Bedroom Overwater Cabana", total: 1, baseRate: 300 },
+  cabana_2br: { label: "2 Bedroom Overwater Cabana", total: 1, baseRate: 400 },
+};
 
 export function resolveRoomType(input: string): RoomType {
-  const key = input.toLowerCase().trim()
-  return ROOM_TYPE_MAP[key] || 'suite_1st_floor'
+  const key = input.toLowerCase().trim();
+  return ROOM_TYPE_MAP[key] || "suite_1st_floor";
 }
 
 export function getRoomTypeInfo(rt: RoomType) {
-  return ROOM_TYPE_INFO[rt]
+  return ROOM_TYPE_INFO[rt];
 }
 
 /** Generate date array [checkIn, checkIn+1, ..., checkOut-1] */
 function dateRange(checkIn: string, checkOut: string): string[] {
-  const dates: string[] = []
-  const start = new Date(checkIn + 'T00:00:00')
-  const end = new Date(checkOut + 'T00:00:00')
-  const current = new Date(start)
+  const dates: string[] = [];
+  const start = new Date(checkIn + "T00:00:00");
+  const end = new Date(checkOut + "T00:00:00");
+  const current = new Date(start);
   while (current < end) {
-    dates.push(current.toISOString().split('T')[0])
-    current.setDate(current.getDate() + 1)
+    dates.push(current.toISOString().split("T")[0]);
+    current.setDate(current.getDate() + 1);
   }
-  return dates
+  return dates;
 }
 
 export interface AvailabilityResult {
-  roomType: RoomType
-  label: string
-  totalRooms: number
-  availableRooms: number
-  baseRate: number
-  nights: number
-  estimatedTotal: number
-  available: boolean
+  roomType: RoomType;
+  label: string;
+  totalRooms: number;
+  availableRooms: number;
+  baseRate: number;
+  nights: number;
+  estimatedTotal: number;
+  available: boolean;
 }
 
 /**
@@ -80,62 +100,75 @@ export async function checkAvailability(
   checkIn: string,
   checkOut: string,
 ): Promise<AvailabilityResult[]> {
-  const dates = dateRange(checkIn, checkOut)
-  const nights = dates.length
+  const dates = dateRange(checkIn, checkOut);
+  const nights = dates.length;
 
-  if (nights < 1) return []
+  if (nights < 1) return [];
 
   // Get all rooms grouped by type
   const { data: rooms, error: roomErr } = await supabase
-    .from('rooms')
-    .select('id, room_type, base_rate_usd')
-    .eq('status', 'active')
+    .from("rooms")
+    .select("id, room_type, base_rate_usd")
+    .eq("status", "active");
 
-  if (roomErr || !rooms) throw new Error('Failed to load rooms: ' + (roomErr?.message || 'unknown'))
+  if (roomErr || !rooms)
+    throw new Error("Failed to load rooms: " + (roomErr?.message || "unknown"));
 
   // Get booked/blocked inventory for the date range
   const { data: blockedInventory, error: invErr } = await supabase
-    .from('room_inventory')
-    .select('room_id, date')
-    .in('date', dates)
-    .in('status', ['booked', 'blocked', 'maintenance'])
+    .from("room_inventory")
+    .select("room_id, date")
+    .in("date", dates)
+    .in("status", ["booked", "blocked", "maintenance"]);
 
-  if (invErr) throw new Error('Failed to check inventory: ' + invErr.message)
+  if (invErr) throw new Error("Failed to check inventory: " + invErr.message);
 
   // Build set of room_ids that are blocked on ANY date in the range
-  const blockedRoomIds = new Set<string>()
-  const blockedByRoom = new Map<string, Set<string>>()
+  const blockedRoomIds = new Set<string>();
+  const blockedByRoom = new Map<string, Set<string>>();
   for (const inv of blockedInventory || []) {
-    if (!blockedByRoom.has(inv.room_id)) blockedByRoom.set(inv.room_id, new Set())
-    blockedByRoom.get(inv.room_id)!.add(inv.date)
+    if (!blockedByRoom.has(inv.room_id))
+      blockedByRoom.set(inv.room_id, new Set());
+    blockedByRoom.get(inv.room_id)!.add(inv.date);
   }
 
   // A room is unavailable if ANY date in the range is blocked
   for (const room of rooms) {
-    const blocked = blockedByRoom.get(room.id)
-    if (blocked && dates.some(d => blocked.has(d))) {
-      blockedRoomIds.add(room.id)
+    const blocked = blockedByRoom.get(room.id);
+    if (blocked && dates.some((d) => blocked.has(d))) {
+      blockedRoomIds.add(room.id);
     }
   }
 
   // Group by type and count available
-  const byType = new Map<RoomType, { total: number; available: number; baseRate: number }>()
+  const byType = new Map<
+    RoomType,
+    { total: number; available: number; baseRate: number }
+  >();
   for (const room of rooms) {
-    const rt = room.room_type as RoomType
+    const rt = room.room_type as RoomType;
     if (!byType.has(rt)) {
-      byType.set(rt, { total: 0, available: 0, baseRate: Number(room.base_rate_usd) })
+      byType.set(rt, {
+        total: 0,
+        available: 0,
+        baseRate: Number(room.base_rate_usd),
+      });
     }
-    const entry = byType.get(rt)!
-    entry.total++
+    const entry = byType.get(rt)!;
+    entry.total++;
     if (!blockedRoomIds.has(room.id)) {
-      entry.available++
+      entry.available++;
     }
   }
 
-  const results: AvailabilityResult[] = []
+  const results: AvailabilityResult[] = [];
   for (const [rt, info] of Object.entries(ROOM_TYPE_INFO)) {
-    const roomType = rt as RoomType
-    const data = byType.get(roomType) || { total: info.total, available: info.total, baseRate: info.baseRate }
+    const roomType = rt as RoomType;
+    const data = byType.get(roomType) || {
+      total: info.total,
+      available: info.total,
+      baseRate: info.baseRate,
+    };
     results.push({
       roomType,
       label: info.label,
@@ -145,10 +178,10 @@ export async function checkAvailability(
       nights,
       estimatedTotal: data.baseRate * nights,
       available: data.available > 0,
-    })
+    });
   }
 
-  return results
+  return results;
 }
 
 /**
@@ -161,41 +194,42 @@ export async function findAvailableRoom(
   checkIn: string,
   checkOut: string,
 ): Promise<string | null> {
-  const dates = dateRange(checkIn, checkOut)
+  const dates = dateRange(checkIn, checkOut);
 
   // Get all active rooms of this type
   const { data: rooms } = await supabase
-    .from('rooms')
-    .select('id')
-    .eq('room_type', roomType)
-    .eq('status', 'active')
+    .from("rooms")
+    .select("id")
+    .eq("room_type", roomType)
+    .eq("status", "active");
 
-  if (!rooms?.length) return null
+  if (!rooms?.length) return null;
 
   // Get blocked inventory for these rooms in this date range
-  const roomIds = rooms.map(r => r.id)
+  const roomIds = rooms.map((r) => r.id);
   const { data: blockedInventory } = await supabase
-    .from('room_inventory')
-    .select('room_id, date')
-    .in('room_id', roomIds)
-    .in('date', dates)
-    .in('status', ['booked', 'blocked', 'maintenance'])
+    .from("room_inventory")
+    .select("room_id, date")
+    .in("room_id", roomIds)
+    .in("date", dates)
+    .in("status", ["booked", "blocked", "maintenance"]);
 
-  const blockedByRoom = new Map<string, Set<string>>()
+  const blockedByRoom = new Map<string, Set<string>>();
   for (const inv of blockedInventory || []) {
-    if (!blockedByRoom.has(inv.room_id)) blockedByRoom.set(inv.room_id, new Set())
-    blockedByRoom.get(inv.room_id)!.add(inv.date)
+    if (!blockedByRoom.has(inv.room_id))
+      blockedByRoom.set(inv.room_id, new Set());
+    blockedByRoom.get(inv.room_id)!.add(inv.date);
   }
 
   // Find first room with ALL dates available
   for (const room of rooms) {
-    const blocked = blockedByRoom.get(room.id)
-    if (!blocked || !dates.some(d => blocked.has(d))) {
-      return room.id
+    const blocked = blockedByRoom.get(room.id);
+    if (!blocked || !dates.some((d) => blocked.has(d))) {
+      return room.id;
     }
   }
 
-  return null
+  return null;
 }
 
 /**
@@ -208,21 +242,21 @@ export async function markDatesBooked(
   checkOut: string,
   reservationId: string,
 ): Promise<void> {
-  const dates = dateRange(checkIn, checkOut)
+  const dates = dateRange(checkIn, checkOut);
 
   // Upsert inventory rows for each date
-  const rows = dates.map(date => ({
+  const rows = dates.map((date) => ({
     room_id: roomId,
     date,
-    status: 'booked' as const,
+    status: "booked" as const,
     reservation_id: reservationId,
-  }))
+  }));
 
   const { error } = await supabase
-    .from('room_inventory')
-    .upsert(rows, { onConflict: 'room_id,date' })
+    .from("room_inventory")
+    .upsert(rows, { onConflict: "room_id,date" });
 
-  if (error) throw new Error('Failed to mark dates booked: ' + error.message)
+  if (error) throw new Error("Failed to mark dates booked: " + error.message);
 }
 
 /**
@@ -233,9 +267,95 @@ export async function releaseDates(
   reservationId: string,
 ): Promise<void> {
   const { error } = await supabase
-    .from('room_inventory')
+    .from("room_inventory")
     .delete()
-    .eq('reservation_id', reservationId)
+    .eq("reservation_id", reservationId);
 
-  if (error) throw new Error('Failed to release dates: ' + error.message)
+  if (error) throw new Error("Failed to release dates: " + error.message);
+}
+
+/**
+ * Select the BEST available room of a given type, personalized to the guest profile.
+ *
+ * Priority scoring:
+ *  - Couples + anniversary: highest floor first (best ocean view)
+ *  - Families (groupSize > 2): lowest floor first (easier with kids/luggage)
+ *  - Default: lowest room_number first (deterministic, consistent assignment)
+ *
+ * Falls back to `findAvailableRoom` ordering if no rooms have floor data.
+ */
+export async function selectBestRoom(
+  supabase: SupabaseClient,
+  roomType: RoomType,
+  checkIn: string,
+  checkOut: string,
+  guestProfile?: {
+    anniversary?: string | null;
+    birthday?: string | null;
+    groupSize?: number;
+  },
+): Promise<string | null> {
+  const dates = dateRange(checkIn, checkOut);
+
+  // Get all active rooms of this type with floor data
+  const { data: rooms } = await supabase
+    .from("rooms")
+    .select("id, room_number, floor")
+    .eq("room_type", roomType)
+    .eq("status", "active");
+
+  if (!rooms?.length) return null;
+
+  // Get blocked inventory for these rooms
+  const roomIds = rooms.map((r) => r.id);
+  const { data: blockedInventory } = await supabase
+    .from("room_inventory")
+    .select("room_id, date")
+    .in("room_id", roomIds)
+    .in("date", dates)
+    .in("status", ["booked", "blocked", "maintenance"]);
+
+  const blockedByRoom = new Map<string, Set<string>>();
+  for (const inv of blockedInventory || []) {
+    if (!blockedByRoom.has(inv.room_id))
+      blockedByRoom.set(inv.room_id, new Set());
+    blockedByRoom.get(inv.room_id)!.add(inv.date);
+  }
+
+  // Filter to available rooms
+  const available = rooms.filter((room) => {
+    const blocked = blockedByRoom.get(room.id);
+    return !blocked || !dates.some((d) => blocked.has(d));
+  });
+
+  if (!available.length) return null;
+
+  // Determine sort preference from guest profile
+  const isAnniversary = !!guestProfile?.anniversary;
+  const isCoupleOrRomantic =
+    isAnniversary ||
+    (guestProfile?.groupSize !== undefined && guestProfile.groupSize <= 2);
+  const isFamily = (guestProfile?.groupSize ?? 0) > 2;
+
+  const sorted = [...available].sort((a, b) => {
+    const floorA = Number(a.floor) || 0;
+    const floorB = Number(b.floor) || 0;
+    const roomA = Number(a.room_number) || 0;
+    const roomB = Number(b.room_number) || 0;
+
+    if (isCoupleOrRomantic) {
+      // Highest floor (best view) first
+      if (floorB !== floorA) return floorB - floorA;
+      return roomB - roomA; // higher room number within same floor
+    }
+    if (isFamily) {
+      // Lowest floor (easier access) first
+      if (floorA !== floorB) return floorA - floorB;
+      return roomA - roomB;
+    }
+    // Default: lowest room_number (deterministic)
+    return roomA - roomB;
+  });
+
+  return sorted[0].id;
 }
