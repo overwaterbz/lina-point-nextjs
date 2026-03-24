@@ -22,8 +22,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Best Value · Panoramic Reef Views",
     description:
       "Elevated luxury with floor-to-ceiling windows, private balcony overlooking the turquoise Caribbean, and soaking tub with ocean view.",
-    image:
-      "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64-scaled.jpg",
+    image: "/rooms/2nd%20Floor%20Hotel%20Suite.jpg",
     badge: "Best Value",
     badgeColor: "bg-blue-500",
     borderColor: "border-blue-500",
@@ -40,8 +39,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Spacious · Direct Beach Access",
     description:
       "Ground-floor suite with direct beach access, full kitchen, two bedrooms, and private patio — ideal for families.",
-    image:
-      "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41-scaled.jpg",
+    image: "/rooms/1st%20Floor%20Hotel%20Suite.jpg",
     badge: null,
     badgeColor: "",
     borderColor: "border-teal-500",
@@ -76,8 +74,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Romantic Pick · 360° Private Views",
     description:
       "The most private accommodation — a standalone overwater cabana with unobstructed 360° ocean views, large hammock deck, and rain shower.",
-    image:
-      "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg",
+    image: "/rooms/1%20Bedroom%20Overwater%20Cabana.jpg",
     badge: "Romantic Pick",
     badgeColor: "bg-rose-500",
     borderColor: "border-rose-500",
@@ -94,8 +91,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Family Favorite · Largest Deck",
     description:
       "The ultimate family overwater experience — two bedrooms, full kitchenette, and our largest private deck with glass bottom panels.",
-    image:
-      "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39-scaled.jpg",
+    image: "/rooms/2%20Bedroom%20Overwater%20Cabana.jpeg",
     badge: "Family Fav",
     badgeColor: "bg-purple-500",
     borderColor: "border-purple-500",
