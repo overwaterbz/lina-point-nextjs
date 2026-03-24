@@ -71,6 +71,8 @@ export default function BookingWizard({ initialData }: BookingWizardProps) {
             nights={wizard.nights}
             checkIn={wizard.checkInDate}
             checkOut={wizard.checkOutDate}
+            otaPriceMap={wizard.otaPriceMap}
+            otaPricesLoading={wizard.otaPricesLoading}
             onSelectRoom={wizard.setRoomType}
             onNext={wizard.nextStep}
             onBack={wizard.prevStep}
