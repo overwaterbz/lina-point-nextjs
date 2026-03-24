@@ -20,6 +20,7 @@ jest.mock("@/lib/inventory", () => ({
     };
     return map[input.toLowerCase().trim()] || "suite_1st_floor";
   }),
+  selectBestRoom: jest.fn(),
   getRoomTypeInfo: jest.fn((rt: string) => {
     const info: Record<string, any> = {
       suite_2nd_floor: {
@@ -55,7 +56,7 @@ jest.mock("@/lib/inventory", () => ({
   releaseDates: jest.fn(),
 }));
 
-const { findAvailableRoom, markDatesBooked, releaseDates } =
+const { findAvailableRoom, markDatesBooked, releaseDates, selectBestRoom } =
   jest.requireMock("@/lib/inventory");
 
 // Helper to build a fluent mock Supabase client
@@ -122,6 +123,7 @@ describe("bookingFulfillment", () => {
 
     it("should create a reservation with valid input", async () => {
       findAvailableRoom.mockResolvedValue("room-uuid-1");
+      selectBestRoom.mockResolvedValue("room-uuid-1");
       markDatesBooked.mockResolvedValue(undefined);
 
       const chain: any = {
@@ -169,12 +171,10 @@ describe("bookingFulfillment", () => {
               ...chain,
               insert: jest.fn().mockReturnValue({
                 select: jest.fn().mockReturnValue({
-                  single: jest
-                    .fn()
-                    .mockResolvedValue({
-                      data: { id: "res-uuid-1" },
-                      error: null,
-                    }),
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: "res-uuid-1" },
+                    error: null,
+                  }),
                 }),
               }),
             };
@@ -191,17 +191,18 @@ describe("bookingFulfillment", () => {
       expect(result.baseRate).toBe(199);
       expect(result.totalRoomCost).toBe(597);
       expect(result.confirmationNumber).toMatch(/^LP-[A-Z2-9]{6}$/);
-      expect(findAvailableRoom).toHaveBeenCalledWith(
+      expect(selectBestRoom).toHaveBeenCalledWith(
         supabase,
         "cabana_1br",
         "2026-04-01",
         "2026-04-04",
+        expect.any(Object),
       );
       expect(markDatesBooked).toHaveBeenCalled();
     });
 
     it("should throw when no rooms are available", async () => {
-      findAvailableRoom.mockResolvedValue(null);
+      selectBestRoom.mockResolvedValue(null);
 
       const supabase: any = { from: jest.fn() };
 
@@ -212,6 +213,7 @@ describe("bookingFulfillment", () => {
 
     it("should apply percentage promo code correctly", async () => {
       findAvailableRoom.mockResolvedValue("room-uuid-1");
+      selectBestRoom.mockResolvedValue("room-uuid-1");
       markDatesBooked.mockResolvedValue(undefined);
 
       // Build a supabase mock that handles promo_codes, reservations, etc.
@@ -257,12 +259,10 @@ describe("bookingFulfillment", () => {
           if (table === "reservations") {
             base.insert = jest.fn().mockReturnValue({
               select: jest.fn().mockReturnValue({
-                single: jest
-                  .fn()
-                  .mockResolvedValue({
-                    data: { id: "res-uuid-1" },
-                    error: null,
-                  }),
+                single: jest.fn().mockResolvedValue({
+                  data: { id: "res-uuid-1" },
+                  error: null,
+                }),
               }),
             });
           }
@@ -389,16 +389,56 @@ describe("bookingFulfillment", () => {
 
   describe("cancelReservation", () => {
     it("should update status to cancelled and release dates", async () => {
-      const updateFn = jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      });
+      const reservationData = {
+        id: "res-uuid-1",
+        check_in: "2026-06-01",
+        total_amount: 597,
+        payment_id: null,
+        payment_processor: null,
+        payment_status: "pending",
+        status: "confirmed",
+      };
+
+      const policyChain: any = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        lte: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
+      };
 
       const supabase: any = {
-        from: jest.fn(() => ({
-          update: updateFn,
-          select: jest.fn().mockReturnThis(),
-          eq: jest.fn().mockReturnThis(),
-        })),
+        from: jest.fn((table: string) => {
+          if (table === "reservations") {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: reservationData,
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === "refund_policies") {
+            return policyChain;
+          }
+          if (table === "notifications") {
+            return {
+              insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+            };
+          }
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            update: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: null, error: null }),
+          };
+        }),
       };
 
       await cancelReservation(supabase, "res-uuid-1");
