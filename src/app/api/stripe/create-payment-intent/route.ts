@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { checkRateLimit, rateLimitKey } from "@/lib/rateLimit";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -13,8 +14,11 @@ let cachedSquareLocationId: string | null = null;
  * PRIMARY: Square (The Mayan — your main billing system)
  * FALLBACK: Stripe (automatic if Square unavailable)
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const limited = checkRateLimit(rateLimitKey(req), 20); // 20 payment intents/min per IP
+    if (limited) return limited;
+
     // Auth check — require a valid Supabase session
     const supabase = await createServerSupabaseClient();
     const {

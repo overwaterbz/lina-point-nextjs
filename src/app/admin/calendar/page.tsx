@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import toast from "react-hot-toast";
 
 interface Reservation {
   id: string;
@@ -117,7 +118,7 @@ export default function CalendarPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || "Failed");
+        toast.error(err.error || "Failed to update reservation status");
         return;
       }
       // Refresh reservations
@@ -125,7 +126,7 @@ export default function CalendarPage() {
         prev.map((r) => (r.id === resId ? { ...r, status: newStatus } : r)),
       );
     } catch {
-      alert("Network error");
+      toast.error("Network error — please try again");
     } finally {
       setActionLoading(null);
     }

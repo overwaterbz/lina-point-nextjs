@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/hooks/useAuth';
-import { createBrowserSupabaseClient } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useAuth } from "@/hooks/useAuth";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface KPIs {
   activeReservations: number;
@@ -37,6 +37,7 @@ export default function AdminDashboardPage() {
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [recentRes, setRecentRes] = useState<RecentReservation[]>([]);
   const [housekeeping, setHousekeeping] = useState<HousekeepingTask[]>([]);
+  const [revpar, setRevpar] = useState<number | null>(null);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function AdminDashboardPage() {
       return;
     }
     const supabase = createBrowserSupabaseClient();
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
 
     (async () => {
       try {
@@ -59,24 +60,56 @@ export default function AdminDashboardPage() {
           { count: upcomingTours },
           { data: recent },
           { data: hkTasks },
+          { data: revenueSnap },
         ] = await Promise.all([
-          supabase.from('reservations').select('id', { count: 'exact', head: true })
-            .in('status', ['confirmed', 'checked_in']),
-          supabase.from('rooms').select('id', { count: 'exact', head: true }),
-          supabase.from('room_inventory').select('id', { count: 'exact', head: true })
-            .eq('date', today).eq('status', 'booked'),
-          supabase.from('housekeeping_tasks').select('id', { count: 'exact', head: true })
-            .eq('date', today).in('status', ['pending', 'in_progress']),
-          supabase.from('invoices').select('id', { count: 'exact', head: true })
-            .in('status', ['draft', 'sent']),
-          supabase.from('notifications').select('id', { count: 'exact', head: true })
-            .or(`user_id.eq.${user.id},user_id.is.null`).eq('read', false),
-          supabase.from('tour_bookings').select('id', { count: 'exact', head: true })
-            .gte('tour_date', today).eq('status', 'confirmed'),
-          supabase.from('reservations').select('id, confirmation_number, check_in, check_out, status, rooms(name)')
-            .order('check_in', { ascending: false }).limit(5),
-          supabase.from('housekeeping_tasks').select('id, task_type, status, priority, rooms(name)')
-            .eq('date', today).order('priority', { ascending: true }).limit(5),
+          supabase
+            .from("reservations")
+            .select("id", { count: "exact", head: true })
+            .in("status", ["confirmed", "checked_in"]),
+          supabase.from("rooms").select("id", { count: "exact", head: true }),
+          supabase
+            .from("room_inventory")
+            .select("id", { count: "exact", head: true })
+            .eq("date", today)
+            .eq("status", "booked"),
+          supabase
+            .from("housekeeping_tasks")
+            .select("id", { count: "exact", head: true })
+            .eq("date", today)
+            .in("status", ["pending", "in_progress"]),
+          supabase
+            .from("invoices")
+            .select("id", { count: "exact", head: true })
+            .in("status", ["draft", "sent"]),
+          supabase
+            .from("notifications")
+            .select("id", { count: "exact", head: true })
+            .or(`user_id.eq.${user.id},user_id.is.null`)
+            .eq("read", false),
+          supabase
+            .from("tour_bookings")
+            .select("id", { count: "exact", head: true })
+            .gte("tour_date", today)
+            .eq("status", "confirmed"),
+          supabase
+            .from("reservations")
+            .select(
+              "id, confirmation_number, check_in, check_out, status, rooms(name)",
+            )
+            .order("check_in", { ascending: false })
+            .limit(5),
+          supabase
+            .from("housekeeping_tasks")
+            .select("id, task_type, status, priority, rooms(name)")
+            .eq("date", today)
+            .order("priority", { ascending: true })
+            .limit(5),
+          supabase
+            .from("revenue_snapshots")
+            .select("total_room_revenue, total_rooms")
+            .order("snapshot_date", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
         ]);
 
         setKpis({
@@ -90,8 +123,15 @@ export default function AdminDashboardPage() {
         });
         setRecentRes((recent || []) as unknown as RecentReservation[]);
         setHousekeeping((hkTasks || []) as unknown as HousekeepingTask[]);
+        if (revenueSnap && revenueSnap.total_rooms > 0) {
+          setRevpar(
+            Math.round(
+              revenueSnap.total_room_revenue / revenueSnap.total_rooms,
+            ),
+          );
+        }
       } catch (err) {
-        console.error('Dashboard fetch error:', err);
+        console.error("Dashboard fetch error:", err);
       } finally {
         setFetching(false);
       }
@@ -110,35 +150,89 @@ export default function AdminDashboardPage() {
     return null; // Layout handles redirect
   }
 
-  const occupancyPct = kpis && kpis.totalRooms > 0
-    ? Math.round((kpis.occupiedRooms / kpis.totalRooms) * 100)
-    : 0;
+  const occupancyPct =
+    kpis && kpis.totalRooms > 0
+      ? Math.round((kpis.occupiedRooms / kpis.totalRooms) * 100)
+      : 0;
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
         <p className="text-sm text-gray-600">
-          Today&apos;s snapshot — {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+          Today&apos;s snapshot —{" "}
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })}
         </p>
       </header>
 
       {/* KPI cards */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Active Reservations" value={kpis?.activeReservations ?? 0} icon="🗓️" href="/admin/calendar" />
-        <KpiCard label="Occupancy Today" value={`${occupancyPct}%`} sub={`${kpis?.occupiedRooms ?? 0} / ${kpis?.totalRooms ?? 0} rooms`} icon="🏨" href="/admin/rooms" />
-        <KpiCard label="Housekeeping" value={kpis?.pendingHousekeeping ?? 0} sub="pending today" icon="🧹" href="/admin/housekeeping" />
-        <KpiCard label="Upcoming Tours" value={kpis?.upcomingTours ?? 0} icon="🌊" href="/admin/tours" />
-        <KpiCard label="Unpaid Invoices" value={kpis?.unpaidInvoices ?? 0} icon="💰" href="/admin/pricing" />
-        <KpiCard label="Notifications" value={kpis?.unreadNotifications ?? 0} sub="unread" icon="🔔" href="/admin/notifications" />
+        <KpiCard
+          label="Active Reservations"
+          value={kpis?.activeReservations ?? 0}
+          icon="🗓️"
+          href="/admin/calendar"
+        />
+        <KpiCard
+          label="Occupancy Today"
+          value={`${occupancyPct}%`}
+          sub={`${kpis?.occupiedRooms ?? 0} / ${kpis?.totalRooms ?? 0} rooms`}
+          icon="🏨"
+          href="/admin/rooms"
+        />
+        <KpiCard
+          label="RevPAR"
+          value={revpar !== null ? `$${revpar}` : "—"}
+          sub="revenue per room"
+          icon="📈"
+          href="/admin/pricing"
+        />
+        <KpiCard
+          label="Housekeeping"
+          value={kpis?.pendingHousekeeping ?? 0}
+          sub="pending today"
+          icon="🧹"
+          href="/admin/housekeeping"
+        />
+        <KpiCard
+          label="Upcoming Tours"
+          value={kpis?.upcomingTours ?? 0}
+          icon="🌊"
+          href="/admin/tours"
+        />
+        <KpiCard
+          label="Unpaid Invoices"
+          value={kpis?.unpaidInvoices ?? 0}
+          icon="💰"
+          href="/admin/pricing"
+        />
+        <KpiCard
+          label="Notifications"
+          value={kpis?.unreadNotifications ?? 0}
+          sub="unread"
+          icon="🔔"
+          href="/admin/notifications"
+        />
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Reservations */}
         <section className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Reservations</h2>
-            <Link href="/admin/calendar" className="text-sm text-indigo-600 hover:underline">View all</Link>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Recent Reservations
+            </h2>
+            <Link
+              href="/admin/calendar"
+              className="text-sm text-indigo-600 hover:underline"
+            >
+              View all
+            </Link>
           </div>
           {recentRes.length === 0 ? (
             <p className="text-sm text-gray-400">No reservations yet.</p>
@@ -156,9 +250,13 @@ export default function AdminDashboardPage() {
                 <tbody>
                   {recentRes.map((r) => (
                     <tr key={r.id} className="border-t border-gray-100">
-                      <td className="py-2 pr-4 font-mono text-xs">{r.confirmation_number}</td>
-                      <td className="py-2 pr-4">{r.rooms?.name ?? '—'}</td>
-                      <td className="py-2 pr-4 text-gray-500">{new Date(r.check_in).toLocaleDateString()}</td>
+                      <td className="py-2 pr-4 font-mono text-xs">
+                        {r.confirmation_number}
+                      </td>
+                      <td className="py-2 pr-4">{r.rooms?.name ?? "—"}</td>
+                      <td className="py-2 pr-4 text-gray-500">
+                        {new Date(r.check_in).toLocaleDateString()}
+                      </td>
                       <td className="py-2">
                         <StatusBadge status={r.status} />
                       </td>
@@ -173,18 +271,32 @@ export default function AdminDashboardPage() {
         {/* Housekeeping Today */}
         <section className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Housekeeping Today</h2>
-            <Link href="/admin/housekeeping" className="text-sm text-indigo-600 hover:underline">View all</Link>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Housekeeping Today
+            </h2>
+            <Link
+              href="/admin/housekeeping"
+              className="text-sm text-indigo-600 hover:underline"
+            >
+              View all
+            </Link>
           </div>
           {housekeeping.length === 0 ? (
             <p className="text-sm text-gray-400">No tasks for today.</p>
           ) : (
             <div className="space-y-2">
               {housekeeping.map((t) => (
-                <div key={t.id} className="flex items-center justify-between border rounded-lg px-3 py-2 text-sm">
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between border rounded-lg px-3 py-2 text-sm"
+                >
                   <div>
-                    <span className="font-medium text-gray-900">{t.rooms?.name ?? '—'}</span>
-                    <span className="ml-2 text-gray-500 capitalize">{t.task_type.replace('_', ' ')}</span>
+                    <span className="font-medium text-gray-900">
+                      {t.rooms?.name ?? "—"}
+                    </span>
+                    <span className="ml-2 text-gray-500 capitalize">
+                      {t.task_type.replace("_", " ")}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <PriorityDot priority={t.priority} />
@@ -200,7 +312,19 @@ export default function AdminDashboardPage() {
   );
 }
 
-function KpiCard({ label, value, sub, icon, href }: { label: string; value: string | number; sub?: string; icon: string; href?: string }) {
+function KpiCard({
+  label,
+  value,
+  sub,
+  icon,
+  href,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  icon: string;
+  href?: string;
+}) {
   const content = (
     <div className="bg-white rounded-lg shadow p-5 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between">
@@ -216,27 +340,34 @@ function KpiCard({ label, value, sub, icon, href }: { label: string; value: stri
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    confirmed: 'bg-green-100 text-green-700',
-    checked_in: 'bg-blue-100 text-blue-700',
-    checked_out: 'bg-gray-100 text-gray-600',
-    cancelled: 'bg-red-100 text-red-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    in_progress: 'bg-blue-100 text-blue-700',
-    done: 'bg-green-100 text-green-700',
+    confirmed: "bg-green-100 text-green-700",
+    checked_in: "bg-blue-100 text-blue-700",
+    checked_out: "bg-gray-100 text-gray-600",
+    cancelled: "bg-red-100 text-red-700",
+    pending: "bg-yellow-100 text-yellow-700",
+    in_progress: "bg-blue-100 text-blue-700",
+    done: "bg-green-100 text-green-700",
   };
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || 'bg-gray-100 text-gray-600'}`}>
-      {status.replace('_', ' ')}
+    <span
+      className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || "bg-gray-100 text-gray-600"}`}
+    >
+      {status.replace("_", " ")}
     </span>
   );
 }
 
 function PriorityDot({ priority }: { priority: string }) {
   const colors: Record<string, string> = {
-    urgent: 'bg-red-500',
-    high: 'bg-orange-500',
-    normal: 'bg-blue-500',
-    low: 'bg-gray-400',
+    urgent: "bg-red-500",
+    high: "bg-orange-500",
+    normal: "bg-blue-500",
+    low: "bg-gray-400",
   };
-  return <span className={`w-2 h-2 rounded-full inline-block ${colors[priority] || 'bg-gray-400'}`} title={priority} />;
+  return (
+    <span
+      className={`w-2 h-2 rounded-full inline-block ${colors[priority] || "bg-gray-400"}`}
+      title={priority}
+    />
+  );
 }

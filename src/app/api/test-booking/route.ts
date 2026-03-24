@@ -12,12 +12,15 @@ const debugLog = (...args: unknown[]) => {
 };
 
 /**
- * Test endpoint for booking flow - no auth required
+ * Test endpoint for booking flow - dev only
  * Use for quick testing of agents without signup
  *
  * Example: GET /api/test-booking
  */
 export async function GET() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   try {
     debugLog("🧪 Starting test booking flow...");
 

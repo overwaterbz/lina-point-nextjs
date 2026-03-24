@@ -435,17 +435,16 @@ export function useBookingWizard(initialData?: {
     setPromoCode("");
   }, []);
 
-  // Stripe fallback
+  // Create Stripe payment intent (used for both Stripe and Square UI modes)
   const fallbackToStripe = useCallback(async () => {
     if (!packageResult) return;
+    const baseTotal = bundleSelected
+      ? packageResult.curated_package.total
+      : packageResult.curated_package.room.room_total;
     const finalTotal =
       promoResult?.valid && promoResult?.discount
-        ? Math.max(
-            0,
-            packageResult.curated_package.total - promoResult.discount,
-          )
-        : packageResult.curated_package.total;
-    setPaymentMode("stripe");
+        ? Math.max(0, baseTotal - promoResult.discount)
+        : baseTotal;
     try {
       const data = await fetchWithTimeout<any>(
         "/api/stripe/create-payment-intent",
@@ -467,9 +466,9 @@ export function useBookingWizard(initialData?: {
       toast.error(err instanceof Error ? err.message : "Payment setup failed");
       setShowPayment(false);
     }
-  }, [packageResult, promoResult]);
+  }, [packageResult, promoResult, bundleSelected]);
 
-  // Initiate payment (requires login)
+  // Initiate payment (requires login or guest mode)
   const handlePay = useCallback(
     async (user: any) => {
       if (!packageResult) return;
@@ -481,9 +480,9 @@ export function useBookingWizard(initialData?: {
       }
       setPaymentMode(hasSquare ? "square" : "stripe");
       setPaymentOptions(null);
-      if (!hasSquare) {
-        await fallbackToStripe();
-      }
+      // Always create the Stripe payment intent — both Square and Stripe UI
+      // modes use Stripe Elements under the hood
+      await fallbackToStripe();
       setShowPayment(true);
     },
     [packageResult, hasSquare, fallbackToStripe, guestMode],

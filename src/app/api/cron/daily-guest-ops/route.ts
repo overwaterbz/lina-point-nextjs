@@ -336,7 +336,6 @@ export async function GET(request: NextRequest) {
       .eq("status", "confirmed")
       .eq("payment_status", "paid");
 
-    const autoCheckins = 0;
     for (const res of arrivals2 || []) {
       await supabase
         .from("reservations")
@@ -358,7 +357,6 @@ export async function GET(request: NextRequest) {
       .eq("check_in_date", tomorrowStr)
       .in("status", ["confirmed"]);
 
-    const inspections = 0;
     for (const res of tomorrowArrivals || []) {
       if (res.room_id) {
         // Check if inspection already exists for this room tomorrow

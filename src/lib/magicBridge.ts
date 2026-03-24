@@ -9,12 +9,12 @@
  * so the property_guests table is directly accessible.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface MagicAccessResult {
-  userId: string
-  isNewUser: boolean
-  magicLoginUrl: string
+  userId: string;
+  isNewUser: boolean;
+  magicLoginUrl: string;
 }
 
 /**
@@ -34,26 +34,28 @@ export async function grantMagicAccess(
 ): Promise<MagicAccessResult | null> {
   try {
     // Expiry = checkout date + 1 day (so they have access through checkout day)
-    const expiresAt = new Date(checkOut + 'T23:59:59Z')
-    expiresAt.setDate(expiresAt.getDate() + 1)
+    const expiresAt = new Date(checkOut + "T23:59:59Z");
+    expiresAt.setDate(expiresAt.getDate() + 1);
 
     // Try to find existing user by email
     const { data: existingUsers } = await supabase.auth.admin.listUsers({
       page: 1,
       perPage: 1,
-    })
+    });
 
     // Search by email across all users
-    let userId: string | null = null
-    let isNewUser = false
+    let userId: string | null = null;
+    let isNewUser = false;
 
     // Use admin API to look up user by email
-    const { data: userList } = await supabase.rpc('get_user_by_email', {
-      lookup_email: email,
-    }).maybeSingle() as { data: { id: string } | null }
+    const { data: userList } = (await supabase
+      .rpc("get_user_by_email", {
+        lookup_email: email,
+      })
+      .maybeSingle()) as { data: { id: string } | null };
 
     if (userList?.id) {
-      userId = userList.id
+      userId = userList.id;
     }
 
     // If no RPC available, try admin.listUsers with filter
@@ -61,73 +63,80 @@ export async function grantMagicAccess(
       // The admin API doesn't support email filtering directly,
       // so we check if this email exists in profiles or auth
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('email', email.toLowerCase())
-        .maybeSingle()
+        .from("profiles")
+        .select("user_id")
+        .eq("email", email.toLowerCase())
+        .maybeSingle();
 
       if (profile?.user_id) {
-        userId = profile.user_id
+        userId = profile.user_id;
       }
     }
 
     // Create a new user if not found
     if (!userId) {
-      const tempPassword = generateSecurePassword()
+      const tempPassword = generateSecurePassword();
 
-      const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
-        email,
-        password: tempPassword,
-        email_confirm: true, // Auto-confirm so they can log in immediately
-        user_metadata: {
-          full_name: fullName,
-          source: 'lina_point_booking',
-          booking_id: bookingId,
-        },
-      })
+      const { data: newUser, error: createErr } =
+        await supabase.auth.admin.createUser({
+          email,
+          password: tempPassword,
+          email_confirm: true, // Auto-confirm so they can log in immediately
+          user_metadata: {
+            full_name: fullName,
+            source: "lina_point_booking",
+            booking_id: bookingId,
+          },
+        });
 
       if (createErr || !newUser?.user) {
-        console.error('[MagicBridge] Failed to create user:', createErr?.message)
-        return null
+        console.error(
+          "[MagicBridge] Failed to create user:",
+          createErr?.message,
+        );
+        return null;
       }
 
-      userId = newUser.user.id
-      isNewUser = true
+      userId = newUser.user.id;
+      isNewUser = true;
 
       // They'll use "Forgot Password" on Magic Is You to set their own password
       // or we can send a magic link
     }
 
     // Upsert property_guests row — gives free Dreamweaver access
-    const { error: guestErr } = await supabase
-      .from('property_guests')
-      .upsert(
-        {
-          user_id: userId,
-          property: 'lina_point',
-          source: 'booking',
-          booking_id: bookingId,
-          granted_at: new Date().toISOString(),
-          expires_at: expiresAt.toISOString(),
-        },
-        { onConflict: 'user_id,property' },
-      )
+    const { error: guestErr } = await supabase.from("property_guests").upsert(
+      {
+        user_id: userId,
+        property: "lina_point",
+        source: "booking",
+        booking_id: bookingId,
+        granted_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
+      },
+      { onConflict: "user_id,property" },
+    );
 
     if (guestErr) {
-      console.error('[MagicBridge] Failed to upsert property_guests:', guestErr.message)
+      console.error(
+        "[MagicBridge] Failed to upsert property_guests:",
+        guestErr.message,
+      );
       // Non-fatal: the user still has an account, just no free access
     }
 
-    const magicLoginUrl = 'https://magic.overwater.com/auth/login'
+    const magicLoginUrl = "https://magic.overwater.com/auth/login";
 
-    console.log(
-      `[MagicBridge] ${isNewUser ? 'Created' : 'Found'} Magic Is You account for ${email} (expires ${expiresAt.toISOString().split('T')[0]})`,
-    )
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `[MagicBridge] ${isNewUser ? "Created" : "Found"} Magic Is You account for ${email} (expires ${expiresAt.toISOString().split("T")[0]})`,
+      );
+    }
 
-    return { userId, isNewUser, magicLoginUrl }
+    return { userId, isNewUser, magicLoginUrl };
   } catch (err) {
-    console.error('[MagicBridge] Unexpected error:', err)
-    return null
+    console.error("[MagicBridge] Unexpected error:", err);
+    return null;
   }
 }
 
@@ -136,9 +145,9 @@ export async function grantMagicAccess(
  * Guests will use "Forgot Password" to set their own.
  */
 function generateSecurePassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%'
-  const length = 24
-  const values = new Uint8Array(length)
-  globalThis.crypto.getRandomValues(values)
-  return Array.from(values, (v) => chars[v % chars.length]).join('')
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
+  const length = 24;
+  const values = new Uint8Array(length);
+  globalThis.crypto.getRandomValues(values);
+  return Array.from(values, (v) => chars[v % chars.length]).join("");
 }

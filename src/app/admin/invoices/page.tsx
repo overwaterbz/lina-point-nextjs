@@ -76,14 +76,16 @@ export default function InvoicesPage() {
   }, [filter]);
 
   const handleStatusChange = async (id: string, status: string) => {
-    const supabase = createBrowserSupabaseClient();
-    const extra: Record<string, string> = {
-      status,
-      updated_at: new Date().toISOString(),
-    };
-    if (status === "paid") extra.paid_at = new Date().toISOString();
-    if (status === "sent") extra.issued_at = new Date().toISOString();
-    await supabase.from("invoices").update(extra).eq("id", id);
+    const res = await fetch(`/api/admin/invoices?id=${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const j = await res.json();
+      console.error("Invoice update failed:", j.error);
+      return;
+    }
     refetch(filter);
   };
 

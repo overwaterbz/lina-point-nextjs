@@ -74,12 +74,17 @@ export default function RoomsPage() {
 
   const handleStatusUpdate = async (room: Room) => {
     const supabase = createBrowserSupabaseClient();
-    await supabase
+    const { error } = await supabase
       .from("rooms")
       .update({ status: editStatus })
       .eq("id", room.id);
+    if (error) {
+      toast.error("Failed to update status: " + error.message);
+      return;
+    }
     setEditingId(null);
     fetchRooms();
+    toast.success("Room status updated");
   };
 
   const handleEditSave = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -118,12 +123,17 @@ export default function RoomsPage() {
 
   const handleIcalSave = async (room: Room) => {
     const supabase = createBrowserSupabaseClient();
-    await supabase
+    const { error } = await supabase
       .from("rooms")
       .update({ ical_url: icalUrl || null })
       .eq("id", room.id);
+    if (error) {
+      toast.error("Failed to save iCal URL: " + error.message);
+      return;
+    }
     setIcalEditId(null);
     fetchRooms();
+    toast.success("iCal URL saved");
   };
 
   const handleSyncNow = async () => {
@@ -135,12 +145,12 @@ export default function RoomsPage() {
         body: JSON.stringify({ agent: "ical-sync" }),
       });
       const data = await res.json();
-      alert(
+      toast.success(
         `Sync complete: ${data.rooms} rooms, +${data.blocked} blocked, -${data.released} released, ${data.errors?.length || 0} errors`,
       );
       fetchRooms();
     } catch {
-      alert("Sync failed");
+      toast.error("Sync failed — check the logs for details");
     } finally {
       setSyncing(false);
     }

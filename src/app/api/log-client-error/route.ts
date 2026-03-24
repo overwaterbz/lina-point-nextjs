@@ -10,16 +10,29 @@ export async function POST(request: NextRequest) {
 
   const { context, error, userAgent, url, timestamp } = await request.json();
 
+  // Truncate fields to prevent oversized payloads from polluting the DB
+  const safeContext =
+    typeof context === "string"
+      ? context.slice(0, 2000)
+      : JSON.stringify(context ?? null).slice(0, 2000);
+  const safeError =
+    typeof error === "string"
+      ? error.slice(0, 5000)
+      : JSON.stringify(error ?? null).slice(0, 5000);
+  const safeUrl = typeof url === "string" ? url.slice(0, 500) : null;
+  const safeUserAgent =
+    typeof userAgent === "string" ? userAgent.slice(0, 300) : null;
+
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
     await supabase.from("client_error_logs").insert({
-      context: typeof context === "string" ? context : JSON.stringify(context),
-      error: typeof error === "string" ? error : JSON.stringify(error),
-      url,
-      user_agent: userAgent,
+      context: safeContext,
+      error: safeError,
+      url: safeUrl,
+      user_agent: safeUserAgent,
       ts: timestamp
         ? new Date(timestamp).toISOString()
         : new Date().toISOString(),

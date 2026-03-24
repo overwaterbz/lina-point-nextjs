@@ -121,6 +121,8 @@ export default function BookingWizard({ initialData }: BookingWizardProps) {
             nights={wizard.nights}
             bundleSelected={wizard.bundleSelected}
             promoResult={wizard.promoResult}
+            guestDetails={wizard.guestDetails}
+            onSetGuestDetails={wizard.setGuestDetails}
             onAuthComplete={wizard.proceedToCheckout}
             onGuestCheckout={wizard.proceedAsGuest}
             onBack={wizard.prevStep}

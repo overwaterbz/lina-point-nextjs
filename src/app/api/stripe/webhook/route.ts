@@ -112,12 +112,39 @@ export async function POST(req: Request) {
       }
       break;
     case "payment_intent.payment_failed":
-      console.warn(
-        "[Webhook] Payment failed:",
-        event.data.object.id,
-        "processor:",
-        event.data.object.metadata?.processor || "stripe",
-      );
+      try {
+        const failedPi = event.data.object;
+        const failedBookingId = failedPi.metadata?.booking_id;
+        console.warn(
+          "[Webhook] Payment failed:",
+          failedPi.id,
+          "booking:",
+          failedBookingId || "none",
+          "processor:",
+          failedPi.metadata?.processor || "stripe",
+        );
+        if (failedBookingId) {
+          const { createServerSupabaseClient } =
+            await import("@/lib/supabase-server");
+          const supabase = await createServerSupabaseClient();
+          await supabase
+            .from("reservations")
+            .update({
+              payment_status: "payment_failed",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("booking_id", failedBookingId);
+          await supabase.from("notifications").insert({
+            type: "payment_failed",
+            title: "Payment Failed",
+            message: `Payment failed for booking ${failedBookingId}. PI: ${failedPi.id}`,
+            user_id: null,
+            read: false,
+          });
+        }
+      } catch (failErr) {
+        console.error("[Webhook] Error handling payment_failed:", failErr);
+      }
       break;
     case "charge.refunded":
       try {
