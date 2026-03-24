@@ -56,8 +56,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Most Popular · Glass Bottom Floors",
     description:
       "Classic overwater experience with glass-bottom floor panels revealing the reef below, private deck, and direct sea ladder access.",
-    image:
-      "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg",
+    image: "/rooms/1%20Bedroom%20Overwater%20Cabana%20(Duplex).jpg",
     badge: "Most Popular",
     badgeColor: "bg-amber-500",
     borderColor: "border-amber-500",
