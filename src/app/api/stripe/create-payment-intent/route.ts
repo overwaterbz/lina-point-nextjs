@@ -19,15 +19,11 @@ export async function POST(req: NextRequest) {
     const limited = checkRateLimit(rateLimitKey(req), 20); // 20 payment intents/min per IP
     if (limited) return limited;
 
-    // Auth check — require a valid Supabase session
+    // Optionally get user for metadata (guests allowed)
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
-      error: authError,
     } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const body = await req.json();
     const {
@@ -55,7 +51,7 @@ export async function POST(req: NextRequest) {
       const squareAttempt = await trySquarePayment(
         amount,
         currency,
-        { ...metadata, user_id: user.id },
+        { ...metadata, user_id: user?.id ?? "guest" },
         sourceId,
       );
       if (squareAttempt.success) {
@@ -77,7 +73,7 @@ export async function POST(req: NextRequest) {
     // Fallback to Stripe
     const stripeResult = await tryStripePayment(amount, currency, {
       ...metadata,
-      user_id: user.id,
+      user_id: user?.id ?? "guest",
     });
     if (stripeResult.success) {
       if (!isProd) console.log("[Payment] Stripe payment created as fallback");
