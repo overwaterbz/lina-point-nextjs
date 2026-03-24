@@ -294,10 +294,24 @@ export default function PricingPage() {
       return;
     }
     const supabase = createBrowserSupabaseClient();
-    await supabase
+    const oldEntry = basePrices.find((bp) => bp.room_type === roomType);
+    const { error } = await supabase
       .from("rooms")
       .update({ base_price: price })
       .eq("room_type", roomType);
+    if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      await supabase.from("pricing_audit").insert({
+        room_type: roomType,
+        field: "base_price",
+        old_value: String(oldEntry?.base_price ?? ""),
+        new_value: String(price),
+        changed_by: user?.email ?? "unknown",
+        change_source: "admin",
+      });
+    }
     setEditingBase(null);
     fetchData();
     toast.success("Base price updated");

@@ -17,8 +17,9 @@ import {
   getEcosystemContext,
 } from "@/lib/agents/ecosystemBrands";
 
+const isProd = process.env.NODE_ENV === "production";
 const debugLog = (...args: unknown[]) => {
-  console.log("[Marketing Cron]", ...args);
+  if (!isProd) console.log("[Marketing Cron]", ...args);
 };
 
 const supabase = createClient(

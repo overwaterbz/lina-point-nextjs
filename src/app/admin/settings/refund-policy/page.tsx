@@ -29,6 +29,7 @@ export default function RefundPolicyPage() {
   const [editing, setEditing] = useState<RefundPolicy | null>(null);
   const [form, setForm] = useState<Omit<RefundPolicy, "id">>(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function fetchPolicies() {
     const res = await fetch("/api/admin/refund-policy");
@@ -81,12 +82,12 @@ export default function RefundPolicyPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this refund policy?")) return;
     const res = await fetch(`/api/admin/refund-policy?id=${id}`, {
       method: "DELETE",
     });
     if (res.ok) {
       toast.success("Deleted");
+      setConfirmDeleteId(null);
       fetchPolicies();
     } else toast.error("Delete failed");
   }
@@ -201,7 +202,7 @@ export default function RefundPolicyPage() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(p.id)}
+                      onClick={() => setConfirmDeleteId(p.id)}
                       className="text-xs text-red-500 hover:underline"
                     >
                       Delete
@@ -341,6 +342,35 @@ export default function RefundPolicyPage() {
                 className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
               >
                 {saving ? "Saving…" : "Save Rule"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">
+              Delete Policy?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              This refund rule will be permanently removed. Current bookings may
+              be affected.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDeleteId)}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Delete permanently
               </button>
             </div>
           </div>

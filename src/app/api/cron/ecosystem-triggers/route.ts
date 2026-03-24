@@ -25,7 +25,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || "",
 );
 
-const log = (...args: unknown[]) => console.log("[EcosystemTriggers]", ...args);
+const isProd = process.env.NODE_ENV === "production";
+const log = (...args: unknown[]) => {
+  if (!isProd) console.log("[EcosystemTriggers]", ...args);
+};
 
 export async function GET(request: NextRequest) {
   try {

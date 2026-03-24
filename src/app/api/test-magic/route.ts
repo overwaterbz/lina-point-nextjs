@@ -13,9 +13,12 @@ const debugLog = (...args: unknown[]) => {
 
 /**
  * GET /api/test-magic
- * Test magic content generation with mock data
+ * Test magic content generation with mock data — dev only
  */
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   try {
     debugLog("[Test] Starting magic content generation test...");
 

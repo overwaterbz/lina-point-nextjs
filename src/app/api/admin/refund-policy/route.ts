@@ -2,8 +2,32 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { isAdminEmail } from "@/lib/admin";
 
-export async function GET() {
+async function requireAdmin(
+  request: NextRequest,
+): Promise<NextResponse | null> {
+  const authHeader = request.headers.get("authorization");
+  if (
+    process.env.CRON_SECRET &&
+    authHeader === `Bearer ${process.env.CRON_SECRET}`
+  )
+    return null;
+  try {
+    const sessionSupabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await sessionSupabase.auth.getUser();
+    if (user && isAdminEmail(user.email)) return null;
+  } catch {
+    /* session check failed */
+  }
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+export async function GET(request: NextRequest) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("refund_policies")
@@ -15,6 +39,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const supabase = await createServerSupabaseClient();
   const body = await req.json();
   const { name, days_before, refund_pct, notes, sort_order } = body;
@@ -43,12 +69,21 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const supabase = await createServerSupabaseClient();
   const body = await req.json();
-  const { id, ...updates } = body;
+  const { id, name, days_before, refund_pct, notes, active, sort_order } = body;
   if (!id)
     return NextResponse.json({ error: "id is required" }, { status: 400 });
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (name !== undefined) updates.name = name;
+  if (days_before !== undefined) updates.days_before = days_before;
+  if (refund_pct !== undefined) updates.refund_pct = refund_pct;
+  if (notes !== undefined) updates.notes = notes;
+  if (active !== undefined) updates.active = active;
+  if (sort_order !== undefined) updates.sort_order = sort_order;
   const { data, error } = await supabase
     .from("refund_policies")
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update(updates)
     .eq("id", id)
     .select()
     .single();
@@ -58,6 +93,8 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const supabase = await createServerSupabaseClient();
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

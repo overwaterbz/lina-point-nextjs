@@ -33,81 +33,96 @@ function getService() {
   );
 }
 
+const ALLOWED_CATEGORIES = [
+  "water",
+  "culture",
+  "nature",
+  "adventure",
+  "wellness",
+  "dining",
+];
+
+/** GET /api/admin/tours — list all tours with OTA prices */
 export async function GET(request: NextRequest) {
   const denied = await requireAdmin(request);
   if (denied) return denied;
 
-  const { searchParams } = new URL(request.url);
-  const status = searchParams.get("status"); // "published" | "draft" | undefined
-
   const supabase = getService();
-  let query = supabase
-    .from("blog_posts")
-    .select(
-      "id, slug, title, author, category, published, published_at, created_at",
-    )
-    .order("created_at", { ascending: false });
+  const { data, error } = await supabase
+    .from("tours")
+    .select("*, tour_ota_prices(*)")
+    .order("category")
+    .order("name");
 
-  if (status === "published") query = query.eq("published", true);
-  else if (status === "draft") query = query.eq("published", false);
-
-  const { data, error } = await query;
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ posts: data });
+  return NextResponse.json({ tours: data });
 }
 
+/** POST /api/admin/tours — create a new tour */
 export async function POST(request: NextRequest) {
   const denied = await requireAdmin(request);
   if (denied) return denied;
 
   const body = await request.json();
-  const { title, slug, content, excerpt, category, author, tags } = body;
+  const {
+    name,
+    description,
+    price,
+    duration_hours,
+    category,
+    max_guests,
+    image_url,
+    active,
+  } = body;
 
-  if (!title?.trim() || !slug?.trim() || !content?.trim()) {
+  if (
+    !name?.trim() ||
+    !description?.trim() ||
+    !price ||
+    !duration_hours ||
+    !category
+  ) {
     return NextResponse.json(
-      { error: "title, slug, and content are required" },
+      {
+        error:
+          "name, description, price, duration_hours, and category are required",
+      },
+      { status: 400 },
+    );
+  }
+  if (!ALLOWED_CATEGORIES.includes(category)) {
+    return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+  }
+  if (price <= 0 || duration_hours <= 0) {
+    return NextResponse.json(
+      { error: "price and duration_hours must be positive" },
       { status: 400 },
     );
   }
 
-  // Basic slug sanitization — lowercase, alphanumeric + hyphens only
-  const safeSlug = slug
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-{2,}/g, "-")
-    .replace(/^-|-$/g, "");
-
   const supabase = getService();
   const { data, error } = await supabase
-    .from("blog_posts")
+    .from("tours")
     .insert({
-      title: title.trim(),
-      slug: safeSlug,
-      content: content.trim(),
-      excerpt: excerpt?.trim() || null,
-      category: category || "travel",
-      author: author?.trim() || "Lina Point Team",
-      tags: Array.isArray(tags) ? tags : [],
+      name: name.trim(),
+      description: description.trim(),
+      price: Number(price),
+      duration_hours: Number(duration_hours),
+      category,
+      max_guests: max_guests ? Number(max_guests) : null,
+      image_url: image_url || null,
+      active: active !== false,
     })
-    .select(
-      "id, slug, title, author, category, published, published_at, created_at",
-    )
+    .select("id, name, category, price, active")
     .single();
 
-  if (error) {
-    if (error.code === "23505") {
-      return NextResponse.json(
-        { error: "Slug already exists — choose a different one" },
-        { status: 409 },
-      );
-    }
+  if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ post: data }, { status: 201 });
+  return NextResponse.json({ tour: data }, { status: 201 });
 }
 
+/** PATCH /api/admin/tours?id=<tourId> — update a tour */
 export async function PATCH(request: NextRequest) {
   const denied = await requireAdmin(request);
   if (denied) return denied;
@@ -119,18 +134,24 @@ export async function PATCH(request: NextRequest) {
 
   const body = await request.json();
   const allowed = [
-    "published",
-    "published_at",
-    "title",
-    "slug",
-    "excerpt",
+    "name",
+    "description",
+    "price",
+    "duration_hours",
     "category",
-    "author",
-    "tags",
+    "max_guests",
+    "image_url",
+    "active",
   ] as const;
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) update[key] = body[key];
+  }
+  if (
+    "category" in update &&
+    !ALLOWED_CATEGORIES.includes(update.category as string)
+  ) {
+    return NextResponse.json({ error: "Invalid category" }, { status: 400 });
   }
   if (Object.keys(update).length === 0)
     return NextResponse.json(
@@ -139,26 +160,7 @@ export async function PATCH(request: NextRequest) {
     );
 
   const supabase = getService();
-  const { error } = await supabase
-    .from("blog_posts")
-    .update(update)
-    .eq("id", id);
-  if (error)
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
-}
-
-export async function DELETE(request: NextRequest) {
-  const denied = await requireAdmin(request);
-  if (denied) return denied;
-
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  if (!id)
-    return NextResponse.json({ error: "id is required" }, { status: 400 });
-
-  const supabase = getService();
-  const { error } = await supabase.from("blog_posts").delete().eq("id", id);
+  const { error } = await supabase.from("tours").update(update).eq("id", id);
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

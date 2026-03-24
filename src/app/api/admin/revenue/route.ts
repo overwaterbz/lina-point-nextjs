@@ -55,7 +55,13 @@ export async function GET(request: NextRequest) {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
-    const totalRooms = 16;
+
+    // Fetch actual room count from database
+    const { count: roomCount } = await supabase
+      .from("rooms")
+      .select("id", { count: "exact", head: true })
+      .eq("active", true);
+    const totalRooms = roomCount || 1; // fallback to 1 to avoid division by zero
 
     // ── Today's occupancy ────────────────────────────────
     const { count: bookedToday } = await supabase

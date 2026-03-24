@@ -3,6 +3,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 interface BlogPost {
   id: string;
@@ -32,6 +33,7 @@ export default function AdminBlogPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const fetchPosts = async () => {
     const supabase = createBrowserSupabaseClient();
@@ -54,14 +56,18 @@ export default function AdminBlogPage() {
   }, [user]);
 
   const togglePublish = async (id: string, current: boolean) => {
-    const supabase = createBrowserSupabaseClient();
-    await supabase
-      .from("blog_posts")
-      .update({
+    const res = await fetch(`/api/admin/blog?id=${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         published: !current,
         published_at: !current ? new Date().toISOString() : null,
-      })
-      .eq("id", id);
+      }),
+    });
+    if (!res.ok) {
+      toast.error("Failed to update post");
+      return;
+    }
     setPosts((prev) =>
       prev.map((p) =>
         p.id === id
@@ -76,10 +82,14 @@ export default function AdminBlogPage() {
   };
 
   const deletePost = async (id: string) => {
-    if (!confirm("Delete this blog post permanently?")) return;
-    const supabase = createBrowserSupabaseClient();
-    await supabase.from("blog_posts").delete().eq("id", id);
+    const res = await fetch(`/api/admin/blog?id=${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      toast.error("Failed to delete post");
+      return;
+    }
     setPosts((prev) => prev.filter((p) => p.id !== id));
+    setConfirmDeleteId(null);
+    toast.success("Post deleted");
   };
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -220,7 +230,7 @@ export default function AdminBlogPage() {
                     {post.published ? "Unpublish" : "Publish"}
                   </button>
                   <button
-                    onClick={() => deletePost(post.id)}
+                    onClick={() => setConfirmDeleteId(post.id)}
                     className="text-xs px-3 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100"
                   >
                     Delete
@@ -340,6 +350,35 @@ export default function AdminBlogPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">
+              Delete Post?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              This will permanently delete the blog post. This action cannot be
+              undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deletePost(confirmDeleteId)}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Delete permanently
+              </button>
+            </div>
           </div>
         </div>
       )}

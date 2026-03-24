@@ -214,17 +214,19 @@ export async function createReservation(
       reservation_id: reservation.id,
       discount_applied: promoDiscount,
     });
-    // Increment current_uses on the promo code
+    // Increment current_uses on the promo code (optimistic lock to reduce race window)
     const { data: currentPromo } = await supabase
       .from("promo_codes")
       .select("current_uses")
       .eq("id", promoCodeId)
       .single();
     if (currentPromo) {
+      // Conditional update: only succeeds if current_uses hasn't changed since read
       await supabase
         .from("promo_codes")
         .update({ current_uses: (currentPromo.current_uses || 0) + 1 })
-        .eq("id", promoCodeId);
+        .eq("id", promoCodeId)
+        .eq("current_uses", currentPromo.current_uses); // optimistic lock
     }
   }
 
@@ -291,7 +293,7 @@ export async function markReservationPaid(
     .eq("booking_id", bookingId)
     .eq("payment_status", "pending") // idempotent: only update if still pending
     .select(
-      "id, confirmation_number, guest_id, room_type, base_rate, nights, total_room_cost, total_amount, check_in, check_out, promo_discount",
+      "id, confirmation_number, guest_id, room_type, base_rate, nights, total_room_cost, total_amount, check_in, check_out, promo_discount, booking_id",
     )
     .maybeSingle();
 
@@ -332,6 +334,28 @@ export async function markReservationPaid(
     );
   }
 
+  // Award loyalty points: 1 point per $1 paid (non-fatal)
+  try {
+    const pointsToAdd = Math.floor(Number(data.total_amount) || 0);
+    if (pointsToAdd > 0) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("loyalty_points")
+        .eq("user_id", data.guest_id)
+        .single();
+      if (profile) {
+        await supabase
+          .from("profiles")
+          .update({
+            loyalty_points: (profile.loyalty_points || 0) + pointsToAdd,
+          })
+          .eq("user_id", data.guest_id);
+      }
+    }
+  } catch {
+    // Non-fatal: points can be reconciled manually if needed
+  }
+
   // Notify n8n of new paid booking (fire-and-forget)
   fireN8nWorkflow("new-booking", {
     reservationId: bookingId,
@@ -360,6 +384,8 @@ async function generateInvoice(
     nights: number;
     total_room_cost: number;
     total_amount: number;
+    booking_id?: string;
+    promo_discount?: number | null;
   },
 ): Promise<void> {
   // Check if invoice already exists for this reservation
@@ -375,7 +401,7 @@ async function generateInvoice(
     Number(reservation.total_room_cost) ||
     Number(reservation.total_amount) ||
     0;
-  const promoDiscount = Number((reservation as any).promo_discount) || 0;
+  const promoDiscount = Number(reservation.promo_discount) || 0;
   const taxRate = 0.125; // 12.5% Belize GST
   const subtotal = roomCost - promoDiscount;
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
@@ -406,11 +432,21 @@ async function generateInvoice(
   }
 
   // Check for tour bookings associated with same booking
-  const { data: tours } = (await supabase
+  const tourQuery = supabase
     .from("tour_bookings")
     .select("total_price, num_guests, tours(name)")
     .eq("user_id", reservation.guest_id)
-    .eq("status", "paid")) as any;
+    .eq("status", "paid");
+  if (reservation.booking_id) {
+    tourQuery.eq("booking_id", reservation.booking_id);
+  }
+  type TourRow = {
+    total_price: number;
+    num_guests: number | null;
+    tours: { name: string } | null;
+  };
+  const tourResult = await tourQuery;
+  const tours = tourResult.data as TourRow[] | null;
 
   for (const tb of tours || []) {
     if (tb.total_price > 0) {
@@ -444,22 +480,99 @@ async function generateInvoice(
 }
 
 /**
- * Cancel a reservation and release inventory.
+ * Cancel a reservation, apply refund policy, and issue refund if applicable.
+ * Returns the refund amount and percentage applied.
  */
 export async function cancelReservation(
   supabase: SupabaseClient,
   reservationId: string,
-): Promise<void> {
+): Promise<{ refundAmount: number; refundPct: number }> {
   const { releaseDates } = await import("./inventory");
 
-  const { error } = await supabase
+  // Fetch reservation details needed for refund calculation
+  const { data: res, error: fetchErr } = await supabase
     .from("reservations")
-    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .select(
+      "id, check_in, total_amount, payment_id, payment_processor, payment_status, status",
+    )
+    .eq("id", reservationId)
+    .single();
+
+  if (fetchErr || !res) throw new Error("Reservation not found");
+  if (res.status === "cancelled")
+    throw new Error("Reservation is already cancelled");
+
+  // Calculate days until check-in
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const checkIn = new Date(res.check_in);
+  const daysUntil = Math.max(
+    0,
+    Math.round((checkIn.getTime() - today.getTime()) / 86400000),
+  );
+
+  // Find applicable refund tier: highest refund_pct where days_before <= daysUntil
+  const { data: policies } = await supabase
+    .from("refund_policies")
+    .select("days_before, refund_pct")
+    .eq("active", true)
+    .lte("days_before", daysUntil)
+    .order("days_before", { ascending: false })
+    .limit(1);
+
+  const refundPct = policies?.[0]?.refund_pct ?? 0;
+  const totalAmount = Number(res.total_amount) || 0;
+  const refundAmount = Math.round(totalAmount * (refundPct / 100) * 100) / 100;
+
+  // Issue payment refund if applicable
+  if (res.payment_status === "paid" && res.payment_id && refundAmount > 0) {
+    if (res.payment_processor === "stripe") {
+      try {
+        const Stripe = (await import("stripe")).default;
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+        await stripe.refunds.create({
+          payment_intent: res.payment_id,
+          amount: Math.round(refundAmount * 100), // convert to cents
+        });
+      } catch (refundErr) {
+        console.error("[cancelReservation] Stripe refund failed:", refundErr);
+        // Proceed with cancellation even if refund API fails
+      }
+    }
+    if (res.payment_processor === "square") {
+      // Square refunds require the Square SDK — log for manual processing
+      console.warn(
+        `[cancelReservation] Square refund required: payment_id=${res.payment_id}, amount=$${refundAmount}. Process manually in Square Dashboard.`,
+      );
+    }
+  }
+
+  // Update reservation status
+  const { error: cancelErr } = await supabase
+    .from("reservations")
+    .update({
+      status: "cancelled",
+      payment_status: refundAmount > 0 ? "refunded" : res.payment_status,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", reservationId);
 
-  if (error) throw new Error("Failed to cancel reservation: " + error.message);
+  if (cancelErr)
+    throw new Error("Failed to cancel reservation: " + cancelErr.message);
 
+  // Release inventory dates
   await releaseDates(supabase, reservationId);
+
+  // Write admin notification
+  await supabase.from("notifications").insert({
+    type: "reservation_cancelled",
+    title: "Reservation Cancelled",
+    message: `Reservation ${reservationId} cancelled. Refund: $${refundAmount} (${refundPct}% of $${totalAmount})`,
+    user_id: null,
+    read: false,
+  });
+
+  return { refundAmount, refundPct };
 }
 
 /**
