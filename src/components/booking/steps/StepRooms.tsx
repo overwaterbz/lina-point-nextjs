@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { AvailabilityItem, RoomType } from "@/hooks/useBookingWizard";
+import {
+  AvailabilityItem,
+  RoomType,
+  OTAPriceMap,
+  OTAPriceResponse,
+} from "@/hooks/useBookingWizard";
 import OTAPriceComparison from "@/components/OTAPriceComparison";
 
 interface RoomConfig {
@@ -121,6 +126,8 @@ interface StepRoomsProps {
   nights: number;
   checkIn: string;
   checkOut: string;
+  otaPriceMap: OTAPriceMap;
+  otaPricesLoading: boolean;
   onSelectRoom: (rt: RoomType) => void;
   onNext: () => void;
   onBack: () => void;
@@ -134,10 +141,31 @@ export default function StepRooms({
   nights,
   checkIn,
   checkOut,
+  otaPriceMap,
+  otaPricesLoading,
   onSelectRoom,
   onNext,
   onBack,
 }: StepRoomsProps) {
+  // Sort rooms: available + cheapest unified price first (Google Hotels pattern)
+  const sortedRooms = [...ROOM_ORDER].sort((a, b) => {
+    const aAvail = availability?.find((r) => r.roomType === a);
+    const bAvail = availability?.find((r) => r.roomType === b);
+    const aOTA = otaPriceMap[a];
+    const bOTA = otaPriceMap[b];
+
+    // Sold-out rooms to the bottom
+    const aOut = !!(availability && aAvail && !aAvail.available);
+    const bOut = !!(availability && bAvail && !bAvail.available);
+    if (aOut !== bOut) return aOut ? 1 : -1;
+
+    // Sort by unified price: min(dynamicRate, otaDirectPrice)
+    const aNightly = aAvail?.dynamicRate ?? aAvail?.baseRate ?? 9999;
+    const bNightly = bAvail?.dynamicRate ?? bAvail?.baseRate ?? 9999;
+    const aUnified = aOTA ? Math.min(aNightly, aOTA.ourDirectPrice) : aNightly;
+    const bUnified = bOTA ? Math.min(bNightly, bOTA.ourDirectPrice) : bNightly;
+    return aUnified - bUnified;
+  });
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -159,28 +187,47 @@ export default function StepRooms({
         </button>
       </div>
 
-      {/* Room cards */}
+      {/* Book Direct banner */}
+      <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
+        <span className="text-green-700 font-semibold">
+          ✓ Best Price Guaranteed
+        </span>
+        <span className="text-green-600">
+          — prices below beat Booking.com, Expedia &amp; Airbnb by at least 6%
+        </span>
+      </div>
+
+      {/* Room cards — sorted cheapest first */}
       <div className="space-y-4">
-        {ROOM_ORDER.map((rt) => {
+        {sortedRooms.map((rt) => {
           const config = ROOM_CONFIG[rt];
           const avail = availability?.find((a) => a.roomType === rt);
           const isSoldOut = !!(availability && avail && !avail.available);
           const isTooSmall = groupSize > config.maxGuests;
           const remaining = avail?.availableRooms ?? null;
-          const nightly = avail?.dynamicRate ?? avail?.baseRate ?? 0;
+          const dynamicNightly = avail?.dynamicRate ?? avail?.baseRate ?? 0;
+          const otaData = otaPriceMap[rt] ?? null;
+          // Unified price: best of our dynamic rate vs OTA-beat price
+          const unifiedNightly =
+            otaData && dynamicNightly > 0
+              ? Math.min(dynamicNightly, otaData.ourDirectPrice)
+              : dynamicNightly;
           const isSelected = selectedRoomType === rt;
 
           return (
             <RoomCard
               key={rt}
+              roomType={rt}
               config={config}
               isSoldOut={isSoldOut}
               isTooSmall={isTooSmall}
               remaining={remaining}
-              nightly={nightly}
+              nightly={unifiedNightly}
               nights={nights}
               isSelected={isSelected}
               availLoading={availLoading}
+              otaData={otaData}
+              otaLoading={otaPricesLoading && !otaData}
               onClick={() => !isSoldOut && !isTooSmall && onSelectRoom(rt)}
             />
           );
@@ -209,6 +256,7 @@ export default function StepRooms({
 }
 
 interface RoomCardProps {
+  roomType: RoomType;
   config: RoomConfig;
   isSoldOut: boolean;
   isTooSmall: boolean;
@@ -217,6 +265,8 @@ interface RoomCardProps {
   nights: number;
   isSelected: boolean;
   availLoading: boolean;
+  otaData: OTAPriceResponse | null;
+  otaLoading: boolean;
   onClick: () => void;
 }
 
@@ -229,9 +279,33 @@ function RoomCard({
   nights,
   isSelected,
   availLoading,
+  otaData,
+  otaLoading,
   onClick,
 }: RoomCardProps) {
   const [imgError, setImgError] = useState(false);
+
+  // Price anchoring: show competitor price (struck through) + our savings
+  const lowestOTAPrice = otaData?.lowestOTA?.price ?? null;
+  const lowestOTAName = otaData?.lowestOTA?.ota ?? null;
+  const savingsTotal =
+    lowestOTAPrice && nightly > 0 && nights > 0
+      ? Math.round((lowestOTAPrice - nightly) * nights)
+      : null;
+  const savingsPct = otaData?.savingsPercent ?? null;
+
+  // OTA display labels for anchor
+  const OTA_LABELS: Record<string, string> = {
+    booking: "Booking.com",
+    expedia: "Expedia",
+    airbnb: "Airbnb",
+    agoda: "Agoda",
+    hotels: "Hotels.com",
+    tripadvisor: "TripAdvisor",
+  };
+  const otaLabel = lowestOTAName
+    ? (OTA_LABELS[lowestOTAName] ?? lowestOTAName)
+    : null;
 
   return (
     <div
@@ -271,6 +345,12 @@ function RoomCard({
               {config.badge}
             </span>
           )}
+          {/* Best value badge when savings are available */}
+          {savingsTotal !== null && savingsTotal > 0 && (
+            <span className="absolute bottom-3 left-3 bg-green-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide shadow">
+              Save ${savingsTotal}
+            </span>
+          )}
           {isSoldOut && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <span className="text-white font-bold text-sm bg-red-600 px-3 py-1.5 rounded-full">
@@ -287,22 +367,64 @@ function RoomCard({
               <h3 className="text-lg font-bold text-gray-900 leading-snug">
                 {config.name}
               </h3>
-              {nightly > 0 && (
-                <div className="text-right shrink-0">
-                  <div className="text-xl font-bold text-teal-700">
-                    ${nightly}{" "}
-                    <span className="text-sm font-normal text-gray-400">
-                      USD/night
-                    </span>
+
+              {/* Price column: OTA anchor + our price */}
+              <div className="text-right shrink-0 min-w-[110px]">
+                {otaLoading ? (
+                  /* Skeleton while OTA prices load */
+                  <div className="animate-pulse space-y-1.5">
+                    <div className="h-3 bg-gray-200 rounded w-20 ml-auto" />
+                    <div className="h-5 bg-gray-200 rounded w-16 ml-auto" />
+                    <div className="h-3 bg-gray-200 rounded w-14 ml-auto" />
                   </div>
-                  {nights > 0 && (
-                    <div className="text-xs text-gray-400">
-                      ${nightly * nights} total
+                ) : lowestOTAPrice && nightly > 0 ? (
+                  <>
+                    {/* OTA anchor price — struck through */}
+                    <div className="text-[11px] text-gray-400 line-through">
+                      ${Math.round(lowestOTAPrice)}
+                      <span className="no-underline">/night</span>
+                      {otaLabel && (
+                        <span className="ml-1 text-[10px]">on {otaLabel}</span>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
+                    {/* Our direct price — prominent green */}
+                    <div className="text-xl font-bold text-green-700">
+                      ${Math.round(nightly)}{" "}
+                      <span className="text-sm font-normal text-gray-400">
+                        /night
+                      </span>
+                    </div>
+                    {/* Total for stay + savings prompt */}
+                    {nights > 0 && (
+                      <div className="text-xs text-gray-400">
+                        ${Math.round(nightly * nights)} total
+                        {savingsPct !== null && savingsPct > 0 && (
+                          <span className="ml-1 text-green-600 font-semibold">
+                            · {savingsPct}% off
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : nightly > 0 ? (
+                  /* No OTA data — show plain price */
+                  <>
+                    <div className="text-xl font-bold text-teal-700">
+                      ${nightly}{" "}
+                      <span className="text-sm font-normal text-gray-400">
+                        USD/night
+                      </span>
+                    </div>
+                    {nights > 0 && (
+                      <div className="text-xs text-gray-400">
+                        ${nightly * nights} total
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </div>
             </div>
+
             <p className="text-xs font-semibold text-teal-600 mb-2">
               {config.tagline}
             </p>

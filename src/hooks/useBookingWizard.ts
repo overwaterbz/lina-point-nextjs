@@ -3,6 +3,10 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { trackEvent, getUtmParams } from "@/lib/analytics";
 import { logClientError } from "@/lib/logClientError";
+import { useOTABulkPrices, OTAPriceMap } from "./useOTABulkPrices";
+
+export type { OTAPriceMap } from "./useOTABulkPrices";
+export type { OTAPriceResponse } from "./useOTABulkPrices";
 
 // A/B session IDs — stored in sessionStorage so they persist across wizard steps
 const AB_SESSION_KEY = "funnel_session_id";
@@ -242,6 +246,14 @@ export function useBookingWizard(initialData?: {
     () => availability?.find((r) => r.roomType === roomType) ?? null,
     [availability, roomType],
   );
+
+  // Prefetch OTA prices for ALL room types as soon as valid dates exist
+  // so Step 2 already has prices loaded when the user arrives
+  const {
+    priceMap: otaPriceMap,
+    loading: otaPricesLoading,
+    loaded: otaPricesLoaded,
+  } = useOTABulkPrices(checkInDate, checkOutDate, nights);
 
   // Debounced availability fetch
   const availTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -557,6 +569,10 @@ export function useBookingWizard(initialData?: {
     squareSdkReady,
     selectedRoom,
     hasSquare,
+    // OTA bulk price map (prefetched on step 1 date input)
+    otaPriceMap,
+    otaPricesLoading,
+    otaPricesLoaded,
     // Setters
     setCheckInDate,
     setCheckOutDate,
