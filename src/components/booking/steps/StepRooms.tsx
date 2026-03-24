@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { AvailabilityItem, RoomType } from "@/hooks/useBookingWizard";
+import OTAPriceComparison from "@/components/OTAPriceComparison";
 
 interface RoomConfig {
   name: string;
@@ -118,6 +119,8 @@ interface StepRoomsProps {
   availability: AvailabilityItem[] | null;
   availLoading: boolean;
   nights: number;
+  checkIn: string;
+  checkOut: string;
   onSelectRoom: (rt: RoomType) => void;
   onNext: () => void;
   onBack: () => void;
@@ -129,6 +132,8 @@ export default function StepRooms({
   availability,
   availLoading,
   nights,
+  checkIn,
+  checkOut,
   onSelectRoom,
   onNext,
   onBack,
@@ -181,6 +186,16 @@ export default function StepRooms({
           );
         })}
       </div>
+
+      {/* OTA Price Comparison — shows competitor pricing for selected room */}
+      {checkIn && checkOut && (
+        <OTAPriceComparison
+          roomType={selectedRoomType}
+          checkIn={checkIn}
+          checkOut={checkOut}
+          nights={nights}
+        />
+      )}
 
       <button
         type="button"
@@ -246,6 +261,7 @@ function RoomCard({
               className="object-cover"
               sizes="(max-width: 640px) 100vw, 208px"
               onError={() => setImgError(true)}
+              unoptimized
             />
           )}
           {config.badge && (

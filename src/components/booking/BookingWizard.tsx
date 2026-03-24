@@ -69,6 +69,8 @@ export default function BookingWizard({ initialData }: BookingWizardProps) {
             availability={wizard.availability}
             availLoading={wizard.availLoading}
             nights={wizard.nights}
+            checkIn={wizard.checkInDate}
+            checkOut={wizard.checkOutDate}
             onSelectRoom={wizard.setRoomType}
             onNext={wizard.nextStep}
             onBack={wizard.prevStep}
