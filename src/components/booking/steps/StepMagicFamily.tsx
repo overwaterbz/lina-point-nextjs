@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,42 +10,42 @@ import type {
 
 const BENEFITS = [
   {
-    icon: "ðŸŽµ",
+    icon: "🎵",
     title: "Custom AI Song",
     desc: "Composed from your Mayan cosmic blueprint",
   },
   {
-    icon: "ðŸ’Œ",
+    icon: "💌",
     title: "Personalized Welcome Letter",
     desc: "Waiting in your room at check-in",
   },
   {
-    icon: "ðŸŽ‚",
+    icon: "🎂",
     title: "Birthday & Anniversary Magic",
     desc: "Surprise setups & private upgrades",
   },
   {
-    icon: "ðŸŒ¿",
+    icon: "🌿",
     title: "Curated Daily Experiences",
     desc: "Itinerary shaped around your energy",
   },
   {
-    icon: "ðŸ…",
+    icon: "🏅",
     title: "Loyalty Rewards",
-    desc: "1 point per $1 spent â€” redeemable on stays",
+    desc: "1 point per $1 spent — redeemable on stays",
   },
   {
-    icon: "ðŸ“±",
+    icon: "📱",
     title: "WhatsApp Concierge",
     desc: "Transfers, dining & housekeeping pre-arranged",
   },
   {
-    icon: "âœ¨",
+    icon: "✨",
     title: "Free Magic Is You Access",
     desc: "Dreamweaver subscription during your stay",
   },
   {
-    icon: "ðŸ”„",
+    icon: "🔄",
     title: "Priority Rebooking",
     desc: "Exclusive discounts for returning members",
   },
@@ -82,7 +82,6 @@ export default function StepMagicFamily({
 }: StepMagicFamilyProps) {
   const { signIn, signUp } = useAuth();
 
-  // Required reservation fields
   const [fullName, setFullName] = useState(guestDetails.name);
   const [email, setEmail] = useState(guestDetails.email);
   const [phone, setPhone] = useState(guestDetails.phone);
@@ -90,11 +89,9 @@ export default function StepMagicFamily({
     guestDetails.specialRequests,
   );
 
-  // Sign-in mode for existing members
   const [signingIn, setSigningIn] = useState(false);
   const [password, setPassword] = useState("");
 
-  // Optional: Join the Magic Family
   const [joinMagic, setJoinMagic] = useState(false);
   const [birthday, setBirthday] = useState("");
   const [anniversary, setAnniversary] = useState("");
@@ -125,7 +122,6 @@ export default function StepMagicFamily({
     if (!fullName.trim() || !email.trim() || !email.includes("@")) return;
     if ((signingIn || joinMagic) && !password) return;
 
-    // Pre-fill checkout step regardless of auth path
     onSetGuestDetails({ name: fullName, email, phone, specialRequests });
 
     setLoading(true);
@@ -162,19 +158,18 @@ export default function StepMagicFamily({
 
   const buttonLabel = loading
     ? signingIn
-      ? "Signing inâ€¦"
+      ? "Signing in..."
       : joinMagic
-        ? "Creating your accountâ€¦"
-        : "Continuingâ€¦"
+        ? "Creating your account..."
+        : "Continuing..."
     : signingIn
-      ? "Sign In & Continue â†’"
+      ? "Sign In & Continue →"
       : joinMagic
-        ? "Join The Magic Family & Continue â†’"
-        : "Continue to Checkout â†’";
+        ? "Join The Magic Family & Continue →"
+        : "Continue to Checkout →";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-1">
@@ -189,14 +184,12 @@ export default function StepMagicFamily({
           onClick={onBack}
           className="shrink-0 text-sm text-teal-600 hover:text-teal-800 font-semibold mt-1"
         >
-          â† Back
+          &larr; Back
         </button>
       </div>
 
       <div className="grid lg:grid-cols-5 gap-6">
-        {/* Left: form */}
         <div className="lg:col-span-3 space-y-5">
-          {/* â”€â”€ Required reservation fields â”€â”€ */}
           <div className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
@@ -264,14 +257,13 @@ export default function StepMagicFamily({
               <textarea
                 value={specialRequests}
                 onChange={(e) => setSpecialRequests(e.target.value)}
-                placeholder="Dietary restrictions, accessibility, honeymoon, anniversaryâ€¦"
+                placeholder="Dietary restrictions, accessibility, honeymoon, anniversary..."
                 rows={2}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
             </div>
           </div>
 
-          {/* â”€â”€ Existing member: sign in â”€â”€ */}
           {!joinMagic &&
             (!signingIn ? (
               <button
@@ -282,7 +274,7 @@ export default function StepMagicFamily({
                 }}
                 className="text-sm text-teal-600 hover:text-teal-800 font-medium underline decoration-dotted underline-offset-2"
               >
-                ðŸ”‘ Already a Lina Point member? Sign in
+                Already a Lina Point member? Sign in
               </button>
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
@@ -299,7 +291,7 @@ export default function StepMagicFamily({
                     }}
                     className="text-xs text-gray-400 hover:text-gray-600"
                   >
-                    âœ• Cancel
+                    Cancel
                   </button>
                 </div>
                 <div>
@@ -325,7 +317,6 @@ export default function StepMagicFamily({
               </div>
             ))}
 
-          {/* â”€â”€ Optional: Join The Magic Family â”€â”€ */}
           {!signingIn && (
             <div
               className={`rounded-2xl border-2 transition-all overflow-hidden ${
@@ -334,7 +325,6 @@ export default function StepMagicFamily({
                   : "border-gray-200 bg-gray-50"
               }`}
             >
-              {/* Toggle row */}
               <button
                 type="button"
                 onClick={() => {
@@ -354,21 +344,21 @@ export default function StepMagicFamily({
                   >
                     {joinMagic && (
                       <span className="text-white text-[10px] font-bold">
-                        âœ“
+                        &#10003;
                       </span>
                     )}
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 flex items-center gap-2 flex-wrap">
-                      <span>âœ¨</span> Join The Magic Family
+                      Join The Magic Family
                       <span className="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-medium">
                         Free
                       </span>
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      Create your free account â€” unlock 8 exclusive benefits
-                      including a personalized AI song, loyalty rewards &amp;
-                      concierge access
+                      Create your free account &mdash; unlock 8 exclusive
+                      benefits including a personalized song, loyalty rewards
+                      &amp; concierge access
                     </p>
                   </div>
                 </div>
@@ -376,7 +366,6 @@ export default function StepMagicFamily({
 
               {joinMagic && (
                 <div className="px-4 pb-5 space-y-4">
-                  {/* Benefits mini-grid */}
                   <div className="grid grid-cols-2 gap-2">
                     {BENEFITS.map((b) => (
                       <div
@@ -396,7 +385,6 @@ export default function StepMagicFamily({
                     ))}
                   </div>
 
-                  {/* Password */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Create Password <span className="text-red-500">*</span>
@@ -419,18 +407,18 @@ export default function StepMagicFamily({
                     )}
                   </div>
 
-                  {/* Personalization fields */}
                   <div className="space-y-3 pt-1">
                     <p className="text-xs font-semibold text-teal-800">
-                      âœ¨ Personalize your stay{" "}
+                      Personalize your stay{" "}
                       <span className="font-normal text-teal-600">
-                        (optional â€” powers your custom song &amp; itinerary)
+                        (optional &mdash; powers your custom song &amp;
+                        itinerary)
                       </span>
                     </p>
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          ðŸŽ‚ Birthday
+                          Birthday
                         </label>
                         <input
                           type="date"
@@ -441,7 +429,7 @@ export default function StepMagicFamily({
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          ðŸ’ Anniversary
+                          Anniversary
                         </label>
                         <input
                           type="date"
@@ -452,7 +440,7 @@ export default function StepMagicFamily({
                       </div>
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          ðŸŒ Birthplace
+                          Birthplace
                         </label>
                         <input
                           type="text"
@@ -465,7 +453,7 @@ export default function StepMagicFamily({
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                        ðŸŽµ Music Style
+                        Music Style
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {MUSIC_STYLES.map((s) => (
@@ -493,9 +481,9 @@ export default function StepMagicFamily({
                       />
                       <span className="text-xs text-gray-700">
                         <span className="font-semibold">
-                          âœ¨ Enable Magic content
+                          Enable Magic content
                         </span>{" "}
-                        â€” let our AI compose your personalized song and
+                        &mdash; let our team compose your personalized song and
                         welcome letter before your arrival
                       </span>
                     </label>
@@ -533,7 +521,6 @@ export default function StepMagicFamily({
           )}
         </div>
 
-        {/* Right: booking summary */}
         <div className="lg:col-span-2 order-first lg:order-last">
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 sticky top-6 space-y-4">
             <h3 className="font-bold text-gray-900 text-sm">
@@ -554,7 +541,7 @@ export default function StepMagicFamily({
             </div>
             <div className="bg-teal-50 rounded-xl p-3 border border-teal-100">
               <p className="text-xs text-teal-800 font-semibold">
-                ðŸ… Earn {finalTotal} loyalty points
+                Earn {finalTotal} loyalty points
               </p>
               <p className="text-xs text-teal-600 mt-0.5">
                 Join the Magic Family above to unlock rewards on this booking

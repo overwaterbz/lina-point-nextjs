@@ -283,11 +283,11 @@ export default function StepReview({
         </div>
       </div>
 
-      {/* AI recommendations */}
+      {/* Recommendations */}
       {packageResult.recommendations.length > 0 && (
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
           <h3 className="font-bold text-gray-900 text-sm mb-3">
-            🤖 AI Recommendations
+            Recommendations
           </h3>
           <ul className="space-y-1.5">
             {packageResult.recommendations.map((rec, i) => (
