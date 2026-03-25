@@ -153,6 +153,25 @@ export async function GET(request: NextRequest) {
         source: p.source,
       }));
 
+      // Sanity filter: Tavily sometimes returns off-property results (hostels,
+      // budget guesthouses) from the broader area. Any price below 60% of our
+      // base rate is clearly a different property category — discard and fall
+      // back to curated estimates for this room type.
+      const sanityFloor = Math.round(baseRate * 0.6 * 100) / 100;
+      const validOTAPrices = otaPrices.filter((p) => p.price >= sanityFloor);
+      if (validOTAPrices.length < 2) {
+        const { getFallbackPrices } = await import("@/lib/otaIntegration");
+        otaPrices = getFallbackPrices(roomType).map((p) => ({
+          ota: p.ota,
+          price: p.price,
+          currency: p.currency,
+          url: p.url,
+          source: "fallback" as const,
+        }));
+      } else {
+        otaPrices = validOTAPrices;
+      }
+
       // Persist to cache (fire-and-forget)
       if (otaPrices.length > 0) {
         const cacheRows = otaPrices.map((p) => ({

@@ -253,9 +253,15 @@ export default function OTAPriceComparison({
               <span className="font-bold text-green-800 text-base">
                 Book Direct at Lina Point
               </span>
-              <span className="ml-2 text-xs text-green-600 font-medium">
-                Save {data.savingsPercent}%
-              </span>
+              {data.savingsPercent > 0 ? (
+                <span className="ml-2 text-xs text-green-600 font-medium">
+                  Save {data.savingsPercent}%
+                </span>
+              ) : (
+                <span className="ml-2 text-xs text-green-600 font-medium">
+                  No Booking Fees
+                </span>
+              )}
             </div>
             <div className="text-right">
               <span className="text-green-800 font-bold text-xl">
