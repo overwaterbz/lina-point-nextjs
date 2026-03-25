@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import Navbar from "@/components/resort/Navbar";
 import Footer from "@/components/resort/Footer";
 import SectionHeading from "@/components/resort/SectionHeading";
+import { useTourOTAPrices } from "@/components/TourOTAComparison";
 
 /* ── Tour & experience data from experienceCuratorAgent ── */
 const TOURS = [
@@ -155,10 +156,22 @@ function FadeCard({
   );
 }
 
+// Map tour names to slugs for OTA price lookup
+const TOUR_SLUGS: Record<string, string> = {
+  "Half-Day Snorkeling & Coral Reef": "half-day-snorkeling",
+  "Guided Sport Fishing Adventure": "guided-sport-fishing",
+  "Mainland Jungle & Mayan Ruins": "mainland-jungle-ruins",
+  "Cenote Swimming & Cave Exploration": "cenote-swimming",
+  "Mangrove Kayaking & Wildlife": "mangrove-kayaking",
+  "Scuba Diving — Blue Hole Day Trip": "scuba-blue-hole",
+  "Island Hopping & Beach Picnic": "island-hopping",
+};
+
 export default function ExperiencesPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const filtered =
     filter === "all" ? TOURS : TOURS.filter((t) => t.cat === filter);
+  const otaPrices = useTourOTAPrices();
 
   return (
     <main className="min-h-screen bg-white">
@@ -260,9 +273,28 @@ export default function ExperiencesPage() {
                     <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white text-[10px] tracking-wider uppercase px-3 py-1 rounded-full">
                       {tour.duration}
                     </div>
-                    <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full">
-                      From ${tour.price.budget}
-                    </div>
+                    {(() => {
+                      const slug = TOUR_SLUGS[tour.name];
+                      const otaPrice = slug ? otaPrices[slug] : undefined;
+                      return (
+                        <div className="absolute bottom-3 left-3 flex flex-col gap-1">
+                          {otaPrice != null ? (
+                            <>
+                              <span className="bg-white/90 backdrop-blur-sm text-gray-400 text-[10px] line-through px-2.5 py-1 rounded-full font-medium">
+                                OTA from ${Math.round(otaPrice / 0.94)}
+                              </span>
+                              <span className="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                                ✓ Direct ${otaPrice} — Save 6%
+                              </span>
+                            </>
+                          ) : (
+                            <span className="bg-white/90 backdrop-blur-sm text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full">
+                              From ${tour.price.budget}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="p-6">
                     <div className="flex items-center gap-2 mb-2">
