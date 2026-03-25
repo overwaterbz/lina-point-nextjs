@@ -28,7 +28,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Best Value · Panoramic Reef Views",
     description:
       "Elevated luxury with floor-to-ceiling windows, private balcony overlooking the turquoise Caribbean, and soaking tub with ocean view.",
-    image: "/rooms/suite-2nd-floor.jpg",
+    image: "/room-photos/suite-2nd-floor.jpg",
     badge: "Best Value",
     badgeColor: "bg-blue-500",
     borderColor: "border-blue-500",
@@ -45,7 +45,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Spacious · Direct Beach Access",
     description:
       "Ground-floor suite with direct beach access, full kitchen, two bedrooms, and private patio — ideal for families.",
-    image: "/rooms/suite-1st-floor.jpg",
+    image: "/room-photos/suite-1st-floor.jpg",
     badge: null,
     badgeColor: "",
     borderColor: "border-teal-500",
@@ -62,7 +62,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Most Popular · Glass Bottom Floors",
     description:
       "Classic overwater experience with glass-bottom floor panels revealing the reef below, private deck, and direct sea ladder access.",
-    image: "/rooms/cabana-duplex.jpg",
+    image: "/room-photos/cabana-duplex.jpg",
     badge: "Most Popular",
     badgeColor: "bg-amber-500",
     borderColor: "border-amber-500",
@@ -79,7 +79,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Romantic Pick · 360° Private Views",
     description:
       "The most private accommodation — a standalone overwater cabana with unobstructed 360° ocean views, large hammock deck, and rain shower.",
-    image: "/rooms/cabana-1br.jpg",
+    image: "/room-photos/cabana-1br.jpg",
     badge: "Romantic Pick",
     badgeColor: "bg-rose-500",
     borderColor: "border-rose-500",
@@ -96,7 +96,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Family Favorite · Largest Deck",
     description:
       "The ultimate family overwater experience — two bedrooms, full kitchenette, and our largest private deck with glass bottom panels.",
-    image: "/rooms/cabana-2br.jpeg",
+    image: "/room-photos/cabana-2br.jpeg",
     badge: "Family Fav",
     badgeColor: "bg-purple-500",
     borderColor: "border-purple-500",
