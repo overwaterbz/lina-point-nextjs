@@ -45,6 +45,7 @@ const SELF_AUTH_API_ROUTES = [
   "/api/square/webhook",
   "/api/system/",
   "/api/stripe/create-payment-intent",
+  "/api/book-experience",
 ];
 
 export async function middleware(request: NextRequest) {
