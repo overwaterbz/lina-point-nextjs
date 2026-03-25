@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { motion, useInView } from 'framer-motion';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRef } from 'react';
+import { motion, useInView } from "framer-motion";
+import Image from "next/image";
+import Link from "next/link";
+import { useRef } from "react";
 
 export interface RoomType {
   name: string;
@@ -16,53 +16,58 @@ export interface RoomType {
 
 const ROOMS: RoomType[] = [
   {
-    name: '2nd Floor Hotel Suite',
-    slug: '2nd-floor-suite',
-    tagline: 'Elevated luxury on the barrier reef',
-    price: 'From $130/night',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg',
-    highlights: ['Premium Furnishings', 'Reef Views', 'Balcony'],
+    name: "2nd Floor Hotel Suite",
+    slug: "2nd-floor-suite",
+    tagline: "Elevated luxury on the barrier reef",
+    price: "From $130/night",
+    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg",
+    highlights: ["Premium Furnishings", "Reef Views", "Balcony"],
   },
   {
-    name: '1st Floor Hotel Suite',
-    slug: '1st-floor-suite',
-    tagline: 'Spacious main building luxury',
-    price: 'From $150/night',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg',
-    highlights: ['Ground Floor', 'Beach Access', 'Full Amenities'],
+    name: "1st Floor Hotel Suite",
+    slug: "1st-floor-suite",
+    tagline: "Spacious main building luxury",
+    price: "From $150/night",
+    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg",
+    highlights: ["Ground Floor", "Beach Access", "Full Amenities"],
   },
   {
-    name: '1 Bed Duplex Cabana',
-    slug: 'overwater-cabana-duplex',
-    tagline: 'Glass bottom floors meet Caribbean sunrise',
-    price: 'From $250/night',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg',
-    highlights: ['Glass Bottom Floor', 'Private Deck', 'Ocean View'],
+    name: "1 Bed Duplex Cabana",
+    slug: "overwater-cabana-duplex",
+    tagline: "Glass bottom floors meet Caribbean sunrise",
+    price: "From $250/night",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-duplex.jpg",
+    highlights: ["Glass Bottom Floor", "Private Deck", "Ocean View"],
   },
   {
-    name: '1 Bedroom Cabana',
-    slug: 'overwater-cabana',
-    tagline: 'Our signature standalone overwater experience',
-    price: 'From $300/night',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg',
-    highlights: ['Standalone', 'Private Deck', '360° Ocean View'],
+    name: "1 Bedroom Cabana",
+    slug: "overwater-cabana",
+    tagline: "Our signature standalone overwater experience",
+    price: "From $300/night",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-1br-exterior.jpeg",
+    highlights: ["Standalone", "Private Deck", "360° Ocean View"],
   },
   {
-    name: '2 Bedroom Cabana',
-    slug: '2br-overwater-cabana',
-    tagline: 'Family overwater paradise',
-    price: 'From $400/night',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg',
-    highlights: ['Two Bedrooms', 'Largest Deck', 'Kitchenette'],
+    name: "2 Bedroom Cabana",
+    slug: "2br-overwater-cabana",
+    tagline: "Family overwater paradise",
+    price: "From $400/night",
+    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg",
+    highlights: ["Two Bedrooms", "Largest Deck", "Kitchenette"],
   },
 ];
 
 export default function RoomCarousel() {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-50px' });
+  const inView = useInView(ref, { once: true, margin: "-50px" });
 
   return (
-    <div ref={ref} className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
+    <div
+      ref={ref}
+      className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
+    >
       {ROOMS.map((room, i) => (
         <motion.div
           key={room.slug}
