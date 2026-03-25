@@ -23,9 +23,9 @@ const ALL_EXPERIENCES = [
     duration: "4 hours",
     group: 4,
     prices: { budget: 65, mid: 95, luxury: 150 },
-    priceLabels: { budget: "Standard", mid: "Small Group", luxury: "Private" },
+    priceLabels: { budget: "Small Group", mid: "Standard", luxury: "Private" },
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/greatwhiteshark-19.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-2br-exterior.jpg",
     description:
       "Explore the pristine barrier reef teeming with marine life — the largest living reef in the Western Hemisphere.",
   },
@@ -535,7 +535,7 @@ function BookingFormInner() {
                 ⏱ {experience.duration}
               </span>
               <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">
-                👥 Up to {experience.group} guests
+                👥 Group &amp; private available
               </span>
               <span className="text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-medium capitalize">
                 {experience.type === "dinner" ? "🍽 Dining" : "🗺 Tour"}
@@ -626,17 +626,12 @@ function BookingFormInner() {
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        setGuests((g) => Math.min(experience.group, g + 1))
-                      }
+                      onClick={() => setGuests((g) => g + 1)}
                       className="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg leading-none"
                     >
                       +
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Max {experience.group} guests
-                  </p>
                 </div>
               </div>
 
