@@ -20,7 +20,13 @@ const PUBLIC_ROUTES = [
 function isPublicRoute(pathname: string) {
   // Regex: matches /booking, /booking/, /booking/anything, /booking?foo, /booking#bar
   const bookingRegex = /^\/booking(\/.*)?$/;
-  return PUBLIC_ROUTES.includes(pathname) || bookingRegex.test(pathname);
+  // /experiences and all sub-routes (including /experiences/book) are public
+  const experiencesRegex = /^\/experiences(\/.*)?$/;
+  return (
+    PUBLIC_ROUTES.includes(pathname) ||
+    bookingRegex.test(pathname) ||
+    experiencesRegex.test(pathname)
+  );
 }
 
 // SEO / static routes that should never hit auth
