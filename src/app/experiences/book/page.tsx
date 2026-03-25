@@ -12,6 +12,7 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
+import TourOTAComparison from "@/components/TourOTAComparison";
 
 /* ── All bookable experiences data ── */
 const ALL_EXPERIENCES = [
@@ -271,6 +272,17 @@ const ALL_EXPERIENCES = [
   },
 ];
 
+// Slug map for OTA comparison — matches tourScoutAgent + API route
+const TOUR_SLUG_MAP: Record<string, string> = {
+  "half-day-snorkeling": "half-day-snorkeling",
+  "guided-sport-fishing": "guided-sport-fishing",
+  "mainland-jungle-ruins": "mainland-jungle-ruins",
+  "cenote-swimming": "cenote-swimming",
+  "mangrove-kayaking": "mangrove-kayaking",
+  "scuba-blue-hole": "scuba-blue-hole",
+  "island-hopping": "island-hopping",
+};
+
 function getTomorrow() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -341,6 +353,7 @@ function BookingFormInner() {
     );
 
   const [tier, setTier] = useState<"budget" | "mid" | "luxury">("mid");
+  const [otaBestPrice, setOtaBestPrice] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -356,6 +369,20 @@ function BookingFormInner() {
     return key ? loadStripe(key) : null;
   });
 
+  // Fetch OTA best price for tour types so checkout uses the OTA-beater price
+  useEffect(() => {
+    if (!experience || experience.type !== "tour") return;
+    const slug = TOUR_SLUG_MAP[experience.slug] ?? experience.slug;
+    fetch(`/api/tour-ota-prices?slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ourBestPrice) setOtaBestPrice(d.ourBestPrice);
+      })
+      .catch(() => {
+        /* keep fallback mid-tier price */
+      });
+  }, [experience?.slug]);
+
   if (!experience) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-24 text-center">
@@ -370,7 +397,12 @@ function BookingFormInner() {
     );
   }
 
-  const price = experience.prices[tier];
+  // For tour types: prefer the live OTA-beater price; fall back to mid-tier static
+  const isTour = experience.type === "tour";
+  const basePrice = isTour
+    ? (otaBestPrice ?? experience.prices.mid)
+    : experience.prices[tier];
+  const price = basePrice;
   const totalPrice = price * guests;
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -563,11 +595,19 @@ function BookingFormInner() {
                 Book Your Experience
               </h2>
 
-              {/* Price tier — hidden for flat-price add-ons */}
-              {experience.type !== "addon" && (
+              {/* OTA comparison for tours — tier picker for dinners — hidden for add-ons */}
+              {experience.type === "tour" && (
+                <TourOTAComparison
+                  tourSlug={TOUR_SLUG_MAP[experience.slug] ?? experience.slug}
+                  tourName={experience.name}
+                  fallbackPrice={experience.prices.mid}
+                />
+              )}
+
+              {experience.type === "dinner" && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    Experience Tier
+                    Dining Experience
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {(["budget", "mid", "luxury"] as const).map((t) => (
