@@ -15,6 +15,14 @@ const OTAPriceComparison = dynamic(
   },
 );
 
+const ROOM_TYPE_LABELS: Record<string, string> = {
+  suite_2nd_floor: "2nd Floor Hotel Suite",
+  suite_1st_floor: "1st Floor Hotel Suite",
+  cabana_duplex: "1 Bed Overwater Cabana (Duplex)",
+  cabana_1br: "1 Bedroom Overwater Cabana",
+  cabana_2br: "2 Bedroom Overwater Cabana",
+};
+
 interface StepReviewProps {
   packageResult: BookingResult;
   roomType: RoomType;
@@ -208,12 +216,17 @@ export default function StepReview({
         )}
       </div>
 
-      {/* OTA price comparison widget */}
+      {/* OTA price comparison widget — show actual per-night rate being charged */}
       <OTAPriceComparison
         roomType={roomType}
         checkIn={checkInDate}
         checkOut={checkOutDate}
         nights={nights}
+        directPriceOverride={
+          nights > 0
+            ? Math.round(packageResult.curated_package.room.room_total / nights)
+            : undefined
+        }
       />
 
       {/* Package breakdown */}
@@ -225,8 +238,11 @@ export default function StepReview({
           <div className="flex items-center justify-between px-5 py-3">
             <div>
               <p className="font-medium text-gray-900 text-sm">
-                {roomType.replace(/_/g, " ")} × {nights} night
-                {nights !== 1 ? "s" : ""}
+                {ROOM_TYPE_LABELS[roomType] ||
+                  roomType
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase())}{" "}
+                × {nights} night{nights !== 1 ? "s" : ""}
               </p>
               <p className="text-xs text-gray-400">
                 {packageResult.curated_package.room.ota}

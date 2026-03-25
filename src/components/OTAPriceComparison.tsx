@@ -64,11 +64,14 @@ export default function OTAPriceComparison({
   checkIn,
   checkOut,
   nights,
+  directPriceOverride,
 }: {
   roomType: string;
   checkIn: string;
   checkOut: string;
   nights: number;
+  /** Pass the actual per-night rate being charged so it matches the booking total */
+  directPriceOverride?: number;
 }) {
   const [data, setData] = useState<OTAPriceResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -243,36 +246,33 @@ export default function OTAPriceComparison({
 
         {/* Our direct price — highlighted */}
         <div className="relative mt-3">
-          {data.guaranteeBadge && (
-            <div className="absolute -top-3 left-4 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
-              Best Price Guaranteed
-            </div>
-          )}
+          <div className="absolute -top-3 left-4 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+            Best Price Guaranteed
+          </div>
           <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-500 rounded-xl">
             <div>
               <span className="font-bold text-green-800 text-base">
                 Book Direct at Lina Point
               </span>
-              {data.savingsPercent > 0 ? (
-                <span className="ml-2 text-xs text-green-600 font-medium">
-                  Save {data.savingsPercent}%
-                </span>
-              ) : (
-                <span className="ml-2 text-xs text-green-600 font-medium">
-                  No Booking Fees
-                </span>
-              )}
+              <span className="ml-2 text-xs text-green-600 font-medium">
+                No Booking Fees
+              </span>
             </div>
             <div className="text-right">
               <span className="text-green-800 font-bold text-xl">
-                ${data.ourDirectPrice.toFixed(0)}
+                ${(directPriceOverride ?? data.ourDirectPrice).toFixed(0)}
               </span>
               <span className="text-xs text-green-600">/night</span>
-              {data.savingsAmount > 0 && (
-                <p className="text-xs text-green-600 mt-0.5">
-                  Save ${(data.savingsAmount * nights).toFixed(0)} total
-                </p>
-              )}
+              {(() => {
+                const displayPrice = directPriceOverride ?? data.ourDirectPrice;
+                const lowestOTA = data.lowestOTA.price;
+                const savings = lowestOTA - displayPrice;
+                return savings > 0 ? (
+                  <p className="text-xs text-green-600 mt-0.5">
+                    Save ${(savings * nights).toFixed(0)} total
+                  </p>
+                ) : null;
+              })()}
             </div>
           </div>
         </div>

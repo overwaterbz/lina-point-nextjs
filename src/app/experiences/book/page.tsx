@@ -417,7 +417,7 @@ function BookingFormInner() {
 
   if (step === "success") {
     return (
-      <div className="max-w-xl mx-auto px-6 py-24 text-center">
+      <div className="max-w-2xl mx-auto px-6 py-16 text-center">
         <div className="text-5xl mb-6">🎉</div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
           Booking Confirmed!
@@ -431,13 +431,56 @@ function BookingFormInner() {
             year: "numeric",
           })}
         </p>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-8">
           A confirmation has been sent to <strong>{email}</strong>.
         </p>
-        <p className="text-sm text-gray-500 mb-8">
-          Our team will reach out within 24 hours to confirm your booking
-          details and arrange any transfers.
-        </p>
+
+        {/* Room add-on CTA */}
+        <div className="bg-teal-50 border border-teal-200 rounded-2xl p-6 mb-4 text-left">
+          <div className="flex items-start gap-4">
+            <span className="text-3xl">🏝️</span>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 text-base mb-1">
+                Make it a full getaway — add a room
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Stay overwater at Lina Point and wake up to the Caribbean reef
+                steps from your door. Book direct for our best price — no OTA
+                fees.
+              </p>
+              <Link
+                href="/booking"
+                className="inline-block px-6 py-2.5 bg-teal-700 text-white text-sm font-bold rounded-xl hover:bg-teal-600 transition"
+              >
+                Book a Room &rarr;
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Magic Is You CTA */}
+        <div className="bg-violet-50 border border-violet-200 rounded-2xl p-6 mb-8 text-left">
+          <div className="flex items-start gap-4">
+            <span className="text-3xl">✨</span>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 text-base mb-1">
+                Join Magic Is You — earn rewards
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Create your free account to earn loyalty points on every
+                experience and stay, unlock member discounts, and get a
+                personalized Lina Point experience.
+              </p>
+              <Link
+                href={`/auth/signup?returnTo=/experiences&ref=experience-booking`}
+                className="inline-block px-6 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-500 transition"
+              >
+                Create Free Account &rarr;
+              </Link>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/experiences"
@@ -446,10 +489,10 @@ function BookingFormInner() {
             Browse More Experiences
           </Link>
           <Link
-            href="/booking"
+            href="/"
             className="px-8 py-3 border-2 border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:border-gray-300 transition"
           >
-            Book a Room Too
+            Back to Home
           </Link>
         </div>
       </div>
@@ -651,7 +694,16 @@ function BookingFormInner() {
               </button>
 
               <p className="text-xs text-gray-400 text-center">
-                Secure payment powered by Stripe · No room booking required
+                Secure payment powered by Stripe · No account required
+              </p>
+              <p className="text-xs text-center text-gray-500">
+                Want to save your booking &amp; earn rewards?{" "}
+                <Link
+                  href={`/auth/signup?returnTo=/experiences/book?tour=${encodeURIComponent(tourSlug)}&type=${experience.type}`}
+                  className="text-cyan-700 hover:underline font-medium"
+                >
+                  Create a free account
+                </Link>
               </p>
             </form>
           ) : (
