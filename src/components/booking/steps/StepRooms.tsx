@@ -28,7 +28,8 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Best Value · Panoramic Reef Views",
     description:
       "Elevated luxury with floor-to-ceiling windows, private balcony overlooking the turquoise Caribbean, and soaking tub with ocean view.",
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/suite-2nd-floor.jpg",
     badge: "Best Value",
     badgeColor: "bg-blue-500",
     borderColor: "border-blue-500",
@@ -45,7 +46,8 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Spacious · Direct Beach Access",
     description:
       "Ground-floor suite with direct beach access, full kitchen, two bedrooms, and private patio — ideal for families.",
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/suite-1st-floor.jpg",
     badge: null,
     badgeColor: "",
     borderColor: "border-teal-500",
@@ -63,7 +65,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     description:
       "Classic overwater experience with glass-bottom floor panels revealing the reef below, private deck, and direct sea ladder access.",
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-duplex.jpg",
     badge: "Most Popular",
     badgeColor: "bg-amber-500",
     borderColor: "border-amber-500",
@@ -81,7 +83,7 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     description:
       "The most private accommodation — a standalone overwater cabana with unobstructed 360° ocean views, large hammock deck, and rain shower.",
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-1br-exterior.jpeg",
     badge: "Romantic Pick",
     badgeColor: "bg-rose-500",
     borderColor: "border-rose-500",
@@ -98,7 +100,8 @@ const ROOM_CONFIG: Record<RoomType, RoomConfig> = {
     tagline: "Family Favorite · Largest Deck",
     description:
       "The ultimate family overwater experience — two bedrooms, full kitchenette, and our largest private deck with glass bottom panels.",
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-2br-exterior.jpeg",
     badge: "Family Fav",
     badgeColor: "bg-purple-500",
     borderColor: "border-purple-500",
