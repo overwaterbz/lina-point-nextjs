@@ -65,7 +65,11 @@ export async function GET(request: NextRequest) {
     const floor = Math.round(baseRate * MIN_RATE_FLOOR * 100) / 100;
     const rawBeatPrice =
       Math.round(lowestFallback.price * (1 - BEAT_PERCENTAGE) * 100) / 100;
-    const ourDirectPrice = Math.max(rawBeatPrice, floor);
+    // Always undercut the lowest OTA even if the floor would push us above it
+    const ourDirectPrice = Math.min(
+      Math.max(rawBeatPrice, floor),
+      lowestFallback.price - 1,
+    );
     const savingsAmount =
       Math.round((lowestFallback.price - ourDirectPrice) * 100) / 100;
     const savingsPercent =
@@ -220,7 +224,11 @@ export async function GET(request: NextRequest) {
       const floor = Math.round(baseRate * MIN_RATE_FLOOR * 100) / 100;
       const rawBeatPrice =
         Math.round(lowestFallback.price * (1 - BEAT_PERCENTAGE) * 100) / 100;
-      const ourDirectPrice = Math.max(rawBeatPrice, floor);
+      // Always undercut the lowest OTA even if the floor would push us above it
+      const ourDirectPrice = Math.min(
+        Math.max(rawBeatPrice, floor),
+        lowestFallback.price - 1,
+      );
       const savingsAmount =
         Math.round((lowestFallback.price - ourDirectPrice) * 100) / 100;
       const savingsPercent =
@@ -259,7 +267,11 @@ export async function GET(request: NextRequest) {
   const floor = Math.round(baseRate * MIN_RATE_FLOOR * 100) / 100;
   const rawBeatPrice =
     Math.round(lowestOTA.price * (1 - BEAT_PERCENTAGE) * 100) / 100;
-  const ourDirectPrice = Math.max(rawBeatPrice, floor);
+  // Always undercut the lowest OTA even if the floor would push us above it
+  const ourDirectPrice = Math.min(
+    Math.max(rawBeatPrice, floor),
+    lowestOTA.price - 1,
+  );
   const savingsAmount =
     Math.round((lowestOTA.price - ourDirectPrice) * 100) / 100;
   const savingsPercent =
