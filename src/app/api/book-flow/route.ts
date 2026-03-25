@@ -409,7 +409,7 @@ export async function POST(
     );
     const diningPrice = diningTour?.price || 85;
     const roomTotal =
-      Math.round(priceScoutResult.bestPrice * nights * 100) / 100;
+      Math.round(priceScoutResult.beatPrice * nights * 100) / 100;
     const packageTotal =
       roomTotal + curatorResult.totalPrice + (diningTour ? 0 : diningPrice);
 
@@ -529,7 +529,7 @@ export async function POST(
       nights,
       curated_package: {
         room: {
-          price_per_night: priceScoutResult.bestPrice,
+          price_per_night: priceScoutResult.beatPrice,
           room_total: roomTotal,
           ota: priceScoutResult.bestOTA,
           url: priceScoutResult.priceUrl,
