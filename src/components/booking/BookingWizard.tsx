@@ -143,13 +143,11 @@ export default function BookingWizard({ initialData }: BookingWizardProps) {
             guestDetails={wizard.guestDetails}
             paymentOptions={wizard.paymentOptions}
             paymentMode={wizard.paymentMode}
-            squareSdkReady={wizard.squareSdkReady}
             hasSquare={wizard.hasSquare}
             onSetGuestDetails={wizard.setGuestDetails}
             onHandlePay={wizard.handlePay}
             onPaymentSuccess={wizard.handlePaymentSuccess}
             onFallbackToStripe={wizard.fallbackToStripe}
-            onSetSquareSdkReady={wizard.setSquareSdkReady}
             onSetPaymentMode={wizard.setPaymentMode}
             onBack={wizard.prevStep}
             user={user}
