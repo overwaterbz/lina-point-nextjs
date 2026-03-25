@@ -13,10 +13,6 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-);
-
 /* ── All bookable experiences data ── */
 const ALL_EXPERIENCES = [
   {
@@ -355,6 +351,10 @@ function BookingFormInner() {
   const [clientSecret, setClientSecret] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [stripePromise] = useState(() => {
+    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    return key ? loadStripe(key) : null;
+  });
 
   if (!experience) {
     return (
