@@ -64,27 +64,23 @@ export function validateEnv(): {
   return { valid: missing.length === 0, missing, warnings };
 }
 
-// Auto-validate on import in production — fail fast for public vars, warn for server-only
+// Auto-validate on import in production — only throw for NEXT_PUBLIC build-time vars
 if (typeof window === "undefined" && process.env.NODE_ENV === "production") {
   const result = validateEnv();
-  const publicMissing = result.missing.filter(
-    (v) =>
-      ![
-        "SUPABASE_SERVICE_ROLE_KEY",
-        "GROK_API_KEY",
-        "RESEND_API_KEY",
-        "TAVILY_API_KEY",
-      ].includes(v),
+  // Only hard-fail for NEXT_PUBLIC vars (needed at build time)
+  const buildTimeMissing = result.missing.filter((v) =>
+    v.startsWith("NEXT_PUBLIC_"),
   );
-  if (publicMissing.length > 0) {
+  if (buildTimeMissing.length > 0) {
     throw new Error(
-      `[ENV] Missing required environment variables: ${publicMissing.join(", ")}. ` +
+      `[ENV] Missing required environment variables: ${buildTimeMissing.join(", ")}. ` +
         "Set them in your Vercel dashboard before deploying.",
     );
   }
-  if (result.missing.length > publicMissing.length) {
+  // Server-only vars are only needed at request time — just warn
+  if (result.missing.length > 0) {
     console.warn(
-      `[ENV] Missing runtime environment variables (needed at request time): ${result.missing.filter((v) => !publicMissing.includes(v)).join(", ")}`,
+      `[ENV] Missing runtime environment variables (needed at request time): ${result.missing.join(", ")}`,
     );
   }
 }
