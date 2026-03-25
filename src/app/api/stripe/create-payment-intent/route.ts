@@ -165,7 +165,7 @@ async function trySquarePayment(
       sourceId,
       idempotencyKey,
       amountMoney: {
-        amount: Math.round(amount * 100),
+        amount: BigInt(Math.round(amount * 100)),
         currency: currency.toUpperCase() as any,
       },
       locationId,
