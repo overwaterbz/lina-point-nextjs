@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import Script from "next/script";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -97,7 +98,7 @@ function SquareWebPaymentsForm({
 
         // Wait for Square.js SDK to be ready (loaded via Script tag below)
         let attempts = 0;
-        while (!(window as any).Square && attempts < 60) {
+        while (!(window as any).Square && attempts < 150) {
           await new Promise((r) => setTimeout(r, 100));
           attempts++;
         }
@@ -487,9 +488,16 @@ export default function StepCheckout({
                   <StripeForm onSuccess={() => onPaymentSuccess("stripe")} />
                 </Elements>
               ) : (
-                <p className="text-sm text-red-500">
-                  Stripe is not configured. Please contact support.
-                </p>
+                <div className="text-sm text-red-500 bg-red-50 rounded-xl p-3">
+                  <p className="font-semibold mb-1">Stripe not configured</p>
+                  <p>
+                    Please contact us at{" "}
+                    <a href="mailto:info@linapoint.com" className="underline">
+                      info@linapoint.com
+                    </a>{" "}
+                    to complete your booking.
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -557,13 +565,13 @@ export default function StepCheckout({
 
       {/* Square SDK (loaded eagerly when Square is configured) */}
       {hasSquare && (
-        <script
+        <Script
           src={
             process.env.NODE_ENV === "production"
               ? "https://web.squarecdn.com/v1/square.js"
               : "https://sandbox.web.squarecdn.com/v1/square.js"
           }
-          async
+          strategy="afterInteractive"
         />
       )}
     </div>
