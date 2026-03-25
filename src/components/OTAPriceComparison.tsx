@@ -42,6 +42,23 @@ const OTA_DISPLAY: Record<
   },
 };
 
+const ROOM_NAMES: Record<string, string> = {
+  suite_2nd_floor: "2nd Floor Hotel Suite",
+  suite_1st_floor: "1st Floor Hotel Suite",
+  cabana_duplex: "1 Bed Overwater Cabana (Duplex)",
+  cabana_1br: "1 Bedroom Overwater Cabana",
+  cabana_2br: "2 Bedroom Overwater Cabana",
+};
+
+function formatDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function OTAPriceComparison({
   roomType,
   checkIn,
@@ -158,10 +175,29 @@ export default function OTAPriceComparison({
         <h3 className="text-white font-bold text-lg">
           Compare Prices — We Beat Every Online Travel Site
         </h3>
-        <p className="text-teal-100 text-sm mt-1">
-          Transparent pricing for {nights} night{nights !== 1 ? "s" : ""} · per
-          night rates
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
+          {roomType && ROOM_NAMES[roomType] && (
+            <span className="inline-flex items-center gap-1 bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+              </svg>
+              {ROOM_NAMES[roomType]}
+            </span>
+          )}
+          {checkIn && checkOut && (
+            <span className="inline-flex items-center gap-1 bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              {formatDate(checkIn)} → {formatDate(checkOut)} · {nights} night
+              {nights !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="p-6 space-y-2">
