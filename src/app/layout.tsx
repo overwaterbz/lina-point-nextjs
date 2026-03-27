@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     siteName: "Lina Point",
     images: [
       {
-        url: "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
+        url: "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/drone-2-scaled.jpg",
         width: 1920,
         height: 1080,
         alt: "Lina Point Overwater Resort aerial view",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     description:
       "Disconnect once you step on the bridge. Reconnect with the magic within.",
     images: [
-      "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/drone-2-scaled.jpg",
     ],
   },
   metadataBase: new URL("https://linapoint.com"),
@@ -90,7 +90,8 @@ const jsonLd = {
     latitude: "17.9214",
     longitude: "-87.9611",
   },
-  image: "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
+  image:
+    "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/drone-2-scaled.jpg",
   priceRange: "$$$",
   starRating: { "@type": "Rating", ratingValue: "4.5" },
   amenityFeature: [

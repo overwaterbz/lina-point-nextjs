@@ -7,99 +7,101 @@ import Navbar from "@/components/resort/Navbar";
 import Footer from "@/components/resort/Footer";
 
 /* ── Gallery images organized by category ── */
+const BASE =
+  "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images";
 const IMAGES = [
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
+    src: `${BASE}/drone-2-scaled.jpg`,
     alt: "Aerial view of Lina Point Resort",
     cat: "resort",
     span: "col-span-2 row-span-2",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg",
+    src: `${BASE}/anniversary_cabana-10-1-scaled.jpg`,
     alt: "Overwater cabana at sunset",
     cat: "rooms",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2017/12/21557862_842375785930679_1662415238731283244_n.jpg",
+    src: `${BASE}/21557862_842375785930679_1662415238731283244_n.jpg`,
     alt: "Hooked Rooftop restaurant",
     cat: "dining",
     span: "",
   },
   {
-    src: "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/LinaPoint-55.jpg",
+    src: `${BASE}/LinaPoint-55.jpg`,
     alt: "Infinity pool overlooking the reef",
     cat: "resort",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/greatwhiteshark-19.jpg",
+    src: `${BASE}/greatwhiteshark-19.jpg`,
     alt: "Snorkeling the barrier reef",
     cat: "experiences",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2017/12/day-view.jpg",
+    src: `${BASE}/day-view.jpg`,
     alt: "Overwater cabanas by day",
     cat: "rooms",
     span: "col-span-2",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/spa-6.jpg",
+    src: `${BASE}/spa-6.jpg`,
     alt: "Spa treatment with ocean view",
     cat: "resort",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/conch-21-1.jpg",
+    src: `${BASE}/conch-21-1.jpg`,
     alt: "Fresh conch ceviche",
     cat: "dining",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/drone-3-scaled.jpg",
+    src: `${BASE}/drone-3-scaled.jpg`,
     alt: "Resort from above",
     cat: "resort",
     span: "col-span-2 row-span-2",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg",
+    src: `${BASE}/anniversary_cabana-8-scaled.jpg`,
     alt: "Cabana interior",
     cat: "rooms",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/spa-5.jpg",
+    src: `${BASE}/spa-5.jpg`,
     alt: "Wellness and relaxation",
     cat: "resort",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg",
+    src: `${BASE}/night-view.jpg`,
     alt: "Lina Point at night",
     cat: "resort",
     span: "col-span-2",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg",
+    src: `${BASE}/LinaPoint-39.jpg`,
     alt: "Resort deck and walkway",
     cat: "resort",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg",
+    src: `${BASE}/LinaPoint-64.jpg`,
     alt: "Overwater suites",
     cat: "rooms",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg",
+    src: `${BASE}/drone-4-1-scaled.jpg`,
     alt: "Bird's eye view of the resort",
     cat: "resort",
     span: "",
   },
   {
-    src: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg",
+    src: `${BASE}/LinaPoint-41.jpg`,
     alt: "1st floor suite exterior",
     cat: "rooms",
     span: "",
@@ -182,7 +184,7 @@ export default function GalleryPage() {
       {/* Hero */}
       <section className="relative h-[50vh] min-h-[350px] overflow-hidden">
         <Image
-          src="https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg"
+          src="https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/drone-4-1-scaled.jpg"
           alt="Lina Point aerial gallery"
           fill
           className="object-cover"

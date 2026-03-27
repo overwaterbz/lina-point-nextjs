@@ -12,30 +12,26 @@ import WhyBookDirect from "@/components/WhyBookDirect";
 import TestimonialsCarousel from "@/components/TestimonialsCarousel";
 import TrustBadges from "@/components/TrustBadges";
 
-/* ── Curated images from linapoint.com (owned content) ── */
+/* ── Curated images from Supabase CDN ── */
+const BASE =
+  "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images";
 const IMG = {
-  hero: "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
-  cabana:
-    "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg",
-  cabanaAlt:
-    "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg",
-  restaurant:
-    "https://linapoint.com/wp-content/uploads/2017/12/21557862_842375785930679_1662415238731283244_n.jpg",
-  dayView: "https://linapoint.com/wp-content/uploads/2017/12/day-view.jpg",
-  nightView: "https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg",
-  food: "https://linapoint.com/wp-content/uploads/2022/08/conch-21-1.jpg",
-  spa: "https://linapoint.com/wp-content/uploads/2022/08/spa-6.jpg",
-  resort1: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg",
-  resort2: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg",
-  marine:
-    "https://linapoint.com/wp-content/uploads/2022/08/greatwhiteshark-19.jpg",
-  aerial2:
-    "https://linapoint.com/wp-content/uploads/2022/08/drone-3-scaled.jpg",
-  pool: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-55.jpg",
-  spa2: "https://linapoint.com/wp-content/uploads/2022/08/spa-5.jpg",
-  aerial3:
-    "https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg",
-  resort3: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg",
+  hero: `${BASE}/drone-2-scaled.jpg`,
+  cabana: `${BASE}/anniversary_cabana-10-1-scaled.jpg`,
+  cabanaAlt: `${BASE}/anniversary_cabana-8-scaled.jpg`,
+  restaurant: `${BASE}/21557862_842375785930679_1662415238731283244_n.jpg`,
+  dayView: `${BASE}/day-view.jpg`,
+  nightView: `${BASE}/night-view.jpg`,
+  food: `${BASE}/conch-21-1.jpg`,
+  spa: `${BASE}/spa-6.jpg`,
+  resort1: `${BASE}/LinaPoint-39.jpg`,
+  resort2: `${BASE}/LinaPoint-64.jpg`,
+  marine: `${BASE}/greatwhiteshark-19.jpg`,
+  aerial2: `${BASE}/drone-3-scaled.jpg`,
+  pool: `${BASE}/LinaPoint-55.jpg`,
+  spa2: `${BASE}/spa-5.jpg`,
+  aerial3: `${BASE}/drone-4-1-scaled.jpg`,
+  resort3: `${BASE}/LinaPoint-41.jpg`,
 };
 
 /* ── Data ── */

@@ -31,9 +31,9 @@ const ROOMS = [
     image:
       "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/suite-2nd-floor.jpg",
     gallery: [
-      "https://linapoint.com/wp-content/uploads/2022/08/spa-6.jpg",
-      "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-55.jpg",
-      "https://linapoint.com/wp-content/uploads/2022/08/drone-3-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/spa-6.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/LinaPoint-55.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/drone-3-scaled.jpg",
     ],
     accent: "from-cyan-600 to-cyan-700",
     badge: null,
@@ -58,9 +58,9 @@ const ROOMS = [
     image:
       "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/suite-1st-floor.jpg",
     gallery: [
-      "https://linapoint.com/wp-content/uploads/2017/12/day-view.jpg",
-      "https://linapoint.com/wp-content/uploads/2022/08/conch-21-1.jpg",
-      "https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/day-view.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/conch-21-1.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/drone-4-1-scaled.jpg",
     ],
     accent: "from-teal-500 to-teal-600",
     badge: null,
@@ -87,7 +87,7 @@ const ROOMS = [
     gallery: [
       "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-duplex-bed.jpg",
       "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-duplex-pool.jpg",
-      "https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/night-view.jpg",
     ],
     accent: "from-amber-500 to-amber-600",
     badge: "Most Popular",
@@ -113,8 +113,8 @@ const ROOMS = [
       "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-1br-exterior.jpeg",
     gallery: [
       "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/room-photos/cabana-duplex.jpg",
-      "https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg",
-      "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/night-view.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/LinaPoint-39.jpg",
     ],
     accent: "from-orange-500 to-orange-600",
     badge: "Premium",
@@ -309,7 +309,7 @@ export default function RoomsPage() {
       {/* Hero */}
       <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
         <Image
-          src="https://linapoint.com/wp-content/uploads/2017/12/day-view.jpg"
+          src="https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/day-view.jpg"
           alt="Overwater rooms at Lina Point"
           fill
           className="object-cover"
