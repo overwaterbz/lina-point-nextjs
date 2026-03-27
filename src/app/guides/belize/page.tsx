@@ -1,59 +1,64 @@
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
-import Navbar from '@/components/resort/Navbar';
-import Footer from '@/components/resort/Footer';
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import Navbar from "@/components/resort/Navbar";
+import Footer from "@/components/resort/Footer";
 
 export const metadata: Metadata = {
-  title: 'Belize Travel Guide | Ambergris Caye & San Pedro | Lina Point Resort',
+  title: "Belize Travel Guide | Ambergris Caye & San Pedro | Lina Point Resort",
   description:
-    'Your complete guide to traveling Belize — Ambergris Caye, San Pedro, the Barrier Reef, Great Blue Hole, Maya ruins, and more. Plan your trip from Lina Point Resort.',
+    "Your complete guide to traveling Belize — Ambergris Caye, San Pedro, the Barrier Reef, Great Blue Hole, Maya ruins, and more. Plan your trip from Lina Point Resort.",
 };
 
 const SECTIONS = [
   {
-    title: 'Getting to Belize',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg',
+    title: "Getting to Belize",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-2-scaled.jpg",
     content: [
-      'Fly into Philip S.W. Goldson International Airport (BZE) in Belize City. Major airlines including American, United, Delta, and Southwest offer direct flights from US hubs.',
-      'From Belize City, take a 20-minute domestic flight to San Pedro on Tropic Air or Maya Island Air. We provide complimentary boat transfers from the airstrip to Lina Point.',
-      'No visa required for US, Canadian, UK, and EU citizens for stays up to 30 days. Currency is the Belize Dollar (BZD), pegged 2:1 to USD. US dollars are accepted everywhere.',
+      "Fly into Philip S.W. Goldson International Airport (BZE) in Belize City. Major airlines including American, United, Delta, and Southwest offer direct flights from US hubs.",
+      "From Belize City, take a 20-minute domestic flight to San Pedro on Tropic Air or Maya Island Air. We provide complimentary boat transfers from the airstrip to Lina Point.",
+      "No visa required for US, Canadian, UK, and EU citizens for stays up to 30 days. Currency is the Belize Dollar (BZD), pegged 2:1 to USD. US dollars are accepted everywhere.",
     ],
   },
   {
-    title: 'Ambergris Caye & San Pedro',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/drone-3-scaled.jpg',
+    title: "Ambergris Caye & San Pedro",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-3-scaled.jpg",
     content: [
-      'Ambergris Caye is Belize\'s largest island — 25 miles of Caribbean coastline fringed by the world\'s second-largest barrier reef. San Pedro Town is the vibrant hub with restaurants, dive shops, and local markets.',
-      'The island runs on island time. Golf carts are the primary transportation. The pace is relaxed, the people are welcoming, and the seafood is incredibly fresh.',
-      'Secret Beach on the west side has become a hotspot with calm turquoise waters, beach bars, and restaurants. It\'s about a 30-minute golf cart ride from San Pedro.',
+      "Ambergris Caye is Belize's largest island — 25 miles of Caribbean coastline fringed by the world's second-largest barrier reef. San Pedro Town is the vibrant hub with restaurants, dive shops, and local markets.",
+      "The island runs on island time. Golf carts are the primary transportation. The pace is relaxed, the people are welcoming, and the seafood is incredibly fresh.",
+      "Secret Beach on the west side has become a hotspot with calm turquoise waters, beach bars, and restaurants. It's about a 30-minute golf cart ride from San Pedro.",
     ],
   },
   {
-    title: 'The Belize Barrier Reef',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg',
+    title: "The Belize Barrier Reef",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/LinaPoint-39.jpg",
     content: [
-      'A UNESCO World Heritage Site stretching 190 miles along the coast. Hol Chan Marine Reserve and Shark Ray Alley are just minutes from Lina Point — swim with nurse sharks, rays, and sea turtles.',
-      'The Great Blue Hole is a bucket-list dive: a 300-foot-deep sinkhole made famous by Jacques Cousteau. Full-day trips depart from San Pedro.',
-      'Whether you\'re a beginner snorkeler or an advanced diver, Belize\'s reef system offers world-class underwater experiences year-round.',
+      "A UNESCO World Heritage Site stretching 190 miles along the coast. Hol Chan Marine Reserve and Shark Ray Alley are just minutes from Lina Point — swim with nurse sharks, rays, and sea turtles.",
+      "The Great Blue Hole is a bucket-list dive: a 300-foot-deep sinkhole made famous by Jacques Cousteau. Full-day trips depart from San Pedro.",
+      "Whether you're a beginner snorkeler or an advanced diver, Belize's reef system offers world-class underwater experiences year-round.",
     ],
   },
   {
-    title: 'Beyond the Beach',
-    image: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-55.jpg',
+    title: "Beyond the Beach",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/LinaPoint-55.jpg",
     content: [
-      'Belize is much more than beaches. Ancient Maya cities like Lamanai and Xunantunich are accessible as day trips. Explore jungle zip-lines, cave tubing, and howler monkey sanctuaries.',
-      'The Belizean Creole culture is rich with music, storytelling, and cuisine. Try rice & beans with stew chicken, fry jacks for breakfast, and fresh conch ceviche.',
-      'For wildlife enthusiasts: Belize has jaguars, tapirs (the national animal), manatees, and over 500 bird species.',
+      "Belize is much more than beaches. Ancient Maya cities like Lamanai and Xunantunich are accessible as day trips. Explore jungle zip-lines, cave tubing, and howler monkey sanctuaries.",
+      "The Belizean Creole culture is rich with music, storytelling, and cuisine. Try rice & beans with stew chicken, fry jacks for breakfast, and fresh conch ceviche.",
+      "For wildlife enthusiasts: Belize has jaguars, tapirs (the national animal), manatees, and over 500 bird species.",
     ],
   },
   {
-    title: 'When to Visit',
-    image: 'https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg',
+    title: "When to Visit",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/night-view.jpg",
     content: [
-      'Dry season (November–April): Warm days (80–88°F), cool evenings, low humidity. Peak tourist season with higher rates.',
-      'Wet season (May–October): Occasional rainfall (usually brief), lush green landscapes, fewer crowds, and better rates. Water stays warm (79–84°F) year-round.',
-      'Best months for diving: March–June (whale sharks in Gladden Spit). Best for budget: September–October. Best weather: February–April.',
+      "Dry season (November–April): Warm days (80–88°F), cool evenings, low humidity. Peak tourist season with higher rates.",
+      "Wet season (May–October): Occasional rainfall (usually brief), lush green landscapes, fewer crowds, and better rates. Water stays warm (79–84°F) year-round.",
+      "Best months for diving: March–June (whale sharks in Gladden Spit). Best for budget: September–October. Best weather: February–April.",
     ],
   },
 ];
@@ -72,7 +77,11 @@ export default function BelizeGuidePage() {
     about: {
       "@type": "Place",
       name: "Ambergris Caye, Belize",
-      geo: { "@type": "GeoCoordinates", latitude: "17.9214", longitude: "-87.9611" },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: "17.9214",
+        longitude: "-87.9611",
+      },
     },
     url: "https://linapoint.com/guides/belize",
   };
@@ -81,9 +90,24 @@ export default function BelizeGuidePage() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://linapoint.com" },
-      { "@type": "ListItem", position: 2, name: "Guides", item: "https://linapoint.com/guides/belize" },
-      { "@type": "ListItem", position: 3, name: "Belize", item: "https://linapoint.com/guides/belize" },
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://linapoint.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Guides",
+        item: "https://linapoint.com/guides/belize",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "Belize",
+        item: "https://linapoint.com/guides/belize",
+      },
     ],
   };
 
@@ -102,7 +126,7 @@ export default function BelizeGuidePage() {
       {/* Hero */}
       <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
         <Image
-          src="https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg"
+          src="https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-2-scaled.jpg"
           alt="Aerial view of Ambergris Caye, Belize"
           fill
           className="object-cover"
@@ -117,8 +141,8 @@ export default function BelizeGuidePage() {
             Belize Travel Guide
           </h1>
           <p className="font-display text-lg italic text-white/60 mt-3 max-w-xl">
-            Everything you need to know about Ambergris Caye, San Pedro, and
-            the Caribbean coast
+            Everything you need to know about Ambergris Caye, San Pedro, and the
+            Caribbean coast
           </p>
         </div>
       </section>
@@ -130,7 +154,7 @@ export default function BelizeGuidePage() {
             <div
               key={section.title}
               className={`flex flex-col ${
-                i % 2 === 1 ? 'md:flex-row-reverse' : 'md:flex-row'
+                i % 2 === 1 ? "md:flex-row-reverse" : "md:flex-row"
               } gap-10 items-center`}
             >
               <div className="md:w-1/2">
@@ -169,14 +193,14 @@ export default function BelizeGuidePage() {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
-              { icon: '🌡️', label: 'Temperature', value: '79–88°F' },
-              { icon: '💰', label: 'Currency', value: 'BZD (2:1 USD)' },
-              { icon: '🗣️', label: 'Language', value: 'English' },
-              { icon: '✈️', label: 'Flight Time', value: '2–4h from US' },
-              { icon: '🌊', label: 'Water Temp', value: '79–84°F' },
-              { icon: '🤿', label: 'Visibility', value: '60–100 ft' },
-              { icon: '📋', label: 'Visa', value: 'Not Required' },
-              { icon: '⏰', label: 'Time Zone', value: 'CST (UTC-6)' },
+              { icon: "🌡️", label: "Temperature", value: "79–88°F" },
+              { icon: "💰", label: "Currency", value: "BZD (2:1 USD)" },
+              { icon: "🗣️", label: "Language", value: "English" },
+              { icon: "✈️", label: "Flight Time", value: "2–4h from US" },
+              { icon: "🌊", label: "Water Temp", value: "79–84°F" },
+              { icon: "🤿", label: "Visibility", value: "60–100 ft" },
+              { icon: "📋", label: "Visa", value: "Not Required" },
+              { icon: "⏰", label: "Time Zone", value: "CST (UTC-6)" },
             ].map((fact) => (
               <div key={fact.label} className="p-4">
                 <span className="text-2xl block mb-2">{fact.icon}</span>

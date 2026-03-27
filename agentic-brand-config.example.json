@@ -1,0 +1,70 @@
+{
+  "brands": [
+    {
+      "brand": "linapoint",
+      "displayName": "Lina Point",
+      "domain": "linapoint.com",
+      "voice": "Friendly, expert, welcoming",
+      "keyMessages": [
+        "Luxury overwater bungalows",
+        "Eco-friendly hospitality",
+        "Belize adventure"
+      ]
+    },
+    {
+      "brand": "overwater",
+      "displayName": "Overwater",
+      "domain": "overwater.com",
+      "voice": "Modern, adventurous, exclusive",
+      "keyMessages": [
+        "Ultimate overwater experience",
+        "Private escapes",
+        "Unforgettable moments"
+      ]
+    },
+    {
+      "brand": "magicisyou",
+      "displayName": "Magic Is You",
+      "domain": "magic.linapoint.com",
+      "voice": "Inspirational, magical, uplifting",
+      "keyMessages": [
+        "Find your magic",
+        "Transformative travel",
+        "Personal growth"
+      ]
+    },
+    {
+      "brand": "pointrealtor",
+      "displayName": "Point Realtor",
+      "domain": "pointrealtor.com",
+      "voice": "Professional, knowledgeable, trustworthy",
+      "keyMessages": [
+        "Expert real estate guidance",
+        "Investment opportunities",
+        "Local expertise"
+      ]
+    },
+    {
+      "brand": "kylapoint",
+      "displayName": "Kyla Point",
+      "domain": "kylapoint.com",
+      "voice": "Family-friendly, fun, relaxing",
+      "keyMessages": [
+        "Family getaways",
+        "Relaxation and fun",
+        "Memorable vacations"
+      ]
+    },
+    {
+      "brand": "pointenterprise",
+      "displayName": "Point Enterprise",
+      "domain": "pointenterprise.com",
+      "voice": "Innovative, business-focused, reliable",
+      "keyMessages": [
+        "Business retreats",
+        "Corporate excellence",
+        "Team building"
+      ]
+    }
+  ]
+}

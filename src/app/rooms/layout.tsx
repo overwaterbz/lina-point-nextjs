@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     description:
       "Overwater cabanas, elevated suites & premium beachfront rooms. Direct booking saves 6% vs Expedia.",
     images: [
-      "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/anniversary_cabana-10-1-scaled.jpg",
     ],
   },
 };

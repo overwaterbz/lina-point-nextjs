@@ -66,7 +66,7 @@ export default function Footer() {
             </p>
             <div className="relative w-full max-w-md aspect-[3/1] rounded-lg overflow-hidden opacity-60">
               <Image
-                src="https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg"
+                src="https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-2-scaled.jpg"
                 alt="Lina Point aerial"
                 fill
                 className="object-cover"

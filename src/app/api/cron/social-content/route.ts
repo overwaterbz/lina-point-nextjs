@@ -93,7 +93,7 @@ Rules:
           ? "https://magic.overwater.com/api/og"
           : brand === "overwater"
             ? "https://overwater.com/api/og"
-            : "https://linapoint.com/wp-content/uploads/2024/11/LinaPoint-55.jpg";
+            : "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/LinaPoint-55.jpg";
       results.push(await publishToSocial("instagram", caption, imageUrl));
     }
 

@@ -20,7 +20,8 @@ const ROOMS: RoomType[] = [
     slug: "2nd-floor-suite",
     tagline: "Elevated luxury on the barrier reef",
     price: "From $130/night",
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/LinaPoint-64.jpg",
     highlights: ["Premium Furnishings", "Reef Views", "Balcony"],
   },
   {
@@ -28,7 +29,8 @@ const ROOMS: RoomType[] = [
     slug: "1st-floor-suite",
     tagline: "Spacious main building luxury",
     price: "From $150/night",
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/LinaPoint-41.jpg",
     highlights: ["Ground Floor", "Beach Access", "Full Amenities"],
   },
   {
@@ -54,7 +56,8 @@ const ROOMS: RoomType[] = [
     slug: "2br-overwater-cabana",
     tagline: "Family overwater paradise",
     price: "From $400/night",
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/LinaPoint-39.jpg",
     highlights: ["Two Bedrooms", "Largest Deck", "Kitchenette"],
   },
 ];

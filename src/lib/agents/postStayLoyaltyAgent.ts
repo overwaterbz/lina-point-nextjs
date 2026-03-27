@@ -356,7 +356,7 @@ export async function runPostStayMemoryCapture(
     try {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("phone_number, full_name")
+        .select("phone_number, full_name, loyalty_tier, ai_preferences")
         .eq("user_id", res.guest_id)
         .maybeSingle();
 
@@ -373,6 +373,20 @@ export async function runPostStayMemoryCapture(
         `\n\nThank you for helping us make every stay magical! 💙`;
 
       await sendWhatsAppMessage(phone, questionsText);
+
+      // Analyze upsell/feedback engagement for targeted follow-up
+      const aiPrefs = profile?.ai_preferences || {};
+      if (aiPrefs.lastUpsellAccepted) {
+        await sendWhatsAppMessage(
+          phone,
+          `🎁 Because you engaged with our experiences, here's a special offer for your next stay: 15% off any tour or spa package! Just mention this message when booking.`,
+        );
+      } else if (aiPrefs.lastFeedback && aiPrefs.lastFeedback.length > 10) {
+        await sendWhatsAppMessage(
+          phone,
+          `💙 Thank you for your feedback! As a token of appreciation, enjoy a complimentary welcome drink on your next visit.`,
+        );
+      }
 
       // Mark sent
       await supabase

@@ -1,44 +1,132 @@
-'use client';
+"use client";
 
-import { motion, AnimatePresence, useInView } from 'framer-motion';
-import Image from 'next/image';
-import { useRef, useState, useCallback } from 'react';
-import Navbar from '@/components/resort/Navbar';
-import Footer from '@/components/resort/Footer';
+import { motion, AnimatePresence, useInView } from "framer-motion";
+import Image from "next/image";
+import { useRef, useState, useCallback } from "react";
+import Navbar from "@/components/resort/Navbar";
+import Footer from "@/components/resort/Footer";
 
 /* ── Gallery images organized by category ── */
 const IMAGES = [
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg', alt: 'Aerial view of Lina Point Resort', cat: 'resort', span: 'col-span-2 row-span-2' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg', alt: 'Overwater cabana at sunset', cat: 'rooms', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2017/12/21557862_842375785930679_1662415238731283244_n.jpg', alt: 'Hooked Rooftop restaurant', cat: 'dining', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-55.jpg', alt: 'Infinity pool overlooking the reef', cat: 'resort', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/greatwhiteshark-19.jpg', alt: 'Snorkeling the barrier reef', cat: 'experiences', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2017/12/day-view.jpg', alt: 'Overwater cabanas by day', cat: 'rooms', span: 'col-span-2' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/spa-6.jpg', alt: 'Spa treatment with ocean view', cat: 'resort', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/conch-21-1.jpg', alt: 'Fresh conch ceviche', cat: 'dining', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/drone-3-scaled.jpg', alt: 'Resort from above', cat: 'resort', span: 'col-span-2 row-span-2' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg', alt: 'Cabana interior', cat: 'rooms', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/spa-5.jpg', alt: 'Wellness and relaxation', cat: 'resort', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg', alt: 'Lina Point at night', cat: 'resort', span: 'col-span-2' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg', alt: 'Resort deck and walkway', cat: 'resort', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg', alt: 'Overwater suites', cat: 'rooms', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg', alt: 'Bird\'s eye view of the resort', cat: 'resort', span: '' },
-  { src: 'https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg', alt: '1st floor suite exterior', cat: 'rooms', span: '' },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
+    alt: "Aerial view of Lina Point Resort",
+    cat: "resort",
+    span: "col-span-2 row-span-2",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-10-1-scaled.jpg",
+    alt: "Overwater cabana at sunset",
+    cat: "rooms",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2017/12/21557862_842375785930679_1662415238731283244_n.jpg",
+    alt: "Hooked Rooftop restaurant",
+    cat: "dining",
+    span: "",
+  },
+  {
+    src: "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/LinaPoint-55.jpg",
+    alt: "Infinity pool overlooking the reef",
+    cat: "resort",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/greatwhiteshark-19.jpg",
+    alt: "Snorkeling the barrier reef",
+    cat: "experiences",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2017/12/day-view.jpg",
+    alt: "Overwater cabanas by day",
+    cat: "rooms",
+    span: "col-span-2",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/spa-6.jpg",
+    alt: "Spa treatment with ocean view",
+    cat: "resort",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/conch-21-1.jpg",
+    alt: "Fresh conch ceviche",
+    cat: "dining",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/drone-3-scaled.jpg",
+    alt: "Resort from above",
+    cat: "resort",
+    span: "col-span-2 row-span-2",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/anniversary_cabana-8-scaled.jpg",
+    alt: "Cabana interior",
+    cat: "rooms",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/spa-5.jpg",
+    alt: "Wellness and relaxation",
+    cat: "resort",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg",
+    alt: "Lina Point at night",
+    cat: "resort",
+    span: "col-span-2",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg",
+    alt: "Resort deck and walkway",
+    cat: "resort",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg",
+    alt: "Overwater suites",
+    cat: "rooms",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg",
+    alt: "Bird's eye view of the resort",
+    cat: "resort",
+    span: "",
+  },
+  {
+    src: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-41.jpg",
+    alt: "1st floor suite exterior",
+    cat: "rooms",
+    span: "",
+  },
 ];
 
-type Category = 'all' | 'resort' | 'rooms' | 'dining' | 'experiences';
+type Category = "all" | "resort" | "rooms" | "dining" | "experiences";
 
 const TABS: { key: Category; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'resort', label: 'Resort' },
-  { key: 'rooms', label: 'Rooms' },
-  { key: 'dining', label: 'Dining' },
-  { key: 'experiences', label: 'Experiences' },
+  { key: "all", label: "All" },
+  { key: "resort", label: "Resort" },
+  { key: "rooms", label: "Rooms" },
+  { key: "dining", label: "Dining" },
+  { key: "experiences", label: "Experiences" },
 ];
 
-function GalleryImage({ img, index, onClick }: { img: (typeof IMAGES)[0]; index: number; onClick: () => void }) {
+function GalleryImage({
+  img,
+  index,
+  onClick,
+}: {
+  img: (typeof IMAGES)[0];
+  index: number;
+  onClick: () => void;
+}) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-40px' });
+  const inView = useInView(ref, { once: true, margin: "-40px" });
   return (
     <motion.div
       ref={ref}
@@ -66,18 +154,25 @@ function GalleryImage({ img, index, onClick }: { img: (typeof IMAGES)[0]; index:
 }
 
 export default function GalleryPage() {
-  const [category, setCategory] = useState<Category>('all');
+  const [category, setCategory] = useState<Category>("all");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const filtered = category === 'all' ? IMAGES : IMAGES.filter((img) => img.cat === category);
+  const filtered =
+    category === "all" ? IMAGES : IMAGES.filter((img) => img.cat === category);
   const lightboxImages = filtered;
 
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
   const goNext = useCallback(() => {
-    setLightboxIndex((prev) => (prev !== null ? (prev + 1) % lightboxImages.length : null));
+    setLightboxIndex((prev) =>
+      prev !== null ? (prev + 1) % lightboxImages.length : null,
+    );
   }, [lightboxImages.length]);
   const goPrev = useCallback(() => {
-    setLightboxIndex((prev) => (prev !== null ? (prev - 1 + lightboxImages.length) % lightboxImages.length : null));
+    setLightboxIndex((prev) =>
+      prev !== null
+        ? (prev - 1 + lightboxImages.length) % lightboxImages.length
+        : null,
+    );
   }, [lightboxImages.length]);
 
   return (
@@ -95,10 +190,20 @@ export default function GalleryPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6">
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-[10px] tracking-[0.5em] uppercase text-white/60 mb-4">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-[10px] tracking-[0.5em] uppercase text-white/60 mb-4"
+          >
             Visual Journey
           </motion.p>
-          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="font-display text-4xl md:text-6xl font-bold">
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="font-display text-4xl md:text-6xl font-bold"
+          >
             Photo Gallery
           </motion.h1>
         </div>
@@ -115,8 +220,8 @@ export default function GalleryPage() {
                 onClick={() => setCategory(tab.key)}
                 className={`px-6 py-2.5 rounded-full text-xs tracking-[0.15em] uppercase font-semibold transition ${
                   category === tab.key
-                    ? 'bg-cyan-700 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? "bg-cyan-700 text-white shadow-lg"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 {tab.label}
@@ -135,7 +240,12 @@ export default function GalleryPage() {
               className="grid grid-cols-2 md:grid-cols-4 gap-3 auto-rows-[180px] md:auto-rows-[220px]"
             >
               {filtered.map((img, i) => (
-                <GalleryImage key={img.src} img={img} index={i} onClick={() => setLightboxIndex(i)} />
+                <GalleryImage
+                  key={img.src}
+                  img={img}
+                  index={i}
+                  onClick={() => setLightboxIndex(i)}
+                />
               ))}
             </motion.div>
           </AnimatePresence>
@@ -163,14 +273,20 @@ export default function GalleryPage() {
 
             {/* Nav arrows */}
             <button
-              onClick={(e) => { e.stopPropagation(); goPrev(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                goPrev();
+              }}
               className="absolute left-4 md:left-8 text-white/40 hover:text-white text-4xl z-10 transition"
               aria-label="Previous"
             >
               &#8249;
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); goNext(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                goNext();
+              }}
               className="absolute right-4 md:right-8 text-white/40 hover:text-white text-4xl z-10 transition"
               aria-label="Next"
             >
@@ -194,7 +310,9 @@ export default function GalleryPage() {
               />
               <p className="absolute bottom-4 left-0 right-0 text-center text-white/60 text-sm">
                 {lightboxImages[lightboxIndex].alt}
-                <span className="ml-3 text-white/30">{lightboxIndex + 1} / {lightboxImages.length}</span>
+                <span className="ml-3 text-white/30">
+                  {lightboxIndex + 1} / {lightboxImages.length}
+                </span>
               </p>
             </motion.div>
           </motion.div>

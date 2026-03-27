@@ -18,7 +18,7 @@ const TOURS = [
     group: 4,
     price: 95,
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/greatwhiteshark-19.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/greatwhiteshark-19.jpg",
     interest: "snorkeling",
   },
   {
@@ -30,7 +30,8 @@ const TOURS = [
     duration: "6 hrs",
     group: 2,
     price: 350,
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/LinaPoint-64.jpg",
     interest: "fishing",
   },
   {
@@ -42,7 +43,8 @@ const TOURS = [
     duration: "8 hrs",
     group: 6,
     price: 120,
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/LinaPoint-39.jpg",
     interest: "mainland",
   },
   {
@@ -54,7 +56,8 @@ const TOURS = [
     duration: "5 hrs",
     group: 8,
     price: 130,
-    image: "https://linapoint.com/wp-content/uploads/2022/08/spa-5.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/spa-5.jpg",
     interest: "cenote",
   },
   {
@@ -67,7 +70,7 @@ const TOURS = [
     group: 4,
     price: 85,
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/drone-3-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-3-scaled.jpg",
     interest: "kayaking",
   },
   {
@@ -80,7 +83,7 @@ const TOURS = [
     group: 6,
     price: 280,
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-4-1-scaled.jpg",
     interest: "snorkeling",
   },
   {
@@ -92,7 +95,8 @@ const TOURS = [
     duration: "6 hrs",
     group: 8,
     price: 95,
-    image: "https://linapoint.com/wp-content/uploads/2017/12/day-view.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/day-view.jpg",
     interest: "snorkeling",
   },
 ];
@@ -107,7 +111,8 @@ const DINNERS = [
     duration: "Evening",
     group: 10,
     price: 55,
-    image: "https://linapoint.com/wp-content/uploads/2022/08/conch-21-1.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/conch-21-1.jpg",
     interest: "dining",
   },
   {
@@ -119,7 +124,8 @@ const DINNERS = [
     duration: "Evening",
     group: 2,
     price: 120,
-    image: "https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/night-view.jpg",
     interest: "dining",
   },
   {
@@ -132,7 +138,7 @@ const DINNERS = [
     group: 12,
     price: 65,
     image:
-      "https://linapoint.com/wp-content/uploads/2017/12/21557862_842375785930679_1662415238731283244_n.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/21557862_842375785930679_1662415238731283244_n.jpg",
     interest: "dining",
   },
 ];

@@ -1,4 +1,38 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
 export const dynamic = "force-dynamic";
+
+export async function GET() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+
+  // Aggregate funnel_experiments by variant
+  const { data, error } = await supabase
+    .from("funnel_experiments")
+    .select("variant, converted")
+    .neq("variant", null);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Aggregate results
+  const summary: Record<string, { sessions: number; conversions: number }> = {};
+  (data || []).forEach((row) => {
+    const v = row.variant as string;
+    if (!summary[v]) summary[v] = { sessions: 0, conversions: 0 };
+    summary[v].sessions++;
+    if (row.converted) summary[v].conversions++;
+  });
+  const results = Object.entries(summary).map(([variant, stats]) => ({
+    variant,
+    ...stats,
+  }));
+  return NextResponse.json({ results });
+}
 
 /**
  * Funnel A/B Analytics Endpoint
@@ -6,9 +40,6 @@ export const dynamic = "force-dynamic";
  * Tracks which booking wizard step a session has reached and whether it converted.
  * Upserts to funnel_experiments table — one row per session ID (latest step wins).
  */
-
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
 export async function POST(request: NextRequest) {
   let body: unknown;

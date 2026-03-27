@@ -47,6 +47,37 @@ const nextConfig = {
         hostname: 'seonmgpsyyzbpcsrzjxi.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      // Add other known external image domains
+      {
+        protocol: 'https',
+        hostname: 'bokun.io',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'viator.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.getyourguide.com',
+        pathname: '/img/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/photo-**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'wp.linapoint.com',
+        pathname: '/wp-content/uploads/**',
+      },
     ],
   },
 };

@@ -43,7 +43,8 @@ const ALL_EXPERIENCES = [
       mid: "Semi-Private",
       luxury: "Private Charter",
     },
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-64.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/LinaPoint-64.jpg",
     description:
       "Catch tarpon, permit, or bonefish with expert local guides on a world-class fishing excursion.",
   },
@@ -60,7 +61,8 @@ const ALL_EXPERIENCES = [
       mid: "Small Group",
       luxury: "Private Guide",
     },
-    image: "https://linapoint.com/wp-content/uploads/2022/08/LinaPoint-39.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/LinaPoint-39.jpg",
     description:
       "Visit ancient Mayan ruins and explore the jungle canopy on the mainland.",
   },
@@ -73,7 +75,8 @@ const ALL_EXPERIENCES = [
     group: 8,
     prices: { budget: 80, mid: 130, luxury: 180 },
     priceLabels: { budget: "Group", mid: "Small Group", luxury: "Private" },
-    image: "https://linapoint.com/wp-content/uploads/2022/08/spa-5.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/spa-5.jpg",
     description:
       "Swim in crystal-clear underground cenotes and explore ancient cave systems.",
   },
@@ -91,7 +94,7 @@ const ALL_EXPERIENCES = [
       luxury: "Private Guide",
     },
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/drone-3-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-3-scaled.jpg",
     description:
       "Paddle through lush mangroves, spot crocodiles, exotic birds, and manatees.",
   },
@@ -109,7 +112,7 @@ const ALL_EXPERIENCES = [
       luxury: "Private Boat",
     },
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/drone-4-1-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-4-1-scaled.jpg",
     description:
       "Dive the world-famous Great Blue Hole, a UNESCO World Heritage Site over 400 feet deep.",
   },
@@ -126,7 +129,8 @@ const ALL_EXPERIENCES = [
       mid: "Small Group",
       luxury: "Private Charter",
     },
-    image: "https://linapoint.com/wp-content/uploads/2017/12/day-view.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/day-view.jpg",
     description:
       "Visit multiple islands around Ambergris Caye with a gourmet beach lunch on a pristine sandbar.",
   },
@@ -143,7 +147,8 @@ const ALL_EXPERIENCES = [
       mid: "Per Person (premium)",
       luxury: "Private Dining",
     },
-    image: "https://linapoint.com/wp-content/uploads/2022/08/conch-21-1.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/conch-21-1.jpg",
     description:
       "Fresh grilled fish, lobster, and conch right on the beach with tropical sides and live music.",
   },
@@ -160,7 +165,8 @@ const ALL_EXPERIENCES = [
       mid: "Per Person (chef's tasting)",
       luxury: "Full Private Dinner",
     },
-    image: "https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/night-view.jpg",
     description:
       "Private dinner on the dock at sunset — the most romantic dining experience in Belize.",
   },
@@ -178,7 +184,7 @@ const ALL_EXPERIENCES = [
       luxury: "Private Event",
     },
     image:
-      "https://linapoint.com/wp-content/uploads/2017/12/21557862_842375785930679_1662415238731283244_n.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/21557862_842375785930679_1662415238731283244_n.jpg",
     description:
       "Authentic Creole and Maya cuisine — a culinary journey through Belize's rich cultural heritage.",
   },
@@ -192,7 +198,8 @@ const ALL_EXPERIENCES = [
     group: 6,
     prices: { budget: 150, mid: 150, luxury: 150 },
     priceLabels: { budget: "Per Day", mid: "Per Day", luxury: "Per Day" },
-    image: "https://linapoint.com/wp-content/uploads/2017/12/day-view.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/day-view.jpg",
     description:
       "Reserve an exclusive private cabana for the day — complete privacy on the water.",
   },
@@ -205,7 +212,8 @@ const ALL_EXPERIENCES = [
     group: 2,
     prices: { budget: 80, mid: 80, luxury: 80 },
     priceLabels: { budget: "Per Hour", mid: "Per Hour", luxury: "Per Hour" },
-    image: "https://linapoint.com/wp-content/uploads/2022/08/spa-5.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/spa-5.jpg",
     description: "Rejuvenating massage therapy overlooking the Caribbean Sea.",
   },
   {
@@ -217,7 +225,8 @@ const ALL_EXPERIENCES = [
     group: 2,
     prices: { budget: 120, mid: 120, luxury: 120 },
     priceLabels: { budget: "Package", mid: "Package", luxury: "Package" },
-    image: "https://linapoint.com/wp-content/uploads/2017/12/night-view.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/night-view.jpg",
     description:
       "Flower petals, candles, champagne, and a curated ambiance for a special moment.",
   },
@@ -235,7 +244,7 @@ const ALL_EXPERIENCES = [
       luxury: "4 Activities",
     },
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/drone-3-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-3-scaled.jpg",
     description:
       "A curated bundle of fun, age-appropriate activities for younger guests.",
   },
@@ -253,7 +262,7 @@ const ALL_EXPERIENCES = [
       luxury: "Per Session",
     },
     image:
-      "https://linapoint.com/wp-content/uploads/2022/08/drone-2-scaled.jpg",
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/drone-2-scaled.jpg",
     description:
       "Start your day with a guided sunrise yoga practice on the resort deck.",
   },
@@ -266,7 +275,8 @@ const ALL_EXPERIENCES = [
     group: 6,
     prices: { budget: 25, mid: 25, luxury: 25 },
     priceLabels: { budget: "Daily", mid: "Daily", luxury: "Daily" },
-    image: "https://linapoint.com/wp-content/uploads/2022/08/conch-21-1.jpg",
+    image:
+      "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/conch-21-1.jpg",
     description:
       "Fresh-baked pastries and breads delivered to your cabana each morning.",
   },
@@ -550,6 +560,10 @@ function BookingFormInner() {
               src={experience.image}
               alt={experience.name}
               className="w-full aspect-video object-cover"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/images/fallback-experience.jpg";
+              }}
             />
           </div>
           <div>
