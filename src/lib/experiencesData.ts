@@ -1,4 +1,4 @@
-// Auto-generated from GetYourGuide
+﻿// Auto-generated from GetYourGuide
 // Only experiences with 20+ verified reviews are included (MIN_REVIEWS = 20)
 const SUP =
   "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/";
@@ -17,7 +17,7 @@ export interface Experience {
 }
 
 export const EXPERIENCES: Experience[] = [
-  // ─── GYG picks — all of Belize, sorted by review count ────────────────────
+  // â”€â”€â”€ GYG picks â€” all of Belize, sorted by review count â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: "caye-caulker-7-stop-snorkeling",
     title: "Caye Caulker: 7-Stop Snorkeling in the Belize Barrier Reef",
@@ -34,7 +34,7 @@ export const EXPERIENCES: Experience[] = [
     id: "san-ignacio-atm-cave-full-day",
     title: "San Ignacio: Actun Tunichil Muknal (ATM) Cave Full-Day Tour",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nSan Ignacio: Actun Tunichil Muknal (ATM) Cave Full-Day Tour\n7-8 hours",
     price: "4.9\n(450)\nFrom\n$140",
@@ -72,7 +72,7 @@ export const EXPERIENCES: Experience[] = [
     id: "san-ignacio-xunantunich-mayan-tour",
     title: "From San Ignacio: Xunantunich Mayan Tour & Optional Combos",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nFrom San Ignacio: Xunantunich Mayan Tour & Optional Combos\n4-8.5 hours",
     price: "5.0\n(157)\nFrom\n$70",
@@ -84,7 +84,7 @@ export const EXPERIENCES: Experience[] = [
     id: "san-ignacio-caracol-maya-ruins-waterfall",
     title: "San Ignacio: Caracol Maya Ruins & Waterfall Tour with Lunch",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nSan Ignacio: Caracol Maya Ruins & Waterfall Tour with Lunch\n10 hours",
     price: "4.9\n(113)\nFrom\n$130",
@@ -96,7 +96,7 @@ export const EXPERIENCES: Experience[] = [
     id: "belize-city-cave-kayaking-zipline",
     title: "Belize City: Cave Kayaking",
     description: "Water activity",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration: "Water activity\nBelize City: Cave Kayaking\n5-6 hours",
     price: "4.8\n(101)\nFrom\n$69",
     reviewCount: 101,
@@ -107,7 +107,7 @@ export const EXPERIENCES: Experience[] = [
     id: "san-ignacio-cave-tubing-lunch-zipline",
     title: "San Ignacio: Cave Tubing with Lunch & Optional Zipline",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nSan Ignacio: Cave Tubing with Lunch & Optional Zipline\n7-8 hours",
     price: "4.9\n(91)\nFrom\n$95",
@@ -119,7 +119,7 @@ export const EXPERIENCES: Experience[] = [
     id: "belize-city-altun-ha-half-day-tour",
     title: "Belize City: Half-Day Altun Ha Temple & Belize City Tour",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nBelize City: Half-Day Altun Ha Temple & Belize City Tour\n4 hours",
     price: "4.9\n(76)\nFrom\n$86",
@@ -154,7 +154,7 @@ export const EXPERIENCES: Experience[] = [
     id: "belize-city-cave-tubing-crystal-cave",
     title: "Belize City: Cave Tubing or Crystal Cave",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nBelize City: Cave Tubing or Crystal Cave\n5-6.5 hours",
     price: "4.7\n(72)\nFrom\n$69",
@@ -177,7 +177,7 @@ export const EXPERIENCES: Experience[] = [
     id: "belize-city-mayan-temple-zipline",
     title: "Belize City: Mayan Temple Exploration, Cave-Tube, & Zipline",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nBelize City: Mayan Temple Exploration, Cave-Tube, & Zipline\n5 hours",
     price: "4.6\n(51)\nFrom\n$185",
@@ -201,7 +201,7 @@ export const EXPERIENCES: Experience[] = [
     id: "belize-city-lamanai-river-safari",
     title: "Belize City: Lamanai Maya Ruins, River Safari, & Lunch",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nBelize City: Lamanai Maya Ruins, River Safari, & Lunch\n7-8 hours",
     price: "4.9\n(61)\nFrom\n$169",
@@ -213,7 +213,7 @@ export const EXPERIENCES: Experience[] = [
     id: "belize-city-lamanai-mayan-site-jungle-boat",
     title: "Belize City: Lamanai Mayan Site Tour and Jungle Boat Ride",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nBelize City: Lamanai Mayan Site Tour and Jungle Boat Ride\n7 hours",
     price: "4.5\n(56)\nFrom\n$140",
@@ -225,7 +225,7 @@ export const EXPERIENCES: Experience[] = [
     id: "belize-city-cave-tubing-zipline",
     title: "Belize City: Cave Tubing & Zipline Adventure Tour",
     description: "Guided tour",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Guided tour\nBelize City: Cave Tubing & Zipline Adventure Tour\n5-10 hours",
     price: "4.9\n(37)\nFrom\n$115",
@@ -236,7 +236,7 @@ export const EXPERIENCES: Experience[] = [
     id: "caye-caulker-tiki-bar-pontoon",
     title: "Caye Caulker: Tiki Bar Pontoon Boat Cruise",
     description: "Water activity",
-    image: `${SUP}drone-2-scaled.jpg`,
+    image: `${SUP}drone-4-1-scaled.jpg`,
     duration:
       "Water activity\nCaye Caulker: Tiki Bar Pontoon Boat Cruise\n1.5 hours",
     price: "4.9\n(28)\nFrom\n$65",
@@ -254,7 +254,7 @@ export const EXPERIENCES: Experience[] = [
     reviewCount: 21,
     bookingLink: "",
   },
-  // ─── In-house Lina Point experiences ──────────────────────────────────────
+  // â”€â”€â”€ In-house Lina Point experiences â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: "garifuna-drumming-class",
     title: "Garifuna Drumming Class",

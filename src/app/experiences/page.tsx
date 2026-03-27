@@ -52,16 +52,22 @@ function parsePrice(raw: string): {
   return { price: lines[lines.length - 1] ?? raw };
 }
 
-/* Parse duration from multi-line text â€” last meaningful part */
+/* Parse duration from multi-line text — last meaningful part */
 function parseDuration(raw: string): string {
   const lines = raw.split("\n").filter(Boolean);
-  // Last line is "X hours â€¢ Private group â€¢ Pickup available" etc
   const last = lines[lines.length - 1] ?? "";
-  // Keep duration and first attribute only
-  return last.split("â€¢")[0].trim();
+  return last.split("•")[0].trim();
 }
 
-/* Category â†’ filter key */
+/* Extract numeric dollar amount from price string e.g. "4.8\n(227)\nFrom\n$125" → 125 */
+function parseAmount(raw: string): number | null {
+  const parts = raw.split("\n").filter(Boolean);
+  const last = parts[parts.length - 1] ?? "";
+  const m = last.match(/\$(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+/* Category → filter key */
 function getCategoryFilter(desc: string): string {
   if (
     desc.toLowerCase().includes("water") ||
@@ -208,11 +214,14 @@ export default function ExperiencesPage() {
                 const { rating, reviewCount, price } = parsePrice(exp.price);
                 const duration = parseDuration(exp.duration);
                 const imgSrc = getImage(exp.id, exp.image);
-                const bookUrl = exp.isInHouse
-                  ? exp.bookingLink
-                  : exp.bookingLink
-                    ? `https://www.getyourguide.com${exp.bookingLink}`
-                    : "";
+                const otaPrice = parseAmount(exp.price);
+                const directPrice = otaPrice
+                  ? Math.round(otaPrice * 0.94)
+                  : null;
+                const savings =
+                  otaPrice && directPrice ? otaPrice - directPrice : null;
+                const internalUrl = `/experiences/book?tour=${encodeURIComponent(exp.id)}`;
+                const bookUrl = exp.isInHouse ? exp.bookingLink : internalUrl;
 
                 return (
                   <FadeCard key={exp.id} delay={i * 0.06} className="h-full">
@@ -232,7 +241,7 @@ export default function ExperiencesPage() {
                         )}
                         {rating && (
                           <div className="absolute top-3 left-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full">
-                            <span className="text-amber-500 text-xs">â˜…</span>
+                            <span className="text-amber-500 text-xs">★</span>
                             <span className="text-gray-900 text-xs font-bold">
                               {rating}
                             </span>
@@ -259,28 +268,49 @@ export default function ExperiencesPage() {
                           {exp.title}
                         </h3>
                         <div className="mt-auto pt-4 border-t border-gray-100">
+                          {!exp.isInHouse && otaPrice && directPrice && (
+                            <div className="mb-3 space-y-1.5">
+                              <div className="flex justify-between items-center text-xs px-3 py-1.5 bg-orange-50 rounded-lg">
+                                <span className="text-orange-700 font-medium">
+                                  🗺️ GYG / Viator
+                                </span>
+                                <span className="text-orange-800 font-semibold line-through">
+                                  ${otaPrice}
+                                  <span className="text-[10px] text-orange-400 no-underline">
+                                    /person
+                                  </span>
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center px-3 py-2 bg-green-50 border border-green-300 rounded-lg">
+                                <span className="text-green-700 font-bold text-xs">
+                                  ✓ Book Direct
+                                </span>
+                                <span className="text-green-800 font-bold text-sm">
+                                  ${directPrice}
+                                  <span className="text-[10px] text-green-600 font-normal">
+                                    /person
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                          )}
                           {exp.isInHouse ? (
                             <Link
                               href={bookUrl}
-                              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs tracking-[0.15em] uppercase font-semibold px-5 py-2.5 rounded-full transition shadow-sm"
+                              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs tracking-[0.15em] uppercase font-semibold px-5 py-2.5 rounded-full transition shadow-sm"
                             >
-                              Book Now
-                              <span aria-hidden>→</span>
-                            </Link>
-                          ) : bookUrl ? (
-                            <Link
-                              href={bookUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 bg-cyan-700 hover:bg-cyan-600 text-white text-xs tracking-[0.15em] uppercase font-semibold px-5 py-2.5 rounded-full transition shadow-sm"
-                            >
-                              View on GetYourGuide
-                              <span aria-hidden>→</span>
+                              Book Now →
                             </Link>
                           ) : (
-                            <span className="inline-flex items-center gap-2 bg-gray-100 text-gray-400 text-xs tracking-[0.15em] uppercase font-semibold px-5 py-2.5 rounded-full">
-                              Details Coming Soon
-                            </span>
+                            <Link
+                              href={internalUrl}
+                              className="w-full flex items-center justify-center gap-2 bg-cyan-700 hover:bg-cyan-600 text-white text-xs tracking-[0.15em] uppercase font-semibold px-5 py-2.5 rounded-full transition shadow-sm"
+                            >
+                              {savings
+                                ? `Book Direct — Save $${savings}`
+                                : "Book Direct at Lina Point"}{" "}
+                              →
+                            </Link>
                           )}
                         </div>
                       </div>
