@@ -3,10 +3,34 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+import re
 
-GYG_URL = "https://www.getyourguide.com/san-pedro-belize-l117510/"
+GYG_URL = "https://www.getyourguide.com/belize-l169068/"
 import os
 OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "..", "src", "lib", "experiencesData.ts")
+MIN_REVIEWS = 20
+SUPABASE = "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/"
+
+# In-house Lina Point experiences — always appended after scraping
+IN_HOUSE_ENTRIES = [
+    {
+        "id": "garifuna-drumming-class",
+        "title": "Garifuna Drumming Class",
+        "description": "Workshop or class",
+        "image": f"{SUPABASE}gyg-garifuna-drumming-class.jpg",
+        "duration": "Workshop or class\nGarifuna Drumming Class\n1.5 hours",
+        "price": "From\n$30",
+        "reviewCount": 0,
+        "isInHouse": True,
+        "bookingLink": "/experiences/book?tour=garifuna-drumming-class",
+    }
+]
+
+
+def parse_review_count(price_str: str) -> int:
+    """Extract review count from strings like '(227)' or '4.8\n(227)\nFrom\n$125'."""
+    m = re.search(r'\((\d+)\)', price_str)
+    return int(m.group(1)) if m else 0
 
 
 def scrape_gyg_experiences():
@@ -30,8 +54,11 @@ def scrape_gyg_experiences():
         # Price
         price_tag = card.find(string=lambda s: s and 'From $' in s)
         price = price_tag.strip().replace('From ', '') if price_tag else ''
+        # Review count
+        review_tag = card.find(string=lambda s: s and re.match(r'^\(\d+\)$', s.strip()))
+        review_count = parse_review_count(review_tag.strip()) if review_tag else 0
         id_ = title.lower().replace(' ', '-').replace(':', '').replace('/', '-')[:40]
-        if title:
+        if title and review_count >= MIN_REVIEWS:
             experiences.append({
                 'id': id_,
                 'title': title,
@@ -39,17 +66,20 @@ def scrape_gyg_experiences():
                 'image': img,
                 'duration': duration,
                 'price': price,
+                'reviewCount': review_count,
                 'bookingLink': f"/booking?experience={id_}"
             })
     return experiences
 
 def write_ts_data(experiences):
+    all_entries = experiences + IN_HOUSE_ENTRIES
     with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
-        f.write('// Auto-generated from GetYourGuide\n')
+        f.write('// Auto-generated from GetYourGuide (MIN_REVIEWS=20) + in-house entries\n')
+        f.write(f'const SUP = "{SUPABASE}";\n\n')
         f.write('export interface Experience {\n')
-        f.write('  id: string;\n  title: string;\n  description: string;\n  image: string;\n  duration: string;\n  price: string;\n  bookingLink: string;\n  dateAdded?: string;\n}\n\n')
+        f.write('  id: string;\n  title: string;\n  description: string;\n  image: string;\n  duration: string;\n  price: string;\n  bookingLink: string;\n  reviewCount: number;\n  isInHouse?: boolean;\n  dateAdded?: string;\n}\n\n')
         f.write('export const EXPERIENCES: Experience[] = ')
-        json.dump(experiences, f, indent=2)
+        json.dump(all_entries, f, indent=2)
         f.write(';\n')
 
 import re

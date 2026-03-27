@@ -79,11 +79,11 @@ function getCategoryFilter(desc: string): string {
     desc.toLowerCase().includes("cooking") ||
     desc.toLowerCase().includes("guided")
   )
-    return "food";
+    return "guided";
   return "other";
 }
 
-type Filter = "all" | "water" | "food" | "private" | "workshop";
+type Filter = "all" | "water" | "guided" | "private" | "workshop";
 
 function FadeCard({
   children,
@@ -175,9 +175,9 @@ export default function ExperiencesPage() {
               [
                 ["all", "All Experiences"],
                 ["water", "Water Adventures"],
-                ["food", "Food & Culture"],
-                ["private", "Private Tours"],
+                ["guided", "Guided Tours"],
                 ["workshop", "Workshops"],
+                ["private", "Private Tours"],
               ] as [Filter, string][]
             ).map(([key, label]) => (
               <button
@@ -208,7 +208,11 @@ export default function ExperiencesPage() {
                 const { rating, reviewCount, price } = parsePrice(exp.price);
                 const duration = parseDuration(exp.duration);
                 const imgSrc = getImage(exp.id, exp.image);
-                const bookUrl = `https://www.getyourguide.com${exp.bookingLink}`;
+                const bookUrl = exp.isInHouse
+                  ? exp.bookingLink
+                  : exp.bookingLink
+                    ? `https://www.getyourguide.com${exp.bookingLink}`
+                    : "";
 
                 return (
                   <FadeCard key={exp.id} delay={i * 0.06} className="h-full">
@@ -255,15 +259,29 @@ export default function ExperiencesPage() {
                           {exp.title}
                         </h3>
                         <div className="mt-auto pt-4 border-t border-gray-100">
-                          <Link
-                            href={bookUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-cyan-700 hover:bg-cyan-600 text-white text-xs tracking-[0.15em] uppercase font-semibold px-5 py-2.5 rounded-full transition shadow-sm"
-                          >
-                            Book on GetYourGuide
-                            <span aria-hidden>â†’</span>
-                          </Link>
+                          {exp.isInHouse ? (
+                            <Link
+                              href={bookUrl}
+                              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs tracking-[0.15em] uppercase font-semibold px-5 py-2.5 rounded-full transition shadow-sm"
+                            >
+                              Book Now
+                              <span aria-hidden>→</span>
+                            </Link>
+                          ) : bookUrl ? (
+                            <Link
+                              href={bookUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 bg-cyan-700 hover:bg-cyan-600 text-white text-xs tracking-[0.15em] uppercase font-semibold px-5 py-2.5 rounded-full transition shadow-sm"
+                            >
+                              View on GetYourGuide
+                              <span aria-hidden>→</span>
+                            </Link>
+                          ) : (
+                            <span className="inline-flex items-center gap-2 bg-gray-100 text-gray-400 text-xs tracking-[0.15em] uppercase font-semibold px-5 py-2.5 rounded-full">
+                              Details Coming Soon
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

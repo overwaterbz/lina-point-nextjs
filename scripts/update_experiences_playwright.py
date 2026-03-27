@@ -3,9 +3,33 @@
 from playwright.sync_api import sync_playwright
 import json
 import os
+import re
 
-GYG_URL = "https://www.getyourguide.com/san-pedro-belize-l117510/"
+GYG_URL = "https://www.getyourguide.com/belize-l169068/"
 OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "..", "src", "lib", "experiencesData.ts")
+MIN_REVIEWS = 20
+SUPABASE = "https://seonmgpsyyzbpcsrzjxi.supabase.co/storage/v1/object/public/LP/images/"
+
+# In-house Lina Point experiences — preserved on every scraper run
+IN_HOUSE_ENTRIES = [
+    {
+        "id": "garifuna-drumming-class",
+        "title": "Garifuna Drumming Class",
+        "description": "Workshop or class",
+        "image": f"{SUPABASE}gyg-garifuna-drumming-class.jpg",
+        "duration": "Workshop or class\nGarifuna Drumming Class\n1.5 hours",
+        "price": "From\n$30",
+        "reviewCount": 0,
+        "isInHouse": True,
+        "bookingLink": "/experiences/book?tour=garifuna-drumming-class",
+    }
+]
+
+
+def parse_review_count(price_str: str) -> int:
+    """Extract review count from strings like '4.8\n(227)\nFrom\n$125' or '(227)'."""
+    m = re.search(r'\((\d+)\)', price_str)
+    return int(m.group(1)) if m else 0
 
 def scrape_experiences():
     with sync_playwright() as p:
@@ -18,11 +42,11 @@ def scrape_experiences():
             url = GYG_URL + (f"?page={page_num}" if page_num > 1 else "")
             try:
                 page.goto(url, timeout=30000)
-                page.wait_for_selector('a[href*="/san-pedro-belize-l117510/"]', timeout=20000)
+                page.wait_for_selector('a[href*="/belize-l169068/"], a[href*="-l117510/"], a[href*="-l"]', timeout=20000)
             except Exception as e:
                 print(f"Navigation or selector wait failed on page {page_num}: {e}")
                 break
-            anchors = page.query_selector_all('a[href*="/san-pedro-belize-l117510/"]')
+            anchors = page.query_selector_all('a[href*="getyourguide.com"][href*="-l"]')
             found = 0
             for anchor in anchors:
                 img = anchor.query_selector('img')
@@ -46,7 +70,18 @@ def scrape_experiences():
                         price = text
                 booking_link = anchor.get_attribute('href')
                 id_ = title.lower().replace(' ', '-').replace(':', '').replace('/', '-')[:40]
-                if title and img_url and booking_link:
+                # Extract review count — looks for pattern "(N)" among all text nodes
+                review_count = 0
+                for node in anchor.query_selector_all('*'):
+                    try:
+                        t = node.inner_text().strip()
+                    except Exception:
+                        continue
+                    m = re.match(r'^\((\d+)\)$', t)
+                    if m:
+                        review_count = int(m.group(1))
+                        break
+                if title and img_url and booking_link and review_count >= MIN_REVIEWS:
                     experiences.append({
                         'id': id_,
                         'title': title,
@@ -54,6 +89,7 @@ def scrape_experiences():
                         'image': img_url,
                         'duration': duration,
                         'price': price,
+                        'reviewCount': review_count,
                         'bookingLink': booking_link
                     })
                     found += 1
@@ -70,12 +106,14 @@ def scrape_experiences():
         return experiences
 
 def write_ts_data(experiences):
+    all_entries = experiences + IN_HOUSE_ENTRIES
     with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
-        f.write('// Auto-generated from GetYourGuide\n')
+        f.write('// Auto-generated from GetYourGuide (MIN_REVIEWS=20) + in-house entries\n')
+        f.write(f'const SUP = "{SUPABASE}";\n\n')
         f.write('export interface Experience {\n')
-        f.write('  id: string;\n  title: string;\n  description: string;\n  image: string;\n  duration: string;\n  price: string;\n  bookingLink: string;\n  dateAdded?: string;\n}\n\n')
+        f.write('  id: string;\n  title: string;\n  description: string;\n  image: string;\n  duration: string;\n  price: string;\n  bookingLink: string;\n  reviewCount: number;\n  isInHouse?: boolean;\n  dateAdded?: string;\n}\n\n')
         f.write('export const EXPERIENCES: Experience[] = ')
-        json.dump(experiences, f, indent=2)
+        json.dump(all_entries, f, indent=2)
         f.write(';\n')
 
 if __name__ == "__main__":
